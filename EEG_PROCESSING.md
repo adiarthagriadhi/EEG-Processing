@@ -89,7 +89,8 @@ EEG-Processing/
 python -m venv .venv && source .venv/bin/activate
 pip install mne mne-icalabel python-picard numpy scipy pandas matplotlib \
             av pytesseract opencv-python rapidfuzz statsmodels pingouin pyyaml \
-            mediapipe            # pose estimation untuk fase gerak aktual (Tahap 4)
+            mediapipe            # pose estimation (Tasks API, mediapipe ≥ 1.0) untuk Tahap 4
+# Linux tanpa GUI: sudo apt install libegl1 libgles2   (dibutuhkan mediapipe)
 # Tesseract OCR engine (sistem):
 #   Ubuntu: sudo apt install tesseract-ocr ffmpeg
 #   macOS : brew install tesseract ffmpeg
@@ -128,7 +129,9 @@ Semua parameter disimpan di satu file `config.yaml`, jangan ditulis langsung (*h
 sfreq_expected: 100
 filter: {l_freq: 1.0, h_freq: 40.0}
 hud_box: {x0: 960, y0: 250, x1: 1280, y1: 480}   # verifikasi per file
-webcam_box: {x0: null, y0: null, x1: null, y1: null}   # isi setelah cek frame sampel
+webcam_box: {x0: null, y0: null, x1: null, y1: null}   # area webcam di frame komposit
+participant_box: {x0: null, y0: null, x1: null, y1: null}   # area partisipan saja, TANPA operator
+pose_model: models/pose_landmarker_full.task
 ocr_sample_sec: 0.2
 sync: {prior_offset_sec: 0.0, max_lag_sec: 5.0, max_drift_sec: 0.2, max_residual_sec: 0.5}
 phases: {late_sec: 1.5, short_hold_sec: 1.0, min_phase_sec: 0.5}
@@ -144,6 +147,11 @@ erd:
 ---
 
 ## 5. Tahap 0 — Manifest
+
+Struktur folder (dikonfirmasi pengguna): **satu folder per partisipan**, berisi
+rekaman video, `PXX_Baseline.EDF`, dan `PXX_Trial.EDF`. Kelompok, usia, dan timepoint
+**tidak** tersimpan di folder, jadi diambil dari file demografis terpisah
+(`data/participants.csv`) yang digabung lewat `participant_id`.
 
 `data/manifest.csv`:
 
@@ -300,8 +308,8 @@ from scipy.signal import correlate, correlation_lags
 FS = 10.0   # resolusi bersama (Hz)
 
 def video_motion(path, box, fs=FS):
-    """Energi gerak (selisih antar-frame) di region webcam, di-resample ke grid fs."""
-    x0, y0, x1, y1 = box                           # webcam_box di config.yaml
+    """Energi gerak (selisih antar-frame) di area partisipan, di-resample ke grid fs."""
+    x0, y0, x1, y1 = box                           # participant_box di config.yaml (tanpa operator)
     ts, energy, prev = [], [], None
     with av.open(str(path)) as c:
         for fr in c.decode(video=0):
@@ -332,11 +340,20 @@ def xcorr_offset(v, e, fs=FS, max_lag_sec=5.0):
 
 raw = mne.io.read_raw_edf(path_trial_edf, preload=True)
 raw.rename_channels(lambda ch: ch.split("-")[0])
-tv, v = video_motion(path_video, webcam_box)
+tv, v = video_motion(path_video, participant_box)
 te, e = eeg_motion(raw)
 offset, peak, (lags, cc) = xcorr_offset(v, e)
 print(f"sync_offset_sec = {offset:+.2f} dtk (r = {peak:.2f})")
 ```
+
+**Dari setting ruang rekaman:** operator duduk tepat di samping/belakang partisipan dan
+memegang berkas kabel elektroda. Karena itu:
+
+- Area sinyal gerak video harus **hanya area partisipan**. Gerak operator di video tidak
+  punya pasangan di EEG dan akan menurunkan korelasi.
+- Tarikan atau goyangan kabel oleh operator menimbulkan artefak di EEG **tanpa** gerak
+  partisipan di video. Hal ini menurunkan `r` tetapi tidak menggeser puncak lag, selama
+  gerakan partisipan yang dominan. Catat di log jika operator terlihat menangani kabel.
 
 Kriteria penerimaan:
 
@@ -456,6 +473,11 @@ raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
 - **Jangan buang komponen "otot/gerak" secara otomatis**. Ritme mu/beta sensorimotor
   bisa ikut terbuang. Buang hanya komponen mata yang jelas (kedip dan saccade).
 - Jika `Add_lead1/2` ternyata EOG, ganti `ch_name` di `find_bads_eog` ke kanal tersebut.
+- **Gerak mata terkunci waktu dengan gerakan.** Partisipan menatap monitor instruksi saat
+  menurunkan tubuh, sehingga sudut pandang berubah dan muncul gerak mata vertikal tepat di
+  sekitar onset TURUN. Artefak ini paling berpengaruh pada F3/F4 (theta frontal) dan LRP.
+  Pastikan komponen gerak mata vertikal ikut dibuang, lalu periksa rata-rata Fp1/Fp2
+  terhadap onset setelah ICA.
 - Segmen dengan artefak gerak besar diberi anotasi `BAD_motion` dan tidak dipakai
   untuk *fit* ICA.
 
@@ -491,10 +513,10 @@ pencarian.
 
 **Langkah semi-otomatis:**
 
-1. **Lintasan tubuh:** pose estimation (mis. MediaPipe Pose) pada region webcam untuk
-   mengambil posisi vertikal pinggul (rata-rata *left/right hip*, koordinat y) di setiap
-   frame, menggunakan timestamp PTS. Ngeed/agem adalah gerakan menurunkan tubuh dengan
-   menekuk lutut, sehingga pinggul turun saat TURUN, stabil saat TAHAN, dan naik saat NAIK.
+1. **Lintasan tubuh:** pose estimation pada region webcam untuk mengambil posisi
+   vertikal **batang tubuh** di setiap frame, menggunakan timestamp PTS. Ngeed/agem
+   menurunkan tubuh dengan menekuk lutut, sehingga batang tubuh turun saat TURUN,
+   stabil saat TAHAN, dan naik saat NAIK. Kode di 9.1.1.
 2. **Segmentasi otomatis** per repetisi, dalam jendela `[onset HUD TURUN − 1 dtk,
    akhir HUD NAIK + 3 dtk]` (jendela harus mencakup posisi berdiri sebelum dan sesudah).
    Posisi pinggul dinormalisasi ke kedalaman gerak (0 = berdiri, 1 = terendah), lalu
@@ -577,6 +599,81 @@ Output `data/timeline/PXX_movement_phases.csv`:
 Waktu disimpan dalam **detik video**, lalu dikonversi ke waktu EEG dengan offset dari
 Tahap 2. Latensi respons (`act_turun − hud_turun`) juga menjadi variabel perilaku yang
 dapat dibandingkan antara penari dan non-penari.
+
+#### 9.1.1 Ekstraksi pose — hal khusus dari setting ruang rekaman
+
+Setting (foto dari pengguna): partisipan berdiri menghadap monitor instruksi, webcam
+di tripod di pojok ruangan, dan **dua operator duduk di samping/belakang partisipan**
+(satu memegang berkas kabel elektroda). Partisipan memakai **kamen** (kain panjang).
+Hasil uji MediaPipe pada foto setting:
+
+| Uji | Hasil | Konsekuensi |
+|---|---|---|
+| Deteksi pada frame penuh (setting default) | Satu-satunya orang yang terdeteksi adalah **operator yang duduk**, bukan partisipan | **Wajib** memilih orang yang benar: crop ke area partisipan dan pilih pose berdasarkan posisi |
+| Crop area partisipan, ambang deteksi 0,2 | Partisipan terdeteksi; visibilitas pinggul 0,99, **lutut 0,11–0,16** | Lutut tertutup kamen → jangan pakai landmark lutut/pergelangan kaki. Pakai **bahu + pinggul** (+ hidung) |
+
+Catatan: foto diambil dari belakang partisipan, bukan dari sudut webcam. Hasil di
+atas perlu diulang pada frame video asli.
+
+```python
+import av
+import numpy as np
+import mediapipe as mp
+from mediapipe.tasks import python as mpt
+from mediapipe.tasks.python import vision
+
+# Model: https://storage.googleapis.com/mediapipe-models/pose_landmarker/
+#        pose_landmarker_full/float16/latest/pose_landmarker_full.task
+# mediapipe ≥ 1.0 hanya punya Tasks API (mp.solutions sudah dihapus).
+# Linux tanpa GUI butuh libEGL: sudo apt install libegl1 libgles2
+TRUNK = [11, 12, 23, 24]          # bahu kiri/kanan, pinggul kiri/kanan
+
+def trunk_trajectory(path, participant_box, model="pose_landmarker_full.task",
+                     max_jump=0.15):
+    """Posisi vertikal batang tubuh partisipan per frame (piksel frame penuh).
+    participant_box: area berdiri partisipan di frame (config.yaml), tanpa operator."""
+    x0, y0, x1, y1 = participant_box
+    opts = vision.PoseLandmarkerOptions(
+        base_options=mpt.BaseOptions(model_asset_path=model),
+        running_mode=vision.RunningMode.VIDEO, num_poses=2,
+        min_pose_detection_confidence=0.2, min_pose_presence_confidence=0.2,
+        min_tracking_confidence=0.5)
+    ts, ys, prev_x = [], [], None
+    with vision.PoseLandmarker.create_from_options(opts) as lm, av.open(str(path)) as c:
+        for fr in c.decode(video=0):
+            crop = np.ascontiguousarray(fr.to_ndarray(format="rgb24")[y0:y1, x0:x1])
+            h, w = crop.shape[:2]
+            res = lm.detect_for_video(mp.Image(image_format=mp.ImageFormat.SRGB, data=crop),
+                                      int(fr.time * 1000))
+            cand = []
+            for p in res.pose_landmarks:
+                cx = np.mean([p[k].x for k in TRUNK]) * w
+                vis = np.mean([p[k].visibility for k in TRUNK])
+                if vis > 0.5:
+                    cand.append((cx, np.mean([p[k].y for k in TRUNK]) * h + y0))
+            if not cand:
+                ts.append(fr.time); ys.append(np.nan); continue
+            # pilih pose paling dekat dengan posisi partisipan sebelumnya; tolak lompatan
+            # besar (mis. hanya operator yang terdeteksi di frame ini) agar tidak berpindah orang
+            ref = prev_x if prev_x is not None else w / 2
+            cx, y = min(cand, key=lambda c: abs(c[0] - ref))
+            if abs(cx - ref) > max_jump * w:
+                ts.append(fr.time); ys.append(np.nan); continue
+            prev_x = cx
+            ts.append(fr.time); ys.append(y)
+    return np.array(ts), np.array(ys)
+```
+
+- `participant_box` ditentukan sekali per file dari frame sampel. Pilih area tempat
+  partisipan berdiri, sesempit mungkin tanpa memotong tubuh saat turun, dan
+  **tidak mencakup operator**.
+- Frame tanpa deteksi (`NaN`) diinterpolasi hanya jika celahnya < 0,3 dtk. Celah lebih
+  panjang di dalam jendela repetisi → kode `no_video`.
+- QC visual: buat video pendek atau montase frame dengan titik bahu/pinggul yang
+  digambar, untuk memastikan yang dilacak adalah partisipan dan bukan operator.
+- Sudut kamera miring (webcam di pojok) tidak masalah untuk gerak vertikal, tetapi
+  pergeseran badan ke samping pada agem kanan/kiri terlihat terdistorsi. Gunakan hanya
+  sumbu vertikal untuk fase.
 
 ### 9.2 Epoching berbasis onset aktual
 
@@ -1044,7 +1141,7 @@ Log per partisipan (`results/qc_log.csv`):
 
 - [ ] File lengkap (manifest tidak kosong)
 - [ ] Kotak HUD dicek pada frame sampel
-- [ ] Kotak webcam dicek; pose terdeteksi stabil
+- [ ] Kotak webcam & `participant_box` dicek; pose melacak **partisipan, bukan operator** (cek montase frame)
 - [ ] Timeline OCR divalidasi manual; 4 repetisi per gerakan (NGEED, AGEM KANAN, AGEM KIRI)
 - [ ] Offset xcorr: puncak tunggal, |offset| ≤ 2 dtk, drift paruh-sesi < 0,2 dtk
 - [ ] Offset divalidasi dengan transisi alpha Romberg (residual < 0,5 dtk)
@@ -1072,6 +1169,10 @@ Log per partisipan (`results/qc_log.csv`):
   dengan transisi alpha Romberg. Laporkan offset, r, drift, dan residual (rata-rata ± SD).
 - **Onset gerakan dari video** (pose estimation + verifikasi manual), bukan dari sensor
   gerak/EMG. Resolusi temporal dibatasi frame rate (~30 fps) dan presisi sinkronisasi.
+- **Operator dalam ruang dan penanganan kabel**: operator duduk dekat partisipan dan
+  memegang kabel elektroda, sehingga ada potensi artefak kabel yang tidak terkait gerak
+  partisipan. Kamen menutupi lutut, jadi fase gerak diukur dari batang tubuh
+  (bahu/pinggul), bukan sudut lutut.
 - **Kepatuhan instruksi bervariasi**: sebagian partisipan tidak mengikuti
   TURUN→TAHAN→NAIK dengan tepat. Laporkan jumlah repetisi per kode kepatuhan per grup,
   karena perbedaan kepatuhan antara penari dan non-penari sendiri adalah temuan.
@@ -1096,9 +1197,9 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 | 2 | Isi `Add_lead1` / `Add_lead2` | ⚠️ "Sepertinya lead referensi". Perlu verifikasi empiris (8.1.1) | 3 |
 | 3 | Label HUD ngeed | ✅ `NGEED`, `AGEM KANAN`, `AGEM KIRI` | 1 |
 | 4 | Urutan sub-fase | ✅ `TURUN → TAHAN → NAIK` untuk semua gerakan; kepatuhan dikonfirmasi dari video (9.1) | 4, 5 |
-| 5 | Struktur folder untuk ke-38 partisipan (subfolder per grup? pre/post?) | ❓ Terbuka | 0 |
+| 5 | Struktur folder untuk ke-38 partisipan | ✅ Satu folder per partisipan: video + EDF Baseline + EDF Trial. ❓ Sisa: bagaimana folder **pre vs post** non-penari dibedakan (nama folder/kode berbeda?) | 0 |
 | 6 | Konfirmasi Python + MNE-Python | ❓ Terbuka (diasumsikan ya) | Semua |
-| 7 | Posisi region webcam di frame video (untuk pose & sinyal gerak) | ❓ Baru: dicek dari frame sampel | 2, 4 |
+| 7 | Posisi region webcam dan area partisipan di frame video | ⚠️ Setting ruang sudah diketahui (foto). Koordinat tetap perlu **satu screenshot frame video asli** | 2, 4 |
 | 8 | Pemetaan sisi untuk LI/LRP: AGEM KANAN → hemisfer kontralateral = **C3**? (agem melibatkan lengan dan tungkai; "tangan kanan" di draft = AGEM KANAN?) | 🔎 Baru | 5 |
 | 9 | Fase mana yang dipakai untuk "ERD Beta Agem" dan "Theta Frontal Agem" (TURUN, TAHAN, atau gabungan)? | 🔎 Baru (default: TURUN; TURUN+TAHAN) | 6 |
 | 10 | Definisi "Rasio Theta/Alpha Romberg": kondisi (EC/EO) dan kanal (theta F3/F4 ÷ alpha O1/O2, atau kanal yang sama)? | 🔎 Baru (default: EC, F3/F4 ÷ O1/O2) | 5b, 6 |

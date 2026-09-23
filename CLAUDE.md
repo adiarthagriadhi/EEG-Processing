@@ -275,6 +275,19 @@ disetujui untuk diadopsi:
    (pose/gerak tubuh), bukan hanya dari label HUD. Refinement onset di Tahap 4
    menjadi **wajib**, bukan opsional.
 
+## Setting Ruang Rekaman & Struktur Folder (dari pengguna, 2026-09-23)
+- Partisipan berdiri menghadap **monitor instruksi** (HUD) di meja; **webcam di tripod
+  di pojok ruangan**; **dua operator duduk di samping/belakang partisipan** (satu
+  memegang berkas kabel elektroda; laptop akuisisi EEG dan laptop task terpisah).
+  Amplifier/headbox di tiang tripod setinggi kepala. Partisipan memakai **kamen**.
+- Uji MediaPipe pada foto setting: deteksi default menangkap **operator**, bukan
+  partisipan → pose wajib dibatasi ke area partisipan + pemilihan pose. Lutut tertutup
+  kamen (visibilitas ≈ 0,1) → fase gerak dari **bahu + pinggul**, bukan lutut.
+- Foto setting **tidak** di-commit ke repo (partisipan dapat dikenali).
+- Struktur folder: **satu folder per partisipan**, berisi video, `PXX_Baseline.EDF`,
+  `PXX_Trial.EDF`. Grup/usia/timepoint dari file demografis terpisah. Belum jelas
+  bagaimana folder pre vs post non-penari dibedakan.
+
 ## Catatan Teknis Hasil Verifikasi (menggantikan asumsi di atas bila bertentangan)
 - **Notch 50 Hz tidak dapat diterapkan**: sampling 100 Hz → 50 Hz = Nyquist (MNE
   menolak). Interferensi listrik ditangani low-pass 40 Hz. (Mengoreksi Tahap 3.)
