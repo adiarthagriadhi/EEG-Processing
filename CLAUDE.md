@@ -432,6 +432,13 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   99–100% terekam. P38: pose kurang andal (4 hud_fallback, hanya 2 epoch ERD, batas ketelitian
   8,2 dB). Uji H1–H5 (4 vs 4, Welch satu arah, FDR): arah H1/H2/H3/H5 sesuai harapan, H4 tidak;
   tidak ada yang signifikan (p 0,14–0,78; p_FDR ≥ 0,36) — daya uji sangat rendah pada n=4/grup.
+- **P05–P07 (penari) & P33–P35 (non-penari), 2026-09-23 (mode hemat, belum ditinjau):**
+  P05 +1,08, P06 +0,85, P07 +0,70 dtk lolos (P06 hanya 4 epoch; P07 cek onset −2,12 dtk dengan
+  n=4, tidak dikoreksi — tinjau). **P33–P35 berhenti di sync**: P33 33% repetisi menempel batas
+  pencarian; P34 offset +33 dtk dan P35 −28 dtk (di luar prior ±5 dtk; r halus 0,21/0,01) →
+  kemungkinan EEG/video dimulai jauh berbeda atau file tertukar — **tinjau minggu depan**.
+  Uji H1–H5 (7 penari vs 4 non-penari): arah H1/H2/H3/H5 sesuai, tidak ada yang signifikan
+  (p_FDR ≥ 0,35). Tahan agem penari 2,40–3,10 dtk (n=7) vs non-penari 0,94–3,26 dtk.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
