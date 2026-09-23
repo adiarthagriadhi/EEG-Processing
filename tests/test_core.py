@@ -113,3 +113,16 @@ def test_config_loads():
     cfg = load_config()
     assert cfg["eeg"]["sfreq"] == 100
     assert cfg["phases"]["hud_protocol"]["END"] == 8.0
+
+
+def test_hypothesis_direction():
+    from eegpipe.hypotheses import test as htest
+    rng = np.random.default_rng(1)
+    df = pd.DataFrame({"group": ["penari"] * 10 + ["non-penari"] * 10,
+                       "x": np.r_[rng.normal(0, 1, 10), rng.normal(3, 1, 10)]})
+    hyp = {"A": {"label": "", "endpoint": "x", "expect": "penari < non-penari"},
+           "B": {"label": "", "endpoint": "x", "expect": "penari > non-penari"},
+           "C": {"label": "", "endpoint": "x", "expect": "non-penari < penari"}}
+    r = htest(df, hyp).set_index("hipotesis")
+    assert r.loc["A", "p_one_sided"] < 0.01 and r.loc["B", "p_one_sided"] > 0.9
+    assert r.loc["C", "p_one_sided"] > 0.9

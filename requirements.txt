@@ -13,3 +13,4 @@ statsmodels>=0.14
 pingouin>=0.5
 pytest>=8.0
 # Sistem: tesseract-ocr; Linux tanpa GUI juga libegl1 libgles2 (untuk mediapipe)
+fooof>=1.1          # specparam (tahap spectral)

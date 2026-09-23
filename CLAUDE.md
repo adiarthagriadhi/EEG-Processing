@@ -393,6 +393,17 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   fitur Paper D berbasis alpha. Rekomendasi: cek impedansi dan uji mata-tertutup
   singkat (efek Berger) di awal sesi sebagai QC perekaman.
 
+## Metode Referensi Rata-rata Spektral & Hipotesis H1–H5 (2026-09-23)
+- Tahap pipeline `spectral` (eegpipe/spectral.py): specparam per kanal × fase × gerakan;
+  indeks global = median perubahan garis latar per belahan (kiri/A1, kanan/A2); tonjolan
+  relatif = perubahan tonjolan − median belahan (tafsiran relatif); batas ketelitian per
+  partisipan dari uji noise 1/f buatan (P02 3,8 dB; P10 4,7 dB). Status: EKSPLORATIF.
+- Indeks global per belahan juga mendeteksi masalah referensi (P02 TURUN kiri +7 vs kanan +1,7 dB).
+- Hipotesis H1–H5 di config.yaml (`python -m eegpipe hypotheses`): H1 neural efficiency,
+  H2 kestabilan motorik (garis latar), H3 durasi tahan, H4 fronto-parietal kiri pada
+  non-penari, H5 lateralisasi kanan saat TAHAN pada penari. P02 vs P10: kelima arah sesuai
+  harapan secara deskriptif; H1/H4/H5 di bawah batas ketelitian; uji formal butuh ≥3/grup.
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
 > 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,

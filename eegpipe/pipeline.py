@@ -11,7 +11,7 @@ from . import erd, ocr, phases, preprocess, romberg, sync
 from .config import Participant
 from .eeg_io import load_edf
 
-STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "romberg", "report"]
+STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "report"]
 
 
 class QCStop(Exception):
@@ -152,6 +152,22 @@ def stage_erd(P, cfg, clean, reps, offset, force=False):
     return tab
 
 
+def stage_spectral(P, cfg, force=False):
+    """Referensi rata-rata spektral (eksploratif) + batas ketelitian per partisipan."""
+    out = P.results_dir / f"{P.pid}_spectral.csv"
+    if out.exists() and not force:
+        return pd.read_csv(out)
+    from . import spectral
+    ep = mne.read_epochs(P.out("move-epo.fif"), verbose="error")
+    df, floor = spectral.analyze(ep, P.pid, cfg)
+    df["noise_floor_db"] = floor
+    df.to_csv(out, index=False)
+    g = df[df.channel.isin(["C3", "C4"])].groupby("phase").global_offset_db.median()
+    _log(P.pid, f"spectral: batas ketelitian {floor:.1f} dB; indeks global (median) "
+                f"{g.round(1).to_dict()}")
+    return df
+
+
 def stage_romberg(P, cfg, clean, tl, offset, force=False):
     out = P.results_dir / f"{P.pid}_romberg_features.csv"
     if out.exists() and not force:
@@ -194,6 +210,8 @@ def run(pid, cfg, stages=None, force=()):
             ctx["clean"] = clean
             if "erd" in stages:
                 ctx["erd"] = stage_erd(P, cfg, clean, reps, offset, f("erd"))
+            if "spectral" in stages and P.out("move-epo.fif").exists():
+                ctx["spectral"] = stage_spectral(P, cfg, f("spectral"))
             if "romberg" in stages:
                 ctx["romberg"] = stage_romberg(P, cfg, clean, tl, offset, f("romberg"))
     except QCStop as e:
