@@ -7,8 +7,7 @@ tabel ERD/ERS gerakan dan fitur Romberg yang siap dianalisis statistik.
 - **Konteks ilmiah, fakta data, dan keputusan desain:** lihat [`CLAUDE.md`](CLAUDE.md).
   Dokumen ini adalah turunan teknisnya (bagaimana mengerjakannya).
 - **Status:** potongan kode di bawah adalah **templat** yang belum diuji pada data
-  nyata. Beberapa langkah bergantung pada jawaban [Pertanyaan Terbuka](#15-pertanyaan-terbuka-yang-memblokir)
-  dan ditandai 🔒.
+  nyata. Status jawaban pertanyaan terbuka ada di [Bagian 15](#15-pertanyaan-terbuka-yang-memblokir).
 
 ---
 
@@ -42,7 +41,9 @@ tabel ERD/ERS gerakan dan fitur Romberg yang siap dianalisis statistik.
 | 16 kanal KT88, **tanpa midline** (Fz/Cz/Pz) | Gunakan proksi: C3/C4 (sensorimotor), F3/F4 atau F7/F8 (frontal), P3/P4, O1/O2. |
 | Referensi **ipsilateral**: kiri → A1, kanan → A2 | **Bukan linked-ear dan bukan referensi bersama.** Perbandingan kiri–kanan (C3 vs C4) ikut dipengaruhi beda aktivitas A1 vs A2. *Average reference* tidak sepenuhnya valid di sini (lihat Tahap 3). |
 | Nama kanal `Fp1-A1`, `T3-A1`, … | Harus di-*rename* ke `Fp1`, `T3`, … sebelum *montage*. T3/T4/T5/T6 dikenali di montage 10-20 MNE. |
-| `Add_lead1`, `Add_lead2` belum diketahui isinya 🔒 | Sementara diset tipe `misc` (tidak ikut filter, referensi, dan ICA). |
+| `Add_lead1`, `Add_lead2` "sepertinya lead referensi" (belum pasti) | Diset tipe `misc` sampai diverifikasi empiris (Tahap 3). Jika terbukti A1/A2, referensi linked-ear bisa direkonstruksi. |
+| Start EEG & video manual oleh dua operator pada hitungan ke-3 | Offset awal ≈ 0 ± 1–2 dtk. Tidak cukup presisi untuk ERD/ERS, jadi disempurnakan dengan korelasi silang sinyal gerak (Tahap 2). |
+| Sebagian partisipan tidak mengikuti TURUN→TAHAN→NAIK dengan tepat | Fase aktual **wajib** ditentukan dari video (Tahap 4); onset HUD hanya sebagai jendela pencarian. |
 | Header EDF `startdate` palsu (2013-04-01) | Tidak boleh dipakai untuk sinkronisasi. |
 | Video `.webm` dari browser (vp9, ~29,4 fps) | Kemungkinan besar ***variable frame rate***. **Waktu frame harus diambil dari timestamp (PTS), bukan `nomor_frame / fps`.** |
 | Selisih durasi EDF − video beda tanda antar partisipan | Offset sinkronisasi dihitung **per partisipan**; validasi dengan anchor kedua (Tahap 2). |
@@ -62,7 +63,7 @@ EEG-Processing/
 │   │   ├── P01/  P01_Baseline.EDF  P01_Trial.EDF  motor_P01_Trial_<ts>.webm
 │   │   └── P02/  ...
 │   ├── manifest.csv              # Tahap 0 (+ sync_offset_sec dari Tahap 2)
-│   ├── timeline/                 # PXX_task_timeline.csv (Tahap 1)
+│   ├── timeline/                 # PXX_task_timeline.csv (Tahap 1), PXX_movement_phases.csv (Tahap 4)
 │   └── derivatives/              # PXX_clean_raw.fif, PXX_move-epo.fif
 ├── scripts/
 │   ├── 00_manifest.py
@@ -87,7 +88,8 @@ EEG-Processing/
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install mne mne-icalabel python-picard numpy scipy pandas matplotlib \
-            av pytesseract opencv-python rapidfuzz statsmodels pingouin pyyaml
+            av pytesseract opencv-python rapidfuzz statsmodels pingouin pyyaml \
+            mediapipe            # pose estimation untuk fase gerak aktual (Tahap 4)
 # Tesseract OCR engine (sistem):
 #   Ubuntu: sudo apt install tesseract-ocr ffmpeg
 #   macOS : brew install tesseract ffmpeg
@@ -103,13 +105,16 @@ Tahap 0  Manifest (participant_id, group, timepoint, age, path…)
    │
 Tahap 1  Video ─► crop HUD ─► OCR ─► PXX_task_timeline.csv   (waktu VIDEO)
    │
-Tahap 2  Anchor di EEG & video ─► sync_offset_sec ─► manifest   ⛔ gerbang validasi
+Tahap 2  Prior hitungan ke-3 (≈0) ─► xcorr gerak video×EEG ─► validasi Romberg
+         ─► sync_offset_sec ─► manifest   ⛔ gerbang validasi
    │
 Tahap 3  EDF ─► rename/montage ─► filter 1–40 Hz ─► kanal buruk ─► ICA (mata saja)
+         (+ verifikasi isi Add_lead)
    │
-Tahap 4  timeline + offset ─► Annotations (waktu EEG) ─► Epochs per repetisi
+Tahap 4  Pose video ─► fase aktual TURUN/TAHAN/NAIK + kepatuhan (verifikasi manual)
+         ─► offset ─► Epochs per repetisi (onset aktual)
    │
-   ├─► Tahap 5   ERD/ERS mu & beta (C3/C4, P3/P4, O1/O2) ─► erd_ers_long.csv
+   ├─► Tahap 5   ERD/ERS mu & beta per fase (C3/C4, P3/P4, O1/O2) ─► erd_ers_long.csv
    └─► Tahap 5b  Romberg EO/EC ─► romberg_features.csv (join dgn Stork Test)
    │
 Tahap 6  Mixed model (ERD/ERS) & korelasi parsial (Romberg × Stork)
@@ -121,12 +126,14 @@ Semua parameter disimpan di satu file `config.yaml`, jangan ditulis langsung (*h
 sfreq_expected: 100
 filter: {l_freq: 1.0, h_freq: 40.0}
 hud_box: {x0: 960, y0: 250, x1: 1280, y1: 480}   # verifikasi per file
+webcam_box: {x0: null, y0: null, x1: null, y1: null}   # isi setelah cek frame sampel
 ocr_sample_sec: 0.2
+sync: {prior_offset_sec: 0.0, max_lag_sec: 5.0, max_drift_sec: 0.2, max_residual_sec: 0.5}
+phases: {late_sec: 1.5, short_hold_sec: 1.0, min_phase_sec: 0.5}
 bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}
 roi: [C3, C4, P3, P4, O1, O2]
 erd:
-  tmin: -2.0          # detik relatif onset (sesuaikan setelah durasi sub-fase diketahui)
-  tmax: 4.0
+  tmin: -2.5          # detik relatif onset TURUN aktual; tmax = durasi gerak terpanjang + 1 dtk
   baseline: [-2.0, -0.5]
 ```
 
@@ -196,9 +203,9 @@ import av, pytesseract
 import pandas as pd
 from rapidfuzz import process, fuzz
 
-VOCAB = [   # label HUD yang diketahui; tambahkan label NGEED setelah dikonfirmasi 🔒
-    "AGEM KANAN TURUN", "AGEM KANAN TAHAN", "AGEM KANAN NAIK",
-    "AGEM KIRI TURUN",  "AGEM KIRI TAHAN",  "AGEM KIRI NAIK",
+MOVES = ["NGEED", "AGEM KANAN", "AGEM KIRI"]
+PHASES = ["TURUN", "TAHAN", "NAIK"]
+VOCAB = [f"{m} {p}" for m in MOVES for p in PHASES] + [
     "ISTIRAHAT UTAMA", "BERDIRI RILEKS",
     "BERDIRI FOKUS MATA TERBUKA", "BERDIRI MATA TERTUTUP",
 ]
@@ -232,7 +239,7 @@ def to_segments(samples):
                                 start_time_video_sec=("t", "first"),
                                 end_time_video_sec=("t", "last"),
                                 n_samples=("t", "size"))
-    seg[["task", "subphase"]] = seg.label.str.extract(r"^(AGEM KANAN|AGEM KIRI)\s+(\w+)$")
+    seg[["task", "subphase"]] = seg.label.str.extract(r"^(NGEED|AGEM KANAN|AGEM KIRI)\s+(TURUN|TAHAN|NAIK)$")
     seg.task = seg.task.fillna(seg.label)
     return seg.reset_index(drop=True)
 ```
@@ -245,7 +252,9 @@ secara berurutan).
 CSV terhadap video di pemutar (VLC menampilkan waktu presisi). Juga pastikan:
 
 - Jumlah repetisi per gerakan = 4.
-- Urutan sub-fase konsisten (🔒 tunggu konfirmasi apakah selalu TURUN→TAHAN→NAIK).
+- Urutan sub-fase HUD selalu `TURUN → TAHAN → NAIK` untuk NGEED, AGEM KANAN, dan AGEM KIRI.
+  Catatan: ini adalah urutan **instruksi**. Fase yang benar-benar dilakukan partisipan
+  dikonfirmasi dari video di Tahap 4.
 - Sampel `UNKNOWN` berturut-turut > 1 detik → periksa frame tersebut.
 
 ---
@@ -261,46 +270,98 @@ t_eeg = t_video + sync_offset_sec
 sync_offset_sec = t_anchor_EEG − t_anchor_video
 ```
 
-### 7.1 Anchor utama (awal sesi)
+### 7.1 Titik awal: aba-aba hitungan ke-3
 
-🔒 Tergantung jawaban Pertanyaan 1. Jika tidak ada marker eksplisit, gunakan onset
-gerakan agem pertama:
+EEG dan video dimulai manual oleh dua operator pada hitungan ke-3. Karena itu
+**prior** `sync_offset_sec ≈ 0`, dengan ketidakpastian sekitar ±1–2 dtk (waktu reaksi
+tiap operator dan delay inisialisasi software). Prior ini cukup untuk membatasi
+pencarian, tetapi **tidak cukup presisi** untuk ERD/ERS: jendela analisis berorde
+ratusan milidetik. Selisih durasi EDF−video (+12 dtk pada P01, −17 s.d. −34 dtk pada
+P02) kemungkinan besar berasal dari waktu **stop** yang berbeda, sehingga tidak
+bertentangan dengan start yang hampir bersamaan.
 
-- **Video:** waktu awal segmen `AGEM … TURUN` pertama dari timeline, disempurnakan
-  dengan mencari frame pertama saat tubuh mulai bergerak.
-- **EEG:** lonjakan artefak gerak (amplitudo/EMG) di kanal frontal/temporal.
+### 7.2 Penyempurnaan: korelasi silang sinyal gerak (seluruh sesi)
+
+Setiap gerakan ngeed/agem menghasilkan **gerak tubuh di video** dan **artefak
+gerak/otot di EEG** secara bersamaan. Dengan mengorelasikan kedua sinyal sepanjang
+sesi (12 repetisi × 3 sub-fase), offset ditentukan oleh banyak kejadian sekaligus,
+bukan satu anchor. Hasilnya lebih presisi (±0,1 dtk pada resolusi 10 Hz) dan lebih
+tahan terhadap satu kejadian yang ambigu.
 
 ```python
 import numpy as np
-import mne
+import av, mne
+from scipy.signal import correlate, correlation_lags
 
-raw = mne.io.read_raw_edf("data/raw/P01/P01_Trial.EDF", preload=True)
-env = raw.copy().pick(["F7-A1", "F8-A2", "T3-A1", "T4-A2"]) \
-         .filter(20, 45).apply_hilbert(envelope=True).get_data().mean(axis=0)
-t = raw.times
-# Cari lonjakan di sekitar perkiraan (t_video_anchor ± 30 dtk), lalu verifikasi visual:
-raw.plot(start=max(0, t_guess - 10), duration=20)
+FS = 10.0   # resolusi bersama (Hz)
+
+def video_motion(path, box, fs=FS):
+    """Energi gerak (selisih antar-frame) di region webcam, di-resample ke grid fs."""
+    x0, y0, x1, y1 = box                           # webcam_box di config.yaml
+    ts, energy, prev = [], [], None
+    with av.open(str(path)) as c:
+        for fr in c.decode(video=0):
+            img = fr.to_ndarray(format="gray")[y0:y1, x0:x1].astype(np.float32)
+            if prev is not None:
+                ts.append(fr.time); energy.append(np.abs(img - prev).mean())
+            prev = img
+    grid = np.arange(0, ts[-1], 1 / fs)
+    return grid, np.interp(grid, ts, energy)      # interpolasi → aman untuk VFR
+
+def eeg_motion(raw, fs=FS):
+    """Envelope artefak gerak/otot di kanal frontal-temporal."""
+    picks = ["Fp1", "Fp2", "F7", "F8", "T3", "T4"]
+    env = raw.copy().pick(picks).filter(20, 45).apply_hilbert(envelope=True) \
+             .get_data().mean(axis=0)
+    grid = np.arange(0, raw.times[-1], 1 / fs)
+    return grid, np.interp(grid, raw.times, env)
+
+def xcorr_offset(v, e, fs=FS, max_lag_sec=5.0):
+    """Lag (dtk) yang memaksimalkan korelasi; positif = kejadian muncul lebih akhir di EEG."""
+    z = lambda x: (x - x.mean()) / x.std()
+    v, e = z(np.log1p(v)), z(np.log1p(e))
+    cc = correlate(e, v, mode="full") / min(len(v), len(e))
+    lags = correlation_lags(len(e), len(v), mode="full") / fs
+    ok = np.abs(lags) <= max_lag_sec              # batasi ke sekitar prior ≈ 0
+    i = np.argmax(cc[ok])
+    return lags[ok][i], cc[ok][i], (lags[ok], cc[ok])
+
+raw = mne.io.read_raw_edf(path_trial_edf, preload=True)
+raw.rename_channels(lambda ch: ch.split("-")[0])
+tv, v = video_motion(path_video, webcam_box)
+te, e = eeg_motion(raw)
+offset, peak, (lags, cc) = xcorr_offset(v, e)
+print(f"sync_offset_sec = {offset:+.2f} dtk (r = {peak:.2f})")
 ```
 
-### 7.2 Anchor validasi (akhir sesi): transisi Romberg mata terbuka → tertutup
+Kriteria penerimaan:
+
+- Puncak korelasi **tunggal dan jelas** (plot `lags` vs `cc`), serta |offset| ≤ ~2 dtk
+  sesuai prior hitungan ke-3. Jika puncaknya lebih jauh atau datar, periksa manual.
+- **Cek drift:** jalankan `xcorr_offset` terpisah pada paruh pertama dan paruh kedua
+  sesi. Jika selisihnya > 0,2 dtk, gunakan model linear `t_eeg = a · t_video + b` yang
+  dicocokkan dari offset beberapa jendela waktu.
+- Overlay visual: plot `v` (digeser offset) dan `e` pada satu grafik untuk 2–3
+  repetisi gerakan.
+
+### 7.3 Validasi independen (akhir sesi): transisi Romberg mata terbuka → tertutup
 
 Saat mata tertutup, **alpha oksipital (O1/O2) naik dengan jelas** dan biasanya
 diawali artefak kedip/tutup mata di Fp1/Fp2. Tanda ini terlihat objektif di EEG dan
 waktunya diketahui dari HUD. Anchor ini dipakai untuk:
 
-1. **Memvalidasi** offset dari anchor awal: selisih prediksi vs observasi harus
-   < ~0,5 dtk.
-2. **Mendeteksi drift clock**: jika selisihnya konsisten membesar seiring waktu,
-   gunakan koreksi linear dengan dua titik (anchor awal dan akhir):
-   `t_eeg = a · t_video + b`.
+1. **Memvalidasi** offset dari 7.2 dengan tanda yang bukan berasal dari gerak:
+   selisih prediksi vs observasi harus < ~0,5 dtk.
+2. **Mendeteksi drift clock** di ujung sesi, sebagai pelengkap cek paruh-sesi di 7.2.
 
 ```python
-alpha = raw.copy().pick(["O1-A1", "O2-A2"]).filter(8, 13) \
+alpha = raw.copy().pick(["O1", "O2"]).filter(8, 13) \
            .apply_hilbert(envelope=True).get_data().mean(axis=0)
 # Plot alpha envelope di sekitar prediksi t_eeg transisi EO→EC
 ```
 
-Catat di manifest: `sync_offset_sec`, `sync_method` (anchor apa), `sync_residual_sec`
+Catat di manifest: `sync_offset_sec`, `sync_xcorr_r`, `sync_drift_sec` (selisih paruh
+1 vs 2), `sync_method`, `sync_residual_sec`
 (selisih pada anchor validasi), `sync_validated` (True/False).
 
 ---
@@ -315,7 +376,7 @@ assert raw.info["sfreq"] == 100
 
 # 1) Rename & tipe kanal
 raw.rename_channels(lambda ch: ch.split("-")[0])          # "C3-A1" → "C3"
-raw.set_channel_types({"Add_lead1": "misc", "Add_lead2": "misc"})   # 🔒 sementara
+raw.set_channel_types({"Add_lead1": "misc", "Add_lead2": "misc"})   # sampai terverifikasi (8.1)
 raw.set_montage("standard_1020")  # MNE ≥1.13 menyarankan nama baru "colin27_1020"
 
 # 2) Filter — TANPA notch (50 Hz = Nyquist); low-pass 40 Hz sudah menekan 50 Hz
@@ -334,7 +395,38 @@ Data direkam dengan **referensi telinga ipsilateral** (kiri–A1, kanan–A2).
 |---|---|---|
 | **Pertahankan referensi asli** (disarankan untuk analisis utama) | ERD/ERS dinyatakan dalam % terhadap baseline di kanal yang sama | Offset referensi sebagian besar hilang dalam normalisasi %; perbandingan antar-hemisfer tetap dilaporkan sebagai limitasi. |
 | *Average reference* | Analisis sensitivitas | Dengan 16 kanal tanpa midline dan referensi campuran, hasilnya belum menjadi *average reference* yang sebenarnya. |
-| Linked-ear matematis | **Hanya jika** ada sinyal A1–A2 terekam (🔒 apakah `Add_lead` berisi ini?) | `Ckiri_linked = Ckiri − ½(A2−A1)`, dst. |
+| Linked-ear matematis | **Hanya jika** verifikasi 8.1.1 membuktikan `Add_lead` berisi A1/A2 | `Ckiri_linked = Ckiri − ½(A2−A1)`, `Ckanan_linked = Ckanan + ½(A2−A1)`. |
+
+#### 8.1.1 Verifikasi isi `Add_lead1` / `Add_lead2`
+
+Menurut pengguna, kedua kanal ini "sepertinya lead referensi". Sebelum dipakai,
+periksa secara empiris untuk tiap beberapa partisipan:
+
+```python
+import numpy as np
+
+add = raw.copy().pick(["Add_lead1", "Add_lead2"]).filter(1, 40, picks="misc")
+eeg = raw.copy().pick("eeg")
+print("SD (µV):", add.get_data().std(axis=1) * 1e6)       # datar (~0)? mirip EEG (10–50)?
+corr = np.corrcoef(np.vstack([add.get_data(), eeg.get_data()]))[:2, 2:]
+for name, r in zip(["Add_lead1", "Add_lead2"], corr):
+    print(name, dict(zip(eeg.ch_names, np.round(r, 2))))
+add.compute_psd(picks="misc", fmax=45).plot()
+add.plot(duration=20)                                      # cari QRS jantung (ciri khas telinga)
+```
+
+Cara membaca hasil:
+
+| Pola | Kemungkinan isi | Tindakan |
+|---|---|---|
+| Nyaris datar / noise sangat kecil | Kanal tidak terpakai | Abaikan (`misc`) |
+| Korelasi **negatif** seragam dengan semua kanal kiri (Add_lead1) atau kanan (Add_lead2), ada QRS jantung | Potensial telinga A1/A2 terhadap referensi internal amplifier | Rekonstruksi linked-ear dari selisih `Add_lead2 − Add_lead1`, tetapi uji dulu tanda dan skalanya pada beberapa partisipan |
+| Satu kanal berisi `A1−A2` (atau `A2−A1`) | Selisih antar-telinga | Rekonstruksi langsung dengan rumus di atas |
+| Kedip besar, lebih kuat dari Fp1/Fp2 | EOG | `set_channel_types(... "eog")`, pakai di ICA |
+| Broadband tinggi saat gerak | EMG | Pakai sebagai referensi artefak gerak (juga membantu sinkronisasi 7.2) |
+
+Konfirmasi juga ke manual/konfigurasi montage perangkat KT88 yang dipakai saat
+perekaman. Keputusan final dicatat di `CLAUDE.md`.
 
 ### 8.2 ICA — hanya artefak mata
 
@@ -366,7 +458,93 @@ raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
 
 ## 9. Tahap 4 — Epoching Gerakan
 
+### 9.1 Konfirmasi fase aktual dari video (wajib)
+
+Semua gerakan (NGEED, AGEM KANAN, AGEM KIRI) diinstruksikan `TURUN → TAHAN → NAIK`,
+tetapi **sebagian partisipan tidak mengikutinya dengan tepat** (terlambat, hold
+terlalu singkat, atau urutan tidak lengkap). Karena itu **onset epoch ditentukan dari
+gerak tubuh di video, bukan dari label HUD**. Label HUD hanya dipakai sebagai jendela
+pencarian.
+
+**Langkah semi-otomatis:**
+
+1. **Lintasan tubuh:** pose estimation (mis. MediaPipe Pose) pada region webcam untuk
+   mengambil posisi vertikal pinggul (rata-rata *left/right hip*, koordinat y) di setiap
+   frame, menggunakan timestamp PTS. Ngeed/agem adalah gerakan menurunkan tubuh dengan
+   menekuk lutut, sehingga pinggul turun saat TURUN, stabil saat TAHAN, dan naik saat NAIK.
+2. **Segmentasi otomatis** per repetisi, dalam jendela `[onset HUD TURUN − 1 dtk,
+   akhir HUD NAIK + 3 dtk]` (jendela harus mencakup posisi berdiri sebelum dan sesudah).
+   Posisi pinggul dinormalisasi ke kedalaman gerak (0 = berdiri, 1 = terendah), lalu
+   fase ditentukan dari persilangan **10% dan 90%**. Pendekatan berbasis posisi ini
+   lebih tahan terhadap noise pose dibanding berbasis kecepatan. Pada uji data
+   sintetis dengan noise 1–4 piksel, galat onset rata-rata ≈ 0,03–0,06 dtk. Konsekuensinya,
+   onset TURUN terdeteksi sedikit setelah gerak benar-benar dimulai (≈10% durasi turun).
+
 ```python
+import numpy as np
+from scipy.ndimage import median_filter
+
+def first_run(mask, start=0, min_len=6):
+    """Indeks awal run True pertama (≥ min_len sampel berturut-turut) mulai dari `start`."""
+    run = 0
+    for i in range(start, len(mask)):
+        run = run + 1 if mask[i] else 0
+        if run >= min_len:
+            return i - min_len + 1
+    return None
+
+def segment_phases(t, hip_y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2,
+                   min_depth_px=15):
+    """t: waktu video (dtk, PTS); hip_y: posisi vertikal pinggul (piksel, makin besar =
+    makin bawah) dalam jendela satu repetisi. Posisi dinormalisasi 0 (berdiri) → 1
+    (posisi terendah); fase ditentukan dari persilangan 10% / 90% kedalaman gerak.
+    Mengembalikan onset aktual TURUN, TAHAN, NAIK, akhir NAIK (dtk video), dan kedalaman."""
+    fps = 1 / np.median(np.diff(t))
+    y = median_filter(hip_y, size=max(3, int(smooth_sec * fps) | 1), mode="nearest")
+    stand, low = np.percentile(y, 5), np.percentile(y, 95)
+    depth = low - stand
+    nan = dict(act_turun=np.nan, act_tahan=np.nan, act_naik=np.nan, act_end=np.nan,
+               depth_px=depth)
+    if depth < min_depth_px:                                # tidak benar-benar turun
+        return nan
+    z = (y - stand) / depth
+    n = max(2, int(min_run_sec * fps))
+    i_turun = first_run(z > lo, 0, n)
+    i_tahan = first_run(z > hi, i_turun, n) if i_turun is not None else None
+    i_naik = first_run(z < hi, i_tahan, n) if i_tahan is not None else None
+    i_end = first_run(z < lo, i_naik, n) if i_naik is not None else None
+    pick = lambda i: t[i] if i is not None else np.nan
+    return dict(act_turun=pick(i_turun), act_tahan=pick(i_tahan),
+                act_naik=pick(i_naik), act_end=pick(i_end), depth_px=depth)
+```
+
+3. **Verifikasi manual semua repetisi.** Jumlahnya sedikit (12 per partisipan), jadi
+   verifikasi bisa dilakukan untuk semuanya: buat plot lintasan pinggul dengan garis
+   onset HUD dan onset aktual, lalu cek ulang di video bila ragu. Koreksi manual ditulis
+   langsung di CSV.
+4. **Kepatuhan (compliance)** dicatat per repetisi:
+
+| Kode | Kriteria (usulan, dapat disesuaikan) | Perlakuan |
+|---|---|---|
+| `ok` | Ketiga fase ada, urutan benar | Dianalisis |
+| `late` | Onset TURUN aktual > 1,5 dtk setelah HUD | Dianalisis dengan onset aktual; kovariat latensi |
+| `short_hold` | Durasi TAHAN aktual < 1 dtk | ERD fase TAHAN dieksklusi; TURUN/NAIK tetap dipakai |
+| `incomplete` | Fase hilang / urutan salah | Eksklusi repetisi |
+| `no_video` | Tubuh tidak terlihat / pose gagal | Eksklusi, atau fallback onset HUD (ditandai) |
+
+Output `data/timeline/PXX_movement_phases.csv`:
+
+| participant_id | task | rep | hud_turun | act_turun | act_tahan | act_naik | act_end | compliance | verified_by | notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+
+Waktu disimpan dalam **detik video**, lalu dikonversi ke waktu EEG dengan offset dari
+Tahap 2. Latensi respons (`act_turun − hud_turun`) juga menjadi variabel perilaku yang
+dapat dibandingkan antara penari dan non-penari.
+
+### 9.2 Epoching berbasis onset aktual
+
+```python
+import numpy as np
 import pandas as pd
 import mne
 
@@ -374,30 +552,36 @@ man = pd.read_csv("data/manifest.csv").set_index("participant_id")
 row = man.loc[pid]
 assert row.sync_validated, f"{pid}: sinkronisasi belum divalidasi"
 
-tl = pd.read_csv(f"data/timeline/{pid}_task_timeline.csv")
-onset_eeg = tl.start_time_video_sec + row.sync_offset_sec     # atau model linear a·t+b
-dur = tl.end_time_video_sec - tl.start_time_video_sec
-desc = (tl.task + "/" + tl.subphase.fillna("NA") + "/rep" + tl.rep.astype(str)) \
-          .str.replace(" ", "_")
+ph = pd.read_csv(f"data/timeline/{pid}_movement_phases.csv")
+ph = ph[ph.compliance != "incomplete"].dropna(subset=["act_turun"]).reset_index(drop=True)
+to_eeg = lambda tv: tv + row.sync_offset_sec                 # atau model linear a·t+b
 
 raw = mne.io.read_raw_fif(f"data/derivatives/{pid}_clean_raw.fif", preload=True)
-raw.set_annotations(raw.annotations + mne.Annotations(onset_eeg, dur, desc))
+sf = raw.info["sfreq"]
+events = np.column_stack([np.round(to_eeg(ph.act_turun) * sf).astype(int),
+                          np.zeros(len(ph), int), np.arange(1, len(ph) + 1)])
+event_id = {f"{r.task.replace(' ', '_')}/rep{r.rep}": i + 1 for i, r in ph.iterrows()}
 
-# Onset gerakan = awal sub-fase TURUN (🔒 konfirmasi urutan sub-fase)
-events, event_id = mne.events_from_annotations(raw, regexp=r"^AGEM_.*/TURUN/")
-epochs = mne.Epochs(raw, events, event_id, tmin=-2.0, tmax=4.0,
-                    baseline=None, reject_by_annotation=True, preload=True)
+# Metadata: waktu fase relatif ke onset TURUN aktual → dipakai untuk jendela ERD per fase
+meta = ph[["task", "rep", "compliance"]].copy()
+for col in ["act_tahan", "act_naik", "act_end"]:
+    meta[col.replace("act_", "rel_")] = ph[col] - ph.act_turun
+meta["latency_hud"] = ph.act_turun - ph.hud_turun
+
+epochs = mne.Epochs(raw, events, event_id, tmin=-2.5, tmax=float(meta.rel_end.max()) + 1.0,
+                    baseline=None, metadata=meta, reject_by_annotation=True, preload=True)
 epochs.save(f"data/derivatives/{pid}_move-epo.fif", overwrite=True)
 ```
 
 Catatan:
 
-- Onset HUD ≠ onset gerakan riil (ada waktu reaksi). Jika diperlukan, sempurnakan onset
-  dengan deteksi gerak dari video (selisih frame / optical flow / pose estimation)
-  dalam jendela ±2 dtk dari onset HUD. Simpan kolom `onset_refined_video_sec`.
-- Pastikan **jendela baseline** (mis. −2 s.d. −0,5 dtk) jatuh di segmen `BERDIRI RILEKS`
-  atau istirahat, **bukan** di sisa gerakan sebelumnya. Periksa terhadap timeline.
-- Target 4 repetisi × {ngeed 🔒, agem kanan, agem kiri}. Catat jumlah epoch yang bertahan.
+- `tmax` mengikuti repetisi dengan durasi gerak terpanjang, ditambah margin untuk efek
+  tepi wavelet. Fase tiap repetisi diambil dari `epochs.metadata`.
+- Pastikan **jendela baseline** (mis. −2 s.d. −0,5 dtk dari onset TURUN **aktual**)
+  jatuh di segmen `BERDIRI RILEKS` atau istirahat, **bukan** di sisa gerakan sebelumnya.
+  Partisipan yang terlambat (`late`) justru punya jeda diam lebih panjang sebelum onset.
+- Target 4 repetisi × {NGEED, AGEM KANAN, AGEM KIRI} = 12 per partisipan. Catat jumlah
+  yang bertahan per kode kepatuhan.
 
 ---
 
@@ -425,22 +609,33 @@ tfr.apply_baseline(baseline=(-2.0, -0.5), mode="percent")   # (A−R)/R
 data = tfr.get_data() * 100                                   # epoch × kanal × freq × waktu
 
 bands = {"mu": (8, 13), "beta": (13, 30)}
-active = (tfr.times >= 0.0) & (tfr.times <= 2.0)              # 🔒 sesuaikan dgn durasi sub-fase
 rows = []
-for i, ev in enumerate(epochs.events[:, 2]):
-    cond = {v: k for k, v in epochs.event_id.items()}[ev]      # mis. "AGEM_KANAN/TURUN/rep1"
-    for b, (lo, hi) in bands.items():
-        fmask = (freqs >= lo) & (freqs < hi)
-        vals = data[i][:, fmask][:, :, active].mean(axis=(1, 2))
-        for ch, v in zip(roi, vals):
-            rows.append(dict(participant_id=pid, condition=cond, band=b,
-                             channel=ch, erd_pct=v))
+for i, m in epochs.metadata.reset_index(drop=True).iterrows():
+    # Jendela per fase dari onset AKTUAL (video), relatif ke onset TURUN = 0
+    windows = {"TURUN": (0.0, m.rel_tahan), "TAHAN": (m.rel_tahan, m.rel_naik),
+               "NAIK": (m.rel_naik, m.rel_end)}
+    if m.compliance == "short_hold":
+        windows.pop("TAHAN")
+    for phase, (t0, t1) in windows.items():
+        if not np.isfinite([t0, t1]).all() or t1 - t0 < 0.5:   # fase terlalu pendek
+            continue
+        tmask = (tfr.times >= t0) & (tfr.times < t1)
+        for b, (lo, hi) in bands.items():
+            fmask = (freqs >= lo) & (freqs < hi)
+            vals = data[i][:, fmask][:, :, tmask].mean(axis=(1, 2))
+            for ch, v in zip(roi, vals):
+                rows.append(dict(participant_id=pid, task=m.task, rep=m.rep, phase=phase,
+                                 compliance=m.compliance, latency_hud=m.latency_hud,
+                                 band=b, channel=ch, erd_pct=v, phase_dur=t1 - t0))
 pd.DataFrame(rows).to_csv(f"results/{pid}_erd_ers.csv", index=False)
 
 # Visualisasi rata-rata
 tfr.average().plot(picks=["C3", "C4"], title=f"{pid} %ERD/ERS")
 ```
 
+- **Per fase:** ERD dihitung terpisah untuk TURUN, TAHAN, dan NAIK menggunakan batas
+  fase aktual dari video. Durasi fase berbeda antar repetisi, jadi `phase_dur` ikut
+  disimpan dan fase < 0,5 dtk dibuang (terlalu pendek untuk estimasi mu/beta).
 - **Lateralisasi:** untuk agem kanan, ERD diharapkan lebih kuat di C3 (kontralateral),
   dan sebaliknya untuk agem kiri. Hitung juga indeks lateralisasi `C3 − C4`, tetapi
   interpretasikan dengan hati-hati karena referensi ipsilateral (A1 vs A2).
@@ -527,10 +722,8 @@ import statsmodels.formula.api as smf
 
 df = pd.concat(pd.read_csv(p) for p in Path("results").glob("P*_erd_ers.csv"))
 df = df.merge(pd.read_csv("data/manifest.csv")[["participant_id", "group", "timepoint", "age"]])
-df["movement"] = df.condition.str.split("/").str[0]
-
 sub = df[(df.band == "mu") & (df.channel == "C3")]
-m = smf.mixedlm("erd_pct ~ group * movement + age", sub,
+m = smf.mixedlm("erd_pct ~ group * task * phase + age", sub,
                 groups=sub["participant_id"]).fit(reml=True)
 print(m.summary())
 # Intervensi non-penari: "erd_pct ~ timepoint * movement + age" pada subset non-penari,
@@ -564,15 +757,18 @@ terpisah sebagai eksploratif.
 
 Log per partisipan (`results/qc_log.csv`):
 
-| participant_id | sync_offset_sec | sync_residual_sec | ocr_manual_check_ok | bad_channels | n_ica_eye_removed | n_move_epochs_kept (/12) | n_romberg_epochs_EO/EC | include | notes |
-|---|---|---|---|---|---|---|---|---|---|
+| participant_id | sync_offset_sec | sync_xcorr_r | sync_drift_sec | sync_residual_sec | ocr_manual_check_ok | add_lead_verdict | bad_channels | n_ica_eye_removed | n_reps_ok/late/short_hold/incomplete (/12) | n_move_epochs_kept | n_romberg_epochs_EO/EC | include | notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 **Checklist per partisipan**
 
 - [ ] File lengkap (manifest tidak kosong)
 - [ ] Kotak HUD dicek pada frame sampel
-- [ ] Timeline OCR divalidasi manual; 4 repetisi per gerakan
-- [ ] Offset sinkronisasi dihitung **dan** divalidasi dengan anchor Romberg (residual < 0,5 dtk)
+- [ ] Kotak webcam dicek; pose terdeteksi stabil
+- [ ] Timeline OCR divalidasi manual; 4 repetisi per gerakan (NGEED, AGEM KANAN, AGEM KIRI)
+- [ ] Offset xcorr: puncak tunggal, |offset| ≤ 2 dtk, drift paruh-sesi < 0,2 dtk
+- [ ] Offset divalidasi dengan transisi alpha Romberg (residual < 0,5 dtk)
+- [ ] Fase aktual TURUN/TAHAN/NAIK diverifikasi manual untuk **semua** 12 repetisi; kode kepatuhan terisi
 - [ ] Sampling rate = 100 Hz; filter 1–40 Hz; tanpa notch
 - [ ] Kanal buruk dicatat & diinterpolasi (C3/C4 buruk → pertimbangkan eksklusi)
 - [ ] Hanya komponen ICA mata yang dibuang, diverifikasi visual
@@ -589,10 +785,14 @@ Log per partisipan (`results/qc_log.csv`):
 - **Sampling rate 100 Hz.** Analisis dibatasi ≤ 40 Hz, gamma tidak dapat dianalisis, dan
   notch 50 Hz tidak diterapkan.
 - **Referensi telinga ipsilateral.** Membatasi interpretasi asimetri hemisfer.
-- **Sinkronisasi EEG–video** dilakukan pasca-perekaman berbasis anchor. Laporkan metode
-  dan residual sinkronisasi (rata-rata ± SD).
-- **Onset berbasis instruksi HUD** (bukan sensor gerak), kecuali disempurnakan dengan
-  analisis video.
+- **Sinkronisasi EEG–video**: start manual oleh dua operator (aba-aba hitungan ke-3),
+  lalu disempurnakan pasca-perekaman dengan korelasi silang sinyal gerak dan divalidasi
+  dengan transisi alpha Romberg. Laporkan offset, r, drift, dan residual (rata-rata ± SD).
+- **Onset gerakan dari video** (pose estimation + verifikasi manual), bukan dari sensor
+  gerak/EMG. Resolusi temporal dibatasi frame rate (~30 fps) dan presisi sinkronisasi.
+- **Kepatuhan instruksi bervariasi**: sebagian partisipan tidak mengikuti
+  TURUN→TAHAN→NAIK dengan tepat. Laporkan jumlah repetisi per kode kepatuhan per grup,
+  karena perbedaan kepatuhan antara penari dan non-penari sendiri adalah temuan.
 - **Rentang usia sangat lebar.** Usia dikontrol sebagai kovariat, dan IAF individual
   dipertimbangkan.
 
@@ -600,16 +800,17 @@ Log per partisipan (`results/qc_log.csv`):
 
 ## 15. Pertanyaan Terbuka yang Memblokir
 
-Dari `CLAUDE.md`. Langkah bertanda 🔒 menunggu jawaban berikut:
+Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 
-| # | Pertanyaan | Memblokir |
-|---|---|---|
-| 1 | EEG & video dimulai oleh tombol/software yang sama? Ada anchor fisik (clap, tombol)? | Tahap 2 |
-| 2 | Isi `Add_lead1` / `Add_lead2` (EOG? EMG? A1–A2?) | Tahap 3 (ICA, referensi) |
-| 3 | Nama label HUD untuk gerakan **ngeed** dan posisinya dalam urutan task | Tahap 1, 4 |
-| 4 | Urutan pasti sub-fase agem (TURUN→TAHAN→NAIK?) dan durasi tiap sub-fase | Tahap 4, 5 (jendela) |
-| 5 | Struktur folder untuk ke-38 partisipan (subfolder per grup? pre/post?) | Tahap 0 |
-| 6 | Konfirmasi Python + MNE-Python | Semua |
+| # | Pertanyaan | Status / jawaban | Tahap |
+|---|---|---|---|
+| 1 | Mekanisme start EEG vs video | ✅ Dua device, start manual pada aba-aba hitungan ke-3 → prior offset ≈ 0, disempurnakan dengan xcorr (7.2) | 2 |
+| 2 | Isi `Add_lead1` / `Add_lead2` | ⚠️ "Sepertinya lead referensi". Perlu verifikasi empiris (8.1.1) | 3 |
+| 3 | Label HUD ngeed | ✅ `NGEED`, `AGEM KANAN`, `AGEM KIRI` | 1 |
+| 4 | Urutan sub-fase | ✅ `TURUN → TAHAN → NAIK` untuk semua gerakan; kepatuhan dikonfirmasi dari video (9.1) | 4, 5 |
+| 5 | Struktur folder untuk ke-38 partisipan (subfolder per grup? pre/post?) | ❓ Terbuka | 0 |
+| 6 | Konfirmasi Python + MNE-Python | ❓ Terbuka (diasumsikan ya) | Semua |
+| 7 | Posisi region webcam di frame video (untuk pose & sinyal gerak) | ❓ Baru: dicek dari frame sampel | 2, 4 |
 
 ---
 

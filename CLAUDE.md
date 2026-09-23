@@ -193,7 +193,30 @@ sisa sesi. Simpan offset ini secara eksplisit per partisipan di file metadata
   multiple comparison (Benjamini-Hochberg disarankan dibanding Bonferroni untuk
   konteks eksploratif ini).
 
+## Jawaban Pengguna (2026-09-23)
+1. **Start rekaman:** EEG dan video direkam di dua device berbeda, dimulai manual
+   oleh dua operator pada aba-aba **hitungan ke-3** (terlihat oleh kedua operator).
+   → Prior: `sync_offset_sec ≈ 0` dengan ketidakpastian ~±1–2 dtk (waktu reaksi
+   manusia + delay inisialisasi software). Presisi ini **tidak cukup** untuk
+   ERD/ERS, sehingga offset tetap harus disempurnakan dan divalidasi berbasis data
+   per partisipan (Tahap 2). Selisih durasi EDF−video kemungkinan besar berasal
+   dari waktu **stop** yang berbeda, bukan dari start.
+2. **`Add_lead1` / `Add_lead2`:** "sepertinya lead referensi" (belum pasti).
+   → Diperlakukan sebagai `misc` sampai diverifikasi secara empiris (lihat
+   EEG_PROCESSING.md, Tahap 3). Jika terbukti berisi potensial A1/A2, referensi
+   linked-ear dapat direkonstruksi.
+3. **Label HUD gerakan:** `NGEED`, `AGEM KANAN`, `AGEM KIRI`.
+4. **Sub-fase:** semua gerakan (ngeed, agem kanan, agem kiri) terdiri dari
+   `TURUN → TAHAN → NAIK`. **Sebagian partisipan tidak mengikuti instruksi HUD
+   dengan tepat**, sehingga fase aktual **wajib dikonfirmasi dari video**
+   (pose/gerak tubuh), bukan hanya dari label HUD. Refinement onset di Tahap 4
+   menjadi **wajib**, bukan opsional.
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
+> Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
+> 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,
+> dan posisi region webcam di frame video.
+
 1. Mekanisme start EEG vs start video — dipicu bersamaan atau terpisah? (Penting:
    selisih durasi EDF vs video berbeda arah antara P01 dan P02, jadi tidak ada
    formula offset tunggal yang bisa diasumsikan.)
