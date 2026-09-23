@@ -1,596 +1,628 @@
-# Panduan Pemrosesan Data EEG Mentah (Raw EEG)
+# Panduan Pemrosesan EEG–Video: Penari Bali vs Non-Penari
 
-Panduan ini adalah alur kerja langkah demi langkah untuk mengolah data EEG mentah
-hingga siap dianalisis (spektral/band power, ERP, dan waktu-frekuensi). Implementasi
-menggunakan **Python + [MNE-Python](https://mne.tools)**, dengan catatan khusus untuk
-perekaman dalam konteks olahraga/aktivitas fisik.
+Panduan kerja langkah demi langkah untuk mengolah data mentah proyek ini
+(`PXX_Baseline.EDF`, `PXX_Trial.EDF`, `motor_PXX_Trial_*.webm`) sampai menjadi
+tabel ERD/ERS gerakan dan fitur Romberg yang siap dianalisis statistik.
 
-> Isi bagian **0. Profil Data** terlebih dahulu. Parameter pada langkah-langkah
-> berikutnya (filter, referensi, epoch) harus disesuaikan dengan profil tersebut.
+- **Konteks ilmiah, fakta data, dan keputusan desain:** lihat [`CLAUDE.md`](CLAUDE.md).
+  Dokumen ini adalah turunan teknisnya (bagaimana mengerjakannya).
+- **Status:** potongan kode di bawah adalah **templat** yang belum diuji pada data
+  nyata. Beberapa langkah bergantung pada jawaban [Pertanyaan Terbuka](#15-pertanyaan-terbuka-yang-memblokir)
+  dan ditandai 🔒.
 
 ---
 
 ## Daftar Isi
 
-0. [Profil Data](#0-profil-data)
-1. [Struktur Folder Proyek](#1-struktur-folder-proyek)
-2. [Instalasi Lingkungan](#2-instalasi-lingkungan)
-3. [Gambaran Umum Pipeline](#3-gambaran-umum-pipeline)
-4. [Langkah 1 — Memuat Data](#4-langkah-1--memuat-data)
-5. [Langkah 2 — Inspeksi Visual](#5-langkah-2--inspeksi-visual)
-6. [Langkah 3 — Montage (Posisi Elektroda)](#6-langkah-3--montage-posisi-elektroda)
-7. [Langkah 4 — Filtering](#7-langkah-4--filtering)
-8. [Langkah 5 — Resampling](#8-langkah-5--resampling)
-9. [Langkah 6 — Kanal Buruk (Bad Channels)](#9-langkah-6--kanal-buruk-bad-channels)
-10. [Langkah 7 — Re-referensi](#10-langkah-7--re-referensi)
-11. [Langkah 8 — ICA untuk Artefak](#11-langkah-8--ica-untuk-artefak)
-12. [Langkah 9 — Segmentasi (Epoching)](#12-langkah-9--segmentasi-epoching)
-13. [Langkah 10 — Penolakan Epoch Buruk](#13-langkah-10--penolakan-epoch-buruk)
-14. [Langkah 11 — Analisis](#14-langkah-11--analisis)
-15. [Catatan Khusus EEG Olahraga](#15-catatan-khusus-eeg-olahraga)
-16. [Kontrol Kualitas (QC) & Checklist](#16-kontrol-kualitas-qc--checklist)
-17. [Pelaporan Metode](#17-pelaporan-metode)
-18. [Troubleshooting](#18-troubleshooting)
-19. [Referensi](#19-referensi)
+1. [Ringkasan Data & Implikasi Teknis](#1-ringkasan-data--implikasi-teknis)
+2. [Struktur Folder](#2-struktur-folder)
+3. [Instalasi](#3-instalasi)
+4. [Alur Pipeline](#4-alur-pipeline)
+5. [Tahap 0 — Manifest](#5-tahap-0--manifest)
+6. [Tahap 1 — Timeline Task dari Video (OCR)](#6-tahap-1--timeline-task-dari-video-ocr)
+7. [Tahap 2 — Sinkronisasi EEG↔Video](#7-tahap-2--sinkronisasi-eegvideo)
+8. [Tahap 3 — Preprocessing EEG](#8-tahap-3--preprocessing-eeg)
+9. [Tahap 4 — Epoching Gerakan](#9-tahap-4--epoching-gerakan)
+10. [Tahap 5 — ERD/ERS](#10-tahap-5--erders)
+11. [Tahap 5b — Fitur Romberg](#11-tahap-5b--fitur-romberg)
+12. [Tahap 6 — Statistik](#12-tahap-6--statistik)
+13. [Kontrol Kualitas](#13-kontrol-kualitas)
+14. [Limitasi untuk Naskah](#14-limitasi-untuk-naskah)
+15. [Pertanyaan Terbuka yang Memblokir](#15-pertanyaan-terbuka-yang-memblokir)
+16. [Referensi](#16-referensi)
 
 ---
 
-## 0. Profil Data
+## 1. Ringkasan Data & Implikasi Teknis
 
-Lengkapi tabel ini untuk setiap dataset sebelum memulai.
-
-| Item                         | Nilai (isi)                                  |
-|------------------------------|----------------------------------------------|
-| Perangkat / amplifier        | _mis. BrainProducts, Emotiv, OpenBCI, Muse_  |
-| Format file                  | _.edf / .bdf / .vhdr / .set / .cnt / .csv_   |
-| Jumlah kanal EEG             |                                              |
-| Kanal tambahan               | _EOG / ECG / EMG / akselerometer_            |
-| Sampling rate (Hz)           |                                              |
-| Referensi saat perekaman     | _mis. Cz, mastoid, CMS/DRL_                  |
-| Satuan data mentah           | _µV atau V_                                  |
-| Frekuensi listrik lokal      | **50 Hz** (Indonesia)                        |
-| Desain / kondisi             | _istirahat mata terbuka/tertutup, pre/post latihan, tugas kognitif_ |
-| Marker/event                 | _ada/tidak; kode trigger_                    |
-| Durasi per kondisi           |                                              |
-| Jumlah partisipan            |                                              |
+| Fakta data (dari `CLAUDE.md`) | Implikasi pada pipeline |
+|---|---|
+| Sampling rate **100 Hz** (Nyquist = 50 Hz) | **Notch 50 Hz tidak bisa diterapkan.** MNE akan error karena 50 Hz tepat di Nyquist. Interferensi listrik dihilangkan oleh **low-pass 40 Hz** saja. Jangan *resample*. |
+| Analisis sampai beta (≤ 30 Hz) | Masih aman di bawah Nyquist; gamma tidak dapat dianalisis. |
+| 16 kanal KT88, **tanpa midline** (Fz/Cz/Pz) | Gunakan proksi: C3/C4 (sensorimotor), F3/F4 atau F7/F8 (frontal), P3/P4, O1/O2. |
+| Referensi **ipsilateral**: kiri → A1, kanan → A2 | **Bukan linked-ear dan bukan referensi bersama.** Perbandingan kiri–kanan (C3 vs C4) ikut dipengaruhi beda aktivitas A1 vs A2. *Average reference* tidak sepenuhnya valid di sini (lihat Tahap 3). |
+| Nama kanal `Fp1-A1`, `T3-A1`, … | Harus di-*rename* ke `Fp1`, `T3`, … sebelum *montage*. T3/T4/T5/T6 dikenali di montage 10-20 MNE. |
+| `Add_lead1`, `Add_lead2` belum diketahui isinya 🔒 | Sementara diset tipe `misc` (tidak ikut filter, referensi, dan ICA). |
+| Header EDF `startdate` palsu (2013-04-01) | Tidak boleh dipakai untuk sinkronisasi. |
+| Video `.webm` dari browser (vp9, ~29,4 fps) | Kemungkinan besar ***variable frame rate***. **Waktu frame harus diambil dari timestamp (PTS), bukan `nomor_frame / fps`.** |
+| Selisih durasi EDF − video beda tanda antar partisipan | Offset sinkronisasi dihitung **per partisipan**; validasi dengan anchor kedua (Tahap 2). |
+| Usia remaja–102 tahun | Pakai *relative power*/%ERD, IAF individual, usia sebagai kovariat. |
 
 ---
 
-## 1. Struktur Folder Proyek
-
-Disarankan mengikuti gaya [BIDS](https://bids.neuroimaging.io/) agar rapi dan mudah
-direproduksi.
+## 2. Struktur Folder
 
 ```
 EEG-Processing/
-├── EEG_PROCESSING.md          # panduan ini
+├── CLAUDE.md                     # konteks proyek (sumber kebenaran)
+├── EEG_PROCESSING.md             # panduan ini
+├── config.yaml                   # parameter pipeline (filter, window, band)
 ├── data/
-│   ├── raw/                   # data asli — JANGAN diubah
-│   │   └── sub-01/
-│   │       └── sub-01_task-rest_eeg.edf
-│   ├── derivatives/           # hasil pemrosesan (.fif)
-│   └── participants.tsv       # data demografis/metadata
+│   ├── raw/                      # JANGAN diubah; tidak di-commit ke git
+│   │   ├── P01/  P01_Baseline.EDF  P01_Trial.EDF  motor_P01_Trial_<ts>.webm
+│   │   └── P02/  ...
+│   ├── manifest.csv              # Tahap 0 (+ sync_offset_sec dari Tahap 2)
+│   ├── timeline/                 # PXX_task_timeline.csv (Tahap 1)
+│   └── derivatives/              # PXX_clean_raw.fif, PXX_move-epo.fif
 ├── scripts/
-│   ├── 01_preprocess.py
-│   ├── 02_epoch_clean.py
-│   └── 03_analysis.py
-├── reports/                   # gambar QC, laporan HTML
-└── results/                   # tabel hasil (CSV) untuk statistik
+│   ├── 00_manifest.py
+│   ├── 01_ocr_timeline.py
+│   ├── 02_sync.py
+│   ├── 03_preprocess.py
+│   ├── 04_epoch.py
+│   ├── 05_erd_ers.py
+│   ├── 05b_romberg.py
+│   └── 06_stats.py
+├── reports/                      # QC HTML/PNG per partisipan
+└── results/                      # erd_ers_long.csv, romberg_features.csv
 ```
 
-Prinsip: **data mentah tidak pernah ditimpa**. Setiap langkah menyimpan hasil baru di
-`data/derivatives/`.
+> Data mentah EEG/video partisipan **jangan di-commit ke GitHub** (privasi dan ukuran file).
+> Tambahkan `data/raw/` ke `.gitignore`.
 
 ---
 
-## 2. Instalasi Lingkungan
+## 3. Instalasi
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install mne mne-icalabel autoreject python-picard \
-            numpy scipy pandas matplotlib edfio
-```
-
-Cek instalasi:
-
-```python
-import mne
-mne.sys_info()
+python -m venv .venv && source .venv/bin/activate
+pip install mne mne-icalabel python-picard numpy scipy pandas matplotlib \
+            av pytesseract opencv-python rapidfuzz statsmodels pingouin pyyaml
+# Tesseract OCR engine (sistem):
+#   Ubuntu: sudo apt install tesseract-ocr ffmpeg
+#   macOS : brew install tesseract ffmpeg
+#   Windows: installer dari github.com/UB-Mannheim/tesseract
 ```
 
 ---
 
-## 3. Gambaran Umum Pipeline
+## 4. Alur Pipeline
 
 ```
-Raw EEG
-  │
-  ├─ 1. Muat data & cek satuan (Volt)
-  ├─ 2. Inspeksi visual (plot, PSD)
-  ├─ 3. Set montage 10-20
-  ├─ 4. Filter: notch 50 Hz, band-pass (mis. 1–40 Hz)
-  ├─ 5. Resample (opsional, mis. 250 Hz)
-  ├─ 6. Tandai & interpolasi kanal buruk
-  ├─ 7. Re-referensi (average / mastoid)
-  ├─ 8. ICA → buang komponen mata, otot, jantung
-  ├─ 9. Epoching (berbasis event atau fixed-length)
-  ├─ 10. Tolak epoch buruk (threshold / autoreject)
-  └─ 11. Analisis: band power, ERP, time-frequency
-          └─ Ekspor ke CSV → statistik
+Tahap 0  Manifest (participant_id, group, timepoint, age, path…)
+   │
+Tahap 1  Video ─► crop HUD ─► OCR ─► PXX_task_timeline.csv   (waktu VIDEO)
+   │
+Tahap 2  Anchor di EEG & video ─► sync_offset_sec ─► manifest   ⛔ gerbang validasi
+   │
+Tahap 3  EDF ─► rename/montage ─► filter 1–40 Hz ─► kanal buruk ─► ICA (mata saja)
+   │
+Tahap 4  timeline + offset ─► Annotations (waktu EEG) ─► Epochs per repetisi
+   │
+   ├─► Tahap 5   ERD/ERS mu & beta (C3/C4, P3/P4, O1/O2) ─► erd_ers_long.csv
+   └─► Tahap 5b  Romberg EO/EC ─► romberg_features.csv (join dgn Stork Test)
+   │
+Tahap 6  Mixed model (ERD/ERS) & korelasi parsial (Romberg × Stork)
 ```
 
-**Urutan penting:** tandai kanal buruk **sebelum** re-referensi rata-rata dan ICA,
-karena satu kanal rusak akan "menular" ke semua kanal lain.
+Semua parameter disimpan di satu file `config.yaml`, jangan ditulis langsung (*hardcode*) di skrip:
+
+```yaml
+sfreq_expected: 100
+filter: {l_freq: 1.0, h_freq: 40.0}
+hud_box: {x0: 960, y0: 250, x1: 1280, y1: 480}   # verifikasi per file
+ocr_sample_sec: 0.2
+bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}
+roi: [C3, C4, P3, P4, O1, O2]
+erd:
+  tmin: -2.0          # detik relatif onset (sesuaikan setelah durasi sub-fase diketahui)
+  tmax: 4.0
+  baseline: [-2.0, -0.5]
+```
 
 ---
 
-## 4. Langkah 1 — Memuat Data
+## 5. Tahap 0 — Manifest
+
+`data/manifest.csv`:
+
+| participant_id | group | timepoint | age | path_baseline_edf | path_trial_edf | path_video | sync_offset_sec | sync_validated | notes |
+|---|---|---|---|---|---|---|---|---|---|
+| P01 | penari | NA | … | data/raw/P01/P01_Baseline.EDF | data/raw/P01/P01_Trial.EDF | data/raw/P01/motor_P01_Trial_….webm | | | |
 
 ```python
-import mne
 from pathlib import Path
+import pandas as pd
 
-raw_path = Path("data/raw/sub-01/sub-01_task-rest_eeg.edf")
-
-# Pilih fungsi sesuai format:
-raw = mne.io.read_raw_edf(raw_path, preload=True)          # .edf
-# raw = mne.io.read_raw_bdf(raw_path, preload=True)        # .bdf (BioSemi)
-# raw = mne.io.read_raw_brainvision("x.vhdr", preload=True) # BrainVision
-# raw = mne.io.read_raw_eeglab("x.set", preload=True)      # EEGLAB
-# raw = mne.io.read_raw_cnt("x.cnt", preload=True)         # Neuroscan
-
-print(raw.info)
-print(raw.ch_names)
+rows = []
+for d in sorted(Path("data/raw").glob("P*")):
+    pid = d.name
+    video = sorted(d.glob(f"motor_{pid}_Trial_*.webm"))
+    rows.append(dict(
+        participant_id=pid,
+        path_baseline_edf=next(iter(d.glob(f"{pid}_Baseline.EDF")), None),
+        path_trial_edf=next(iter(d.glob(f"{pid}_Trial.EDF")), None),
+        path_video=video[0] if len(video) == 1 else None,   # 0 atau >1 file → cek manual
+        sync_offset_sec=None, sync_validated=False,
+    ))
+man = pd.DataFrame(rows)
+# group, timepoint, age digabung dari file data demografis (join by participant_id)
+man.to_csv("data/manifest.csv", index=False)
+print(man.isna().sum())      # laporkan file yang hilang
 ```
 
-### Data CSV (OpenBCI, Muse, dsb.)
+---
 
-MNE mengharapkan satuan **Volt**. Kebanyakan perangkat konsumen menyimpan µV,
-sehingga perlu dikalikan `1e-6`.
+## 6. Tahap 1 — Timeline Task dari Video (OCR)
+
+**Tujuan:** menghasilkan daftar segmen `label + sub-fase` beserta waktu mulai dan
+selesainya **dalam detik video**.
+
+### 6.1 Kalibrasi kotak HUD per file
+
+Simpan satu frame dari setiap video, lalu periksa apakah kotak HUD dari `config.yaml`
+tepat mengenai panel instruksi:
+
+```bash
+ffmpeg -ss 60 -i motor_P01_Trial_<ts>.webm -frames:v 1 reports/P01_frame60.png
+```
+
+### 6.2 Cek frame rate & timestamp
+
+```bash
+ffprobe -v error -select_streams v:0 -show_entries frame=best_effort_timestamp_time \
+        -of csv=p=0 motor_P01_Trial_<ts>.webm | head
+ffprobe -v error -show_entries format=duration -of csv=p=0 motor_P01_Trial_<ts>.webm
+```
+
+Jika jarak antar-timestamp tidak konstan, berarti video *variable frame rate* dan
+waktu **harus** diambil dari PTS. Kode di bawah sudah memakai PTS.
+
+### 6.3 OCR dan deteksi batas segmen
+
+```python
+import re
+import av, pytesseract
+import pandas as pd
+from rapidfuzz import process, fuzz
+
+VOCAB = [   # label HUD yang diketahui; tambahkan label NGEED setelah dikonfirmasi 🔒
+    "AGEM KANAN TURUN", "AGEM KANAN TAHAN", "AGEM KANAN NAIK",
+    "AGEM KIRI TURUN",  "AGEM KIRI TAHAN",  "AGEM KIRI NAIK",
+    "ISTIRAHAT UTAMA", "BERDIRI RILEKS",
+    "BERDIRI FOKUS MATA TERBUKA", "BERDIRI MATA TERTUTUP",
+]
+
+def normalize(text):
+    text = re.sub(r"[\d:()]+|DETIK", " ", text.upper())   # buang countdown & "(30 Detik)"
+    text = re.sub(r"[^A-Z ]", " ", text)
+    text = " ".join(text.split())
+    match = process.extractOne(text, VOCAB, scorer=fuzz.token_set_ratio)
+    return (match[0], match[1]) if match and match[1] >= 80 else ("UNKNOWN", 0)
+
+def ocr_video(path, box, step=0.2):
+    x0, y0, x1, y1 = box
+    samples, next_t = [], 0.0
+    with av.open(str(path)) as container:
+        for frame in container.decode(video=0):
+            t = frame.time                     # PTS dalam detik
+            if t is None or t < next_t:
+                continue
+            next_t = t + step
+            img = frame.to_ndarray(format="gray")[y0:y1, x0:x1]
+            raw_text = pytesseract.image_to_string(img, config="--psm 6")
+            label, score = normalize(raw_text)
+            samples.append(dict(t=t, raw=raw_text.strip(), label=label, score=score))
+    return pd.DataFrame(samples)
+
+def to_segments(samples):
+    s = samples[samples.label != "UNKNOWN"].reset_index(drop=True)
+    seg_id = (s.label != s.label.shift()).cumsum()
+    seg = s.groupby(seg_id).agg(label=("label", "first"),
+                                start_time_video_sec=("t", "first"),
+                                end_time_video_sec=("t", "last"),
+                                n_samples=("t", "size"))
+    seg[["task", "subphase"]] = seg.label.str.extract(r"^(AGEM KANAN|AGEM KIRI)\s+(\w+)$")
+    seg.task = seg.task.fillna(seg.label)
+    return seg.reset_index(drop=True)
+```
+
+Output `data/timeline/PXX_task_timeline.csv` berisi kolom `label, task, subphase,
+start_time_video_sec, end_time_video_sec`, ditambah nomor repetisi (hitung per task
+secara berurutan).
+
+**Validasi (wajib):** periksa manual 10–15% segmen dengan membandingkan waktu di
+CSV terhadap video di pemutar (VLC menampilkan waktu presisi). Juga pastikan:
+
+- Jumlah repetisi per gerakan = 4.
+- Urutan sub-fase konsisten (🔒 tunggu konfirmasi apakah selalu TURUN→TAHAN→NAIK).
+- Sampel `UNKNOWN` berturut-turut > 1 detik → periksa frame tersebut.
+
+---
+
+## 7. Tahap 2 — Sinkronisasi EEG↔Video
+
+⛔ **Gerbang:** jangan lanjut ke Tahap 4 untuk partisipan yang `sync_validated = False`.
+
+Definisi (disimpan di manifest):
+
+```
+t_eeg = t_video + sync_offset_sec
+sync_offset_sec = t_anchor_EEG − t_anchor_video
+```
+
+### 7.1 Anchor utama (awal sesi)
+
+🔒 Tergantung jawaban Pertanyaan 1. Jika tidak ada marker eksplisit, gunakan onset
+gerakan agem pertama:
+
+- **Video:** waktu awal segmen `AGEM … TURUN` pertama dari timeline, disempurnakan
+  dengan mencari frame pertama saat tubuh mulai bergerak.
+- **EEG:** lonjakan artefak gerak (amplitudo/EMG) di kanal frontal/temporal.
 
 ```python
 import numpy as np
-import pandas as pd
+import mne
 
-df = pd.read_csv("data/raw/sub-01/recording.csv")
-ch_names = ["Fp1", "Fp2", "C3", "C4", "P7", "P8", "O1", "O2"]  # sesuaikan
-sfreq = 250.0                                                    # sesuaikan
-
-data = df[ch_names].to_numpy().T * 1e-6   # µV → V, bentuk (n_kanal, n_sampel)
-info = mne.create_info(ch_names, sfreq, ch_types="eeg")
-raw = mne.io.RawArray(data, info)
+raw = mne.io.read_raw_edf("data/raw/P01/P01_Trial.EDF", preload=True)
+env = raw.copy().pick(["F7-A1", "F8-A2", "T3-A1", "T4-A2"]) \
+         .filter(20, 45).apply_hilbert(envelope=True).get_data().mean(axis=0)
+t = raw.times
+# Cari lonjakan di sekitar perkiraan (t_video_anchor ± 30 dtk), lalu verifikasi visual:
+raw.plot(start=max(0, t_guess - 10), duration=20)
 ```
 
-### Atur tipe kanal non-EEG
+### 7.2 Anchor validasi (akhir sesi): transisi Romberg mata terbuka → tertutup
+
+Saat mata tertutup, **alpha oksipital (O1/O2) naik dengan jelas** dan biasanya
+diawali artefak kedip/tutup mata di Fp1/Fp2. Tanda ini terlihat objektif di EEG dan
+waktunya diketahui dari HUD. Anchor ini dipakai untuk:
+
+1. **Memvalidasi** offset dari anchor awal: selisih prediksi vs observasi harus
+   < ~0,5 dtk.
+2. **Mendeteksi drift clock**: jika selisihnya konsisten membesar seiring waktu,
+   gunakan koreksi linear dengan dua titik (anchor awal dan akhir):
+   `t_eeg = a · t_video + b`.
 
 ```python
-raw.set_channel_types({"VEOG": "eog", "HEOG": "eog", "ECG": "ecg"})  # jika ada
+alpha = raw.copy().pick(["O1-A1", "O2-A2"]).filter(8, 13) \
+           .apply_hilbert(envelope=True).get_data().mean(axis=0)
+# Plot alpha envelope di sekitar prediksi t_eeg transisi EO→EC
 ```
 
-### Cek satuan
-
-Amplitudo EEG normal berkisar puluhan µV. Jika `raw.get_data().std()` bernilai
-sekitar 10–100 (bukan ~1e-5), data kemungkinan masih dalam µV dan perlu dikonversi.
+Catat di manifest: `sync_offset_sec`, `sync_method` (anchor apa), `sync_residual_sec`
+(selisih pada anchor validasi), `sync_validated` (True/False).
 
 ---
 
-## 5. Langkah 2 — Inspeksi Visual
-
-Selalu **lihat data** sebelum memproses.
+## 8. Tahap 3 — Preprocessing EEG
 
 ```python
-raw.plot(duration=20, n_channels=len(raw.ch_names), scalings=dict(eeg=100e-6))
-raw.compute_psd(fmax=100).plot()
-```
+import mne
 
-Yang dicari:
+raw = mne.io.read_raw_edf(path_trial_edf, preload=True)
+assert raw.info["sfreq"] == 100
 
-- Kanal datar (flat) atau sangat bising.
-- Puncak 50 Hz (dan harmonik 100 Hz) pada PSD.
-- Kedipan mata (defleksi besar di Fp1/Fp2), gerakan kepala, burst otot (EMG).
-- Pergeseran lambat (drift) akibat keringat.
-- Puncak alfa (~8–12 Hz) di oksipital saat mata tertutup → tanda data sehat.
+# 1) Rename & tipe kanal
+raw.rename_channels(lambda ch: ch.split("-")[0])          # "C3-A1" → "C3"
+raw.set_channel_types({"Add_lead1": "misc", "Add_lead2": "misc"})   # 🔒 sementara
+raw.set_montage("standard_1020")  # MNE ≥1.13 menyarankan nama baru "colin27_1020"
 
-Catat segmen buruk sebagai anotasi (klik-tarik di jendela plot, beri label
-`BAD_...`), atau lewat kode:
+# 2) Filter — TANPA notch (50 Hz = Nyquist); low-pass 40 Hz sudah menekan 50 Hz
+raw.filter(l_freq=1.0, h_freq=40.0)
 
-```python
-raw.annotations.append(onset=120.0, duration=5.0, description="BAD_movement")
-```
-
----
-
-## 6. Langkah 3 — Montage (Posisi Elektroda)
-
-```python
-montage = mne.channels.make_standard_montage("standard_1020")
-raw.set_montage(montage, on_missing="warn")
-raw.plot_sensors(show_names=True)
-```
-
-Jika nama kanal berbeda (mis. `EEG Fp1-REF`), ubah dulu:
-
-```python
-raw.rename_channels(lambda name: name.replace("EEG ", "").replace("-REF", ""))
-```
-
----
-
-## 7. Langkah 4 — Filtering
-
-| Filter       | Nilai umum             | Keterangan                                              |
-|--------------|------------------------|---------------------------------------------------------|
-| Notch        | 50 Hz (+100 Hz)        | Interferensi listrik PLN                                |
-| High-pass    | 0,5–1 Hz               | 1 Hz untuk resting-state/band power; 0,1 Hz untuk ERP   |
-| Low-pass     | 40–45 Hz               | Naikkan (mis. 80–100 Hz) jika meneliti gamma            |
-
-```python
-raw.notch_filter(freqs=[50, 100])
-raw.filter(l_freq=1.0, h_freq=40.0)   # FIR zero-phase (default MNE)
-```
-
-> Untuk **ERP**, high-pass > 0,3 Hz dapat mendistorsi komponen lambat (mis. P300).
-> Gunakan 0,1 Hz untuk data yang dipakai analisis ERP, dan salinan 1 Hz khusus ICA
-> (lihat Langkah 8).
-
----
-
-## 8. Langkah 5 — Resampling
-
-Opsional; mempercepat komputasi. Lakukan **setelah** low-pass filter.
-Sampling rate baru minimal ~3–4× frekuensi tertinggi yang dianalisis.
-
-```python
-raw.resample(250)
-```
-
-Jika ada event/trigger, resample setelah events diekstraksi atau resample Epochs,
-agar waktu trigger tetap presisi.
-
----
-
-## 9. Langkah 6 — Kanal Buruk (Bad Channels)
-
-Tandai kanal buruk berdasarkan inspeksi visual (klik nama kanal di `raw.plot()`),
-lalu interpolasi (spherical spline).
-
-```python
-raw.info["bads"] = ["T7", "Fp2"]      # contoh
+# 3) Kanal buruk (inspeksi visual), lalu interpolasi
+raw.plot(duration=30, scalings=dict(eeg=100e-6))
 raw.interpolate_bads(reset_bads=True)
 ```
 
-Pedoman praktis:
+### 8.1 Referensi
 
-- Kanal datar, amplitudo sangat besar, atau korelasi rendah dengan tetangganya.
-- Jika > ~10–15% kanal buruk, pertimbangkan mengeluarkan partisipan/sesi.
-- Pada headset dengan sedikit kanal (mis. 4–8 kanal), interpolasi kurang akurat —
-  lebih baik sesi tersebut dieksklusi atau kanal dikeluarkan dari analisis.
-- Catat kanal yang diinterpolasi untuk setiap partisipan (untuk laporan).
+Data direkam dengan **referensi telinga ipsilateral** (kiri–A1, kanan–A2).
 
----
+| Opsi | Kapan dipakai | Catatan |
+|---|---|---|
+| **Pertahankan referensi asli** (disarankan untuk analisis utama) | ERD/ERS dinyatakan dalam % terhadap baseline di kanal yang sama | Offset referensi sebagian besar hilang dalam normalisasi %; perbandingan antar-hemisfer tetap dilaporkan sebagai limitasi. |
+| *Average reference* | Analisis sensitivitas | Dengan 16 kanal tanpa midline dan referensi campuran, hasilnya belum menjadi *average reference* yang sebenarnya. |
+| Linked-ear matematis | **Hanya jika** ada sinyal A1–A2 terekam (🔒 apakah `Add_lead` berisi ini?) | `Ckiri_linked = Ckiri − ½(A2−A1)`, dst. |
 
-## 10. Langkah 7 — Re-referensi
-
-```python
-raw.set_eeg_reference("average", projection=False)   # rata-rata semua kanal
-# atau mastoid terhubung:
-# raw.set_eeg_reference(["M1", "M2"])
-```
-
-- **Average reference**: cocok untuk ≥ ~32 kanal dengan cakupan kepala merata.
-- **Mastoid / linked-ear**: umum untuk sedikit kanal atau mengikuti literatur ERP tertentu.
-- Gunakan referensi yang **sama** di seluruh partisipan dan konsisten dengan studi rujukan.
-
----
-
-## 11. Langkah 8 — ICA untuk Artefak
-
-ICA memisahkan sinyal menjadi komponen independen; komponen artefak (kedip mata,
-gerakan mata, otot, jantung) dibuang lalu sinyal direkonstruksi.
+### 8.2 ICA — hanya artefak mata
 
 ```python
 from mne.preprocessing import ICA
-from mne_icalabel import label_components
 
-# 1. Salinan khusus ICA: high-pass 1 Hz membuat ICA lebih stabil
-raw_for_ica = raw.copy().filter(l_freq=1.0, h_freq=100.0 if raw.info["sfreq"] > 200 else None)
+ica = ICA(n_components=len(raw.info["ch_names"]) - len(raw.info["bads"]) - 1,
+          method="picard", fit_params=dict(extended=True, ortho=False),
+          random_state=97, max_iter="auto")
+ica.fit(raw.copy().pick("eeg"), reject_by_annotation=True)
 
-# 2. Fit ICA (buang segmen BAD_ secara otomatis)
-ica = ICA(
-    n_components=0.99,            # atau angka < jumlah kanal - kanal interpolasi
-    method="picard",
-    fit_params=dict(extended=True, ortho=False),   # setara extended-Infomax
-    random_state=97,
-    max_iter="auto",
-)
-ica.fit(raw_for_ica, reject_by_annotation=True)
-
-# 3. Klasifikasi otomatis dengan ICLabel
-labels = label_components(raw_for_ica, ica, method="iclabel")
-exclude = [
-    i for i, (lab, prob) in enumerate(zip(labels["labels"], labels["y_pred_proba"]))
-    if lab not in ("brain", "other") and prob > 0.80
-]
-print("Komponen dibuang:", exclude, [labels["labels"][i] for i in exclude])
-
-# 4. Verifikasi visual — WAJIB
-ica.plot_components()
-ica.plot_sources(raw_for_ica)
-ica.plot_properties(raw_for_ica, picks=exclude)
-
-# 5. Terapkan pada data utama
-ica.exclude = exclude
+eog_idx, scores = ica.find_bads_eog(raw, ch_name=["Fp1", "Fp2"])  # Fp sebagai proksi EOG
+ica.plot_components(); ica.plot_sources(raw); ica.plot_properties(raw, picks=eog_idx)
+ica.exclude = eog_idx        # setelah diverifikasi visual
 ica.apply(raw)
+raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
+```
+
+- **ICLabel kurang andal di sini**: ICLabel dilatih pada data dengan filter 1–100 Hz,
+  sedangkan data ini hanya sampai 50 Hz. Hasilnya boleh dipakai sebagai saran, tetapi
+  keputusan akhir tetap berdasarkan inspeksi visual.
+- **Jangan buang komponen "otot/gerak" secara otomatis**. Ritme mu/beta sensorimotor
+  bisa ikut terbuang. Buang hanya komponen mata yang jelas (kedip dan saccade).
+- Jika `Add_lead1/2` ternyata EOG, ganti `ch_name` di `find_bads_eog` ke kanal tersebut.
+- Segmen dengan artefak gerak besar diberi anotasi `BAD_motion` dan tidak dipakai
+  untuk *fit* ICA.
+
+---
+
+## 9. Tahap 4 — Epoching Gerakan
+
+```python
+import pandas as pd
+import mne
+
+man = pd.read_csv("data/manifest.csv").set_index("participant_id")
+row = man.loc[pid]
+assert row.sync_validated, f"{pid}: sinkronisasi belum divalidasi"
+
+tl = pd.read_csv(f"data/timeline/{pid}_task_timeline.csv")
+onset_eeg = tl.start_time_video_sec + row.sync_offset_sec     # atau model linear a·t+b
+dur = tl.end_time_video_sec - tl.start_time_video_sec
+desc = (tl.task + "/" + tl.subphase.fillna("NA") + "/rep" + tl.rep.astype(str)) \
+          .str.replace(" ", "_")
+
+raw = mne.io.read_raw_fif(f"data/derivatives/{pid}_clean_raw.fif", preload=True)
+raw.set_annotations(raw.annotations + mne.Annotations(onset_eeg, dur, desc))
+
+# Onset gerakan = awal sub-fase TURUN (🔒 konfirmasi urutan sub-fase)
+events, event_id = mne.events_from_annotations(raw, regexp=r"^AGEM_.*/TURUN/")
+epochs = mne.Epochs(raw, events, event_id, tmin=-2.0, tmax=4.0,
+                    baseline=None, reject_by_annotation=True, preload=True)
+epochs.save(f"data/derivatives/{pid}_move-epo.fif", overwrite=True)
 ```
 
 Catatan:
 
-- ICLabel dilatih pada data dengan **average reference** dan filter **1–100 Hz**.
-- Jika tersedia kanal EOG/ECG, gunakan juga `ica.find_bads_eog(raw_for_ica)` dan
-  `ica.find_bads_ecg(raw_for_ica)`.
-- Jumlah komponen dibatasi oleh *rank* data: re-referensi rata-rata dan interpolasi
-  masing-masing mengurangi rank.
-- Laporkan jumlah komponen yang dibuang per partisipan (rata-rata ± SD).
+- Onset HUD ≠ onset gerakan riil (ada waktu reaksi). Jika diperlukan, sempurnakan onset
+  dengan deteksi gerak dari video (selisih frame / optical flow / pose estimation)
+  dalam jendela ±2 dtk dari onset HUD. Simpan kolom `onset_refined_video_sec`.
+- Pastikan **jendela baseline** (mis. −2 s.d. −0,5 dtk) jatuh di segmen `BERDIRI RILEKS`
+  atau istirahat, **bukan** di sisa gerakan sebelumnya. Periksa terhadap timeline.
+- Target 4 repetisi × {ngeed 🔒, agem kanan, agem kiri}. Catat jumlah epoch yang bertahan.
 
 ---
 
-## 12. Langkah 9 — Segmentasi (Epoching)
+## 10. Tahap 5 — ERD/ERS
 
-### a) Resting-state / kondisi kontinu (pre vs post latihan)
+Definisi (Pfurtscheller & Lopes da Silva, 1999):
 
-```python
-epochs = mne.make_fixed_length_epochs(
-    raw, duration=2.0, overlap=1.0, reject_by_annotation=True, preload=True
-)
 ```
-
-Jika rekaman berisi beberapa kondisi dalam satu file, potong dahulu:
-
-```python
-raw_pre  = raw.copy().crop(tmin=0,   tmax=180)   # detik; sesuaikan
-raw_post = raw.copy().crop(tmin=600, tmax=780)
+%ERD/ERS = (A − R) / R × 100
+A = power pada jendela aktivitas, R = power pada jendela referensi (baseline)
+Negatif = ERD (desinkronisasi), Positif = ERS (sinkronisasi)
 ```
-
-### b) Berbasis event (ERP / tugas kognitif)
-
-```python
-events, event_id = mne.events_from_annotations(raw)
-# atau: events = mne.find_events(raw, stim_channel="STI 014")
-
-epochs = mne.Epochs(
-    raw, events, event_id=event_id,
-    tmin=-0.2, tmax=0.8,
-    baseline=(None, 0),
-    reject_by_annotation=True,
-    preload=True,
-)
-```
-
----
-
-## 13. Langkah 10 — Penolakan Epoch Buruk
-
-### Opsi A — Threshold amplitudo sederhana
-
-```python
-epochs.drop_bad(reject=dict(eeg=150e-6), flat=dict(eeg=1e-6))
-epochs.plot_drop_log()
-```
-
-### Opsi B — `autoreject` (data-driven, direkomendasikan)
-
-```python
-from autoreject import AutoReject
-
-ar = AutoReject(random_state=42, n_jobs=-1)
-epochs_clean, reject_log = ar.fit_transform(epochs, return_log=True)
-reject_log.plot("horizontal")
-```
-
-Pedoman: bila > ~25–30% epoch terbuang, periksa kembali langkah sebelumnya atau
-pertimbangkan eksklusi partisipan. Pastikan jumlah epoch **seimbang** antar kondisi
-(`mne.epochs.equalize_epoch_counts`) bila membandingkan kondisi.
-
-Simpan hasil:
-
-```python
-epochs_clean.save("data/derivatives/sub-01/sub-01_task-rest_proc-clean_epo.fif",
-                  overwrite=True)
-```
-
----
-
-## 14. Langkah 11 — Analisis
-
-### a) Power spektral & band power
-
-| Band   | Rentang (Hz) |
-|--------|--------------|
-| Delta  | 1–4          |
-| Theta  | 4–8          |
-| Alpha  | 8–13         |
-| Beta   | 13–30        |
-| Gamma  | 30–40 (sesuai low-pass) |
 
 ```python
 import numpy as np
 import pandas as pd
+import mne
 
-spectrum = epochs_clean.compute_psd(method="welch", fmin=1, fmax=40,
-                                    n_fft=int(2 * epochs_clean.info["sfreq"]))
-psds, freqs = spectrum.get_data(return_freqs=True)   # (epoch, kanal, frekuensi)
-psd_mean = psds.mean(axis=0)                          # rata-rata antar epoch
+epochs = mne.read_epochs(f"data/derivatives/{pid}_move-epo.fif")
+roi = ["C3", "C4", "P3", "P4", "O1", "O2"]
+freqs = np.arange(6, 31, 1.0)
+tfr = epochs.compute_tfr(method="morlet", freqs=freqs, n_cycles=freqs / 2,
+                         picks=roi, average=False, return_itc=False)
+tfr.apply_baseline(baseline=(-2.0, -0.5), mode="percent")   # (A−R)/R
+data = tfr.get_data() * 100                                   # epoch × kanal × freq × waktu
 
-bands = {"delta": (1, 4), "theta": (4, 8), "alpha": (8, 13),
-         "beta": (13, 30), "gamma": (30, 40)}
-
-total = np.trapezoid(psd_mean, freqs, axis=-1)
+bands = {"mu": (8, 13), "beta": (13, 30)}
+active = (tfr.times >= 0.0) & (tfr.times <= 2.0)              # 🔒 sesuaikan dgn durasi sub-fase
 rows = []
-for band, (fmin, fmax) in bands.items():
-    mask = (freqs >= fmin) & (freqs < fmax)
-    abs_power = np.trapezoid(psd_mean[:, mask], freqs[mask], axis=-1)
-    for ch, a, r in zip(epochs_clean.ch_names, abs_power, abs_power / total):
-        rows.append(dict(subject="sub-01", condition="pre", channel=ch, band=band,
-                         abs_power_uV2=a * 1e12, rel_power=r))
+for i, ev in enumerate(epochs.events[:, 2]):
+    cond = {v: k for k, v in epochs.event_id.items()}[ev]      # mis. "AGEM_KANAN/TURUN/rep1"
+    for b, (lo, hi) in bands.items():
+        fmask = (freqs >= lo) & (freqs < hi)
+        vals = data[i][:, fmask][:, :, active].mean(axis=(1, 2))
+        for ch, v in zip(roi, vals):
+            rows.append(dict(participant_id=pid, condition=cond, band=b,
+                             channel=ch, erd_pct=v))
+pd.DataFrame(rows).to_csv(f"results/{pid}_erd_ers.csv", index=False)
 
-pd.DataFrame(rows).to_csv("results/sub-01_bandpower.csv", index=False)
+# Visualisasi rata-rata
+tfr.average().plot(picks=["C3", "C4"], title=f"{pid} %ERD/ERS")
 ```
 
-- **Absolute power** (µV²) sensitif terhadap impedansi & ketebalan tengkorak;
-  **relative power** (band / total) lebih robust antar individu.
-- Untuk rasio/indeks umum: theta/beta, alpha asymmetry frontal
-  (`ln(F4) − ln(F3)` pada alpha), individual alpha frequency (IAF).
-- Pertimbangkan memisahkan komponen aperiodik (1/f) dengan paket
-  [`specparam`/FOOOF](https://fooof-tools.github.io/) bila membandingkan pre–post
-  latihan, karena perubahan 1/f dapat menyamar sebagai perubahan band power.
-
-Visualisasi topografi:
-
-```python
-spectrum.plot_topomap(bands={"Alpha (8-13 Hz)": (8, 13)}, ch_type="eeg")
-```
-
-### b) ERP
-
-```python
-evoked = epochs_clean["target"].average()
-evoked.plot(gfp=True)
-evoked.plot_joint()
-
-# Contoh: amplitudo rata-rata P300 di Pz, jendela 300–500 ms
-p300 = evoked.copy().pick("Pz").crop(0.3, 0.5).data.mean() * 1e6   # µV
-```
-
-### c) Time-frequency (TFR)
-
-```python
-freqs = np.arange(4, 40, 1)
-tfr = epochs_clean.compute_tfr(method="morlet", freqs=freqs, n_cycles=freqs / 2,
-                               return_itc=False, average=True)
-tfr.plot(picks="Cz", baseline=(-0.2, 0), mode="logratio")
-```
-
-### d) Statistik
-
-Ekspor nilai (band power / amplitudo ERP) per partisipan × kondisi × kanal ke CSV,
-lalu analisis dengan uji yang sesuai (paired t-test / Wilcoxon, ANOVA pengukuran
-berulang, atau linear mixed model). Untuk perbandingan banyak kanal/frekuensi,
-gunakan koreksi multiple comparison (FDR) atau cluster-based permutation test
-(`mne.stats.permutation_cluster_test`).
+- **Lateralisasi:** untuk agem kanan, ERD diharapkan lebih kuat di C3 (kontralateral),
+  dan sebaliknya untuk agem kiri. Hitung juga indeks lateralisasi `C3 − C4`, tetapi
+  interpretasikan dengan hati-hati karena referensi ipsilateral (A1 vs A2).
+- **Band individual** (opsional, direkomendasikan karena rentang usia lebar): definisikan
+  mu sebagai IAF−2 s.d. IAF+2 Hz, dengan IAF diambil dari `PXX_Baseline.EDF`.
+- Baseline alternatif: power rata-rata dari `PXX_Baseline.EDF`. Pilih satu definisi dan
+  gunakan secara konsisten.
+- Resolusi: 100 Hz dengan Morlet `n_cycles = f/2` memberi panjang wavelet ≈ 0,5 dtk untuk
+  semua frekuensi. Pastikan epoch cukup panjang agar tepi (*edge effect*) tidak jatuh ke
+  jendela analisis.
 
 ---
 
-## 15. Catatan Khusus EEG Olahraga
+## 11. Tahap 5b — Fitur Romberg
 
-Perekaman sebelum/selama/setelah latihan fisik memiliki artefak khas:
+Segmen: `BERDIRI FOKUS MATA TERBUKA` (EO, 30 dtk) dan `BERDIRI MATA TERTUTUP` (EC, 30 dtk).
+Bukan analisis ERD/ERS, melainkan **power spektral kondisi tunak**.
 
-| Artefak                     | Ciri                                    | Penanganan                                         |
-|-----------------------------|-----------------------------------------|----------------------------------------------------|
-| Keringat                    | Drift sangat lambat (< 0,5 Hz)          | High-pass 1 Hz; keringkan kulit; ruang sejuk       |
-| Otot (EMG) rahang/leher     | Aktivitas broadband > 20 Hz, temporal   | ICA (label *muscle*); hati-hati menafsirkan beta/gamma |
-| Gerakan kepala/kabel        | Lonjakan besar serentak                 | Anotasi `BAD_`, autoreject, fiksasi kabel          |
-| Langkah (treadmill/sepeda)  | Periodik sesuai irama gerak             | Akselerometer sebagai referensi; ASR; ICA          |
-| Jantung (ECG)               | Kompleks QRS periodik, HR tinggi pasca latihan | `ica.find_bads_ecg`                         |
+```python
+import numpy as np
+import pandas as pd
+import mne
 
-Rekomendasi:
+def seg_psd(raw, label, pad=2.0):
+    ann = [a for a in raw.annotations if a["description"].startswith(label)][0]
+    seg = raw.copy().crop(ann["onset"] + pad, ann["onset"] + ann["duration"] - pad)  # buang transisi
+    ep = mne.make_fixed_length_epochs(seg, duration=2.0, overlap=1.0, preload=True)
+    ep.drop_bad(reject=dict(eeg=150e-6))
+    sp = ep.compute_psd(method="welch", fmin=1, fmax=40, n_fft=200)  # resolusi 0,5 Hz
+    psd, f = sp.get_data(return_freqs=True)
+    return psd.mean(axis=0), f, sp.ch_names, len(ep)
 
-- Rekam resting-state **pre** dan **post** dengan durasi & kondisi (mata terbuka/tertutup)
-  yang identik; beri jeda stabilisasi (mis. 5 menit) pasca latihan bila sesuai desain.
-- Catat HR, RPE, suhu ruang, dan waktu pengukuran di metadata.
-- Cek dan catat **impedansi** sebelum dan sesudah sesi.
-- Untuk data selama gerak, pertimbangkan Artifact Subspace Reconstruction (ASR),
-  mis. paket `asrpy`, sebelum ICA.
+def bp(psd, f, chs, picks, lo, hi, relative=True):
+    idx = [chs.index(c) for c in picks]
+    m = (f >= lo) & (f < hi)
+    band = np.trapezoid(psd[idx][:, m], f[m], axis=-1)
+    if relative:
+        band = band / np.trapezoid(psd[idx][:, (f >= 1) & (f < 40)], f[(f >= 1) & (f < 40)], axis=-1)
+    return band.mean()
+
+eo, f, chs, n_eo = seg_psd(raw, "BERDIRI_FOKUS_MATA_TERBUKA")
+ec, _, _, n_ec   = seg_psd(raw, "BERDIRI_MATA_TERTUTUP")
+
+def iaf(psd, picks):
+    m = (f >= 7) & (f <= 13)
+    spec = psd[[chs.index(c) for c in picks]][:, m].mean(axis=0)
+    return (f[m] * spec).sum() / spec.sum()          # center of gravity
+
+feat = dict(
+    participant_id=pid,
+    # Tier 1
+    alpha_occ_EC=bp(ec, f, chs, ["O1", "O2"], 8, 13),
+    alpha_reactivity_EC_EO=bp(ec, f, chs, ["O1", "O2"], 8, 13, False)
+                          / bp(eo, f, chs, ["O1", "O2"], 8, 13, False),
+    mu_sm_EC=bp(ec, f, chs, ["C3", "C4"], 8, 13),
+    mu_sm_EO=bp(eo, f, chs, ["C3", "C4"], 8, 13),
+    theta_front_EC=bp(ec, f, chs, ["F3", "F4"], 4, 8),
+    # Tier 2
+    iaf_occ_EC=iaf(ec, ["O1", "O2"]), iaf_par_EC=iaf(ec, ["P3", "P4"]),
+    beta_sm_EO=bp(eo, f, chs, ["C3", "C4"], 13, 30),
+    beta_sm_EC=bp(ec, f, chs, ["C3", "C4"], 13, 30),
+    alpha_par_EC=bp(ec, f, chs, ["P3", "P4"], 8, 13),
+    # QC
+    n_epochs_EO=n_eo, n_epochs_EC=n_ec,
+)
+pd.DataFrame([feat]).to_csv(f"results/{pid}_romberg_features.csv", index=False)
+```
+
+- Satu baris per partisipan, dengan `participant_id` sebagai kunci untuk digabung dengan
+  data Standing Stork Test (waktu per partisipan).
+- Untuk non-penari yang punya pre/post, tambahkan kolom `timepoint` agar penggabungan
+  tidak tertukar.
+- Tier 3 (entropi, koherensi) ditunda sampai Tier 1–2 selesai.
 
 ---
 
-## 16. Kontrol Kualitas (QC) & Checklist
+## 12. Tahap 6 — Statistik
 
-Buat laporan QC otomatis per partisipan:
+### 12.1 ERD/ERS gerakan — linear mixed model
 
 ```python
-report = mne.Report(title="sub-01 QC")
-report.add_raw(raw, title="Raw (setelah preprocessing)", psd=True)
-report.add_ica(ica, title="ICA", inst=raw_for_ica)
-report.add_epochs(epochs_clean, title="Epochs bersih")
-report.save("reports/sub-01_qc.html", overwrite=True)
+import pandas as pd
+import statsmodels.formula.api as smf
+
+df = pd.concat(pd.read_csv(p) for p in Path("results").glob("P*_erd_ers.csv"))
+df = df.merge(pd.read_csv("data/manifest.csv")[["participant_id", "group", "timepoint", "age"]])
+df["movement"] = df.condition.str.split("/").str[0]
+
+sub = df[(df.band == "mu") & (df.channel == "C3")]
+m = smf.mixedlm("erd_pct ~ group * movement + age", sub,
+                groups=sub["participant_id"]).fit(reml=True)
+print(m.summary())
+# Intervensi non-penari: "erd_pct ~ timepoint * movement + age" pada subset non-penari,
+# atau group × timepoint bila desainnya memungkinkan.
 ```
+
+### 12.2 Romberg × Standing Stork Test
+
+```python
+import pingouin as pg
+from statsmodels.stats.multitest import multipletests
+
+rom = pd.concat(pd.read_csv(p) for p in Path("results").glob("P*_romberg_features.csv"))
+d = rom.merge(stork, on="participant_id").merge(demo[["participant_id", "age"]])
+
+tier1 = ["alpha_occ_EC", "alpha_reactivity_EC_EO", "mu_sm_EC", "mu_sm_EO", "theta_front_EC"]
+res = pd.concat([
+    pg.partial_corr(d, x=feat, y="stork_time_sec", covar="age", method="spearman")
+      .assign(feature=feat)
+    for feat in tier1
+])
+res["p_fdr"] = multipletests(res["p-val"], method="fdr_bh")[1]
+```
+
+Tier 1 dianalisis sebagai hipotesis utama dengan koreksi FDR. Tier 2/3 dilaporkan
+terpisah sebagai eksploratif.
+
+---
+
+## 13. Kontrol Kualitas
+
+Log per partisipan (`results/qc_log.csv`):
+
+| participant_id | sync_offset_sec | sync_residual_sec | ocr_manual_check_ok | bad_channels | n_ica_eye_removed | n_move_epochs_kept (/12) | n_romberg_epochs_EO/EC | include | notes |
+|---|---|---|---|---|---|---|---|---|---|
 
 **Checklist per partisipan**
 
-- [ ] Profil data (Bagian 0) terisi
-- [ ] Satuan data sudah Volt
-- [ ] Montage terpasang, nama kanal sesuai 10-20
-- [ ] Notch 50 Hz & band-pass diterapkan (nilai dicatat)
-- [ ] Kanal buruk ditandai & diinterpolasi (daftar dicatat)
-- [ ] Re-referensi diterapkan
-- [ ] Komponen ICA dibuang diverifikasi visual (jumlah & jenis dicatat)
-- [ ] Persentase epoch dibuang dicatat
-- [ ] PSD akhir wajar (tidak ada puncak 50 Hz, ada puncak alfa)
-- [ ] Hasil disimpan di `data/derivatives/` dan `results/`
-
-Contoh log QC (`results/qc_log.csv`):
-
-| subject | bad_channels | n_ica_removed | ica_types        | epochs_total | epochs_dropped_% | include |
-|---------|--------------|---------------|------------------|--------------|------------------|---------|
-| sub-01  | T7           | 3             | eye, eye, muscle | 179          | 8,4              | yes     |
+- [ ] File lengkap (manifest tidak kosong)
+- [ ] Kotak HUD dicek pada frame sampel
+- [ ] Timeline OCR divalidasi manual; 4 repetisi per gerakan
+- [ ] Offset sinkronisasi dihitung **dan** divalidasi dengan anchor Romberg (residual < 0,5 dtk)
+- [ ] Sampling rate = 100 Hz; filter 1–40 Hz; tanpa notch
+- [ ] Kanal buruk dicatat & diinterpolasi (C3/C4 buruk → pertimbangkan eksklusi)
+- [ ] Hanya komponen ICA mata yang dibuang, diverifikasi visual
+- [ ] Jendela baseline tidak tumpang tindih dengan gerakan sebelumnya
+- [ ] PSD Romberg EC menunjukkan puncak alpha oksipital
+- [ ] Laporan QC HTML tersimpan (`mne.Report`) di `reports/`
 
 ---
 
-## 17. Pelaporan Metode
+## 14. Limitasi untuk Naskah
 
-Laporkan di bagian Metode (mengacu pada pedoman COBIDAS MEEG, Pernet et al., 2020):
-
-- Perangkat, jumlah & lokasi elektroda, referensi & ground perekaman, sampling rate,
-  impedansi.
-- Software & versi (mis. MNE-Python v1.x, Python 3.x).
-- Semua parameter filter (tipe, frekuensi cut-off, orde/panjang).
-- Kriteria & jumlah kanal buruk yang diinterpolasi, metode interpolasi.
-- Referensi yang digunakan untuk analisis.
-- Algoritma ICA, kriteria penolakan komponen, jumlah rata-rata komponen dibuang.
-- Panjang epoch, baseline, kriteria & persentase epoch yang ditolak.
-- Metode estimasi spektral (Welch: panjang window, overlap), definisi band.
-- Uji statistik & koreksi multiple comparison.
-
-Contoh paragraf:
-
-> Data EEG diproses menggunakan MNE-Python (v1.x). Data difilter notch pada 50 Hz dan
-> band-pass 1–40 Hz (FIR zero-phase), di-resample ke 250 Hz, dan direferensikan ulang ke
-> rata-rata semua elektroda. Kanal buruk (rata-rata X ± Y per partisipan) diinterpolasi
-> dengan spherical spline. Artefak okular, otot, dan jantung dihapus menggunakan ICA
-> (extended Infomax via Picard) dengan klasifikasi ICLabel (probabilitas > 0,80) dan
-> verifikasi visual (rata-rata X ± Y komponen dibuang). Data disegmentasi menjadi epoch
-> 2 detik (overlap 50%), dan epoch buruk ditolak menggunakan autoreject (rata-rata X%).
-> Power spektral diestimasi dengan metode Welch...
+- **Tidak ada elektroda midline.** ERD sensorimotor diukur pada proksi C3/C4, dan theta
+  frontal pada F3/F4, bukan Fz.
+- **Sampling rate 100 Hz.** Analisis dibatasi ≤ 40 Hz, gamma tidak dapat dianalisis, dan
+  notch 50 Hz tidak diterapkan.
+- **Referensi telinga ipsilateral.** Membatasi interpretasi asimetri hemisfer.
+- **Sinkronisasi EEG–video** dilakukan pasca-perekaman berbasis anchor. Laporkan metode
+  dan residual sinkronisasi (rata-rata ± SD).
+- **Onset berbasis instruksi HUD** (bukan sensor gerak), kecuali disempurnakan dengan
+  analisis video.
+- **Rentang usia sangat lebar.** Usia dikontrol sebagai kovariat, dan IAF individual
+  dipertimbangkan.
 
 ---
 
-## 18. Troubleshooting
+## 15. Pertanyaan Terbuka yang Memblokir
 
-| Masalah                                         | Kemungkinan penyebab / solusi                                   |
-|-------------------------------------------------|-----------------------------------------------------------------|
-| Plot kosong / garis lurus                       | Satuan salah (µV dibaca sebagai V) → kalikan `1e-6`             |
-| `set_montage` gagal: kanal tidak ditemukan      | Nama kanal tidak standar → `rename_channels`                    |
-| ICA tidak konvergen                             | Naikkan `max_iter`, pastikan high-pass 1 Hz, kurangi `n_components` |
-| Error rank pada ICA                             | `n_components` > rank data (akibat average ref/interpolasi)     |
-| Masih ada puncak 50 Hz                          | Tambahkan harmonik (100 Hz), cek grounding saat perekaman       |
-| Terlalu banyak epoch dibuang                    | Threshold terlalu ketat, atau artefak belum dibersihkan ICA     |
-| Tidak ada puncak alfa saat mata tertutup        | Cek kanal oksipital, referensi, dan kualitas kontak elektroda   |
+Dari `CLAUDE.md`. Langkah bertanda 🔒 menunggu jawaban berikut:
+
+| # | Pertanyaan | Memblokir |
+|---|---|---|
+| 1 | EEG & video dimulai oleh tombol/software yang sama? Ada anchor fisik (clap, tombol)? | Tahap 2 |
+| 2 | Isi `Add_lead1` / `Add_lead2` (EOG? EMG? A1–A2?) | Tahap 3 (ICA, referensi) |
+| 3 | Nama label HUD untuk gerakan **ngeed** dan posisinya dalam urutan task | Tahap 1, 4 |
+| 4 | Urutan pasti sub-fase agem (TURUN→TAHAN→NAIK?) dan durasi tiap sub-fase | Tahap 4, 5 (jendela) |
+| 5 | Struktur folder untuk ke-38 partisipan (subfolder per grup? pre/post?) | Tahap 0 |
+| 6 | Konfirmasi Python + MNE-Python | Semua |
 
 ---
 
-## 19. Referensi
+## 16. Referensi
 
+- Pfurtscheller, G., & Lopes da Silva, F. H. (1999). Event-related EEG/MEG synchronization
+  and desynchronization: basic principles. *Clinical Neurophysiology*, 110(11), 1842–1857.
 - Gramfort, A., et al. (2013). MEG and EEG data analysis with MNE-Python.
   *Frontiers in Neuroscience*, 7, 267.
-- Pion-Tonachini, L., Kreutz-Delgado, K., & Makeig, S. (2019). ICLabel: An automated
-  electroencephalographic independent component classifier. *NeuroImage*, 198, 181–197.
-- Jas, M., et al. (2017). Autoreject: Automated artifact rejection for MEG and EEG data.
-  *NeuroImage*, 159, 417–429.
+- Klimesch, W. (1999). EEG alpha and theta oscillations reflect cognitive and memory
+  performance. *Brain Research Reviews*, 29(2–3), 169–195.
+- Pion-Tonachini, L., et al. (2019). ICLabel. *NeuroImage*, 198, 181–197.
 - Pernet, C., et al. (2020). Issues and recommendations from the OHBM COBIDAS MEEG
-  committee for reproducible EEG and MEG research. *Nature Neuroscience*, 23, 1473–1483.
-- Donoghue, T., et al. (2020). Parameterizing neural power spectra into periodic and
-  aperiodic components. *Nature Neuroscience*, 23, 1655–1665.
-- Luck, S. J. (2014). *An Introduction to the Event-Related Potential Technique* (2nd ed.).
-  MIT Press.
-- Dokumentasi MNE-Python: <https://mne.tools/stable/auto_tutorials/index.html>
+  committee. *Nature Neuroscience*, 23, 1473–1483.
+- Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate.
+  *Journal of the Royal Statistical Society B*, 57(1), 289–300.
