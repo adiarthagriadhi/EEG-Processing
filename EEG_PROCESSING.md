@@ -24,6 +24,8 @@ pip install -r requirements.txt          # + sistem: tesseract-ocr (Linux: libeg
 python -m eegpipe run P02                # semua tahap, lanjut dari cache
 python -m eegpipe run P02 --force sync   # ulang tahap sync + semua tahap sesudahnya
 python -m eegpipe run-all                # semua folder di data/raw/
+python -m eegpipe group                  # statistik grup dari results/ (data riil)
+python -m eegpipe group --simulated      # demo kohort simulasi 38 partisipan [SIMULATED RESULTS]
 pytest -q                                # uji sintetis
 ```
 
@@ -54,7 +56,9 @@ ubah nilainya dan set `method: manual` (sync) / `ica_method: manual` / hapus
 | **P3 & P4 bising sepanjang rekaman** (saat istirahat z +3,6, ~4× kanal lain) | Deteksi kanal buruk otomatis pada segmen istirahat; kanal interpolasi ditandai di output |
 | ICA sesi penuh didominasi artefak gerak; kedipan tidak terpisah | ICA di-fit pada ISTIRAHAT UTAMA; komponen kedipan dipilih serakah → ERP kedipan Fp 241 → 32 µV |
 | **Romberg EC hanya 13% terekam** (EDF berhenti ~26 dtk sebelum video selesai); EO lengkap tetapi kanal kiri (referensi A1) terganggu → hanya 6 dtk bersih | Fitur Romberg P02 = NaN (aturan cakupan/data bersih); amplitudo per kanal dilaporkan |
-| ERD fase TAHAN −44…−52% (mu/beta C3/C4); fase TURUN/NAIK "ERS" +26…+93% | ⚠️ ERS fase dinamis kemungkinan artefak gerak; belum ada metode pembeda yang tervalidasi → lihat Pertanyaan 14 |
+| Permintaan pengguna: ERD dimulai 2 dtk sebelum gerak, semua fase dimasukkan | Fase **PRA** (−2…0 dtk dari onset TURUN aktual) + TURUN, TAHAN, NAIK; baseline dimundurkan ke −5…−3 dtk (periode RILEKS, diam — terverifikasi 3–6% kedalaman gerak) |
+| ERD P02 (median, C kontralateral AGEM): PRA +207…+220%, TURUN +108…+150%, **TAHAN −32…−36%**, NAIK +191…+363%; LI mu TAHAN +0,66 | ⚠️ Hanya TAHAN menunjukkan ERD. PRA sudah memuat gerak lengan persiapan agem (sebelum batang tubuh turun) → bukan "pra-gerak" murni. Fase dinamis kemungkinan artefak gerak → Pertanyaan 14 |
+| Romberg: pengguna meminta memakai EEG yang tersedia walau berhenti sebelum Romberg selesai | Segmen terpotong dipakai (min. 1 jendela 1,5–2 dtk), artefak ditolak **per fitur** (hanya kanal fitur). P02: EC hanya 1 jendela (O1/O2, F3/F4); reaktivitas alpha EC/EO 0,46 → EC belum/ tidak menunjukkan alpha. Sinkronisasi tidak menunjukkan lag/drift, jadi EEG memang berhenti ±25 dtk sebelum video |
 
 ## Daftar Isi
 

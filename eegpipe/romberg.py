@@ -1,42 +1,58 @@
-"""Tahap 5b: fitur Romberg (EO/EC) dengan aturan cakupan dan NaN."""
+"""Tahap 5b: fitur Romberg (EO/EC). Penolakan artefak PER FITUR: jendela hanya ditolak
+bila kanal yang dipakai fitur itu melewati batas (P02: gangguan kanal kiri/A1 tidak
+membuang alpha O1/O2 yang bersih). Segmen terpotong dipakai sejauh tersedia."""
 import mne
 import numpy as np
 
 
-def seg_psd(raw, onset, dur, pad, reject_uv=150.0):
-    a, b = onset + pad, min(onset + dur - pad, raw.times[-1])
-    if b - a < 2.0:
-        return None, None, 0.0, {}
+def seg_epochs(raw, onset, dur, pad):
+    a, b = onset + pad, min(onset + dur - pad, raw.times[-1] - 0.01)
+    if b - a < 1.5:
+        return None
+    win = 2.0 if b - a >= 2.0 else b - a        # segmen terpotong → satu jendela
     seg = raw.copy().crop(a, b)
-    ep = mne.make_fixed_length_epochs(seg, duration=2.0, overlap=1.0, preload=True,
-                                      verbose="error")
-    ptp = np.ptp(ep.get_data(picks="eeg"), axis=2) * 1e6
-    ptp_med = dict(zip(ep.copy().pick("eeg").ch_names, np.median(ptp, axis=0).round(0).tolist()))
-    ep.drop_bad(reject=dict(eeg=reject_uv * 1e-6), verbose="error")
-    if len(ep) == 0:
-        return None, None, 0.0, ptp_med
-    sp = ep.compute_psd(method="welch", fmin=1, fmax=40, n_fft=200, picks="eeg",
+    ep = mne.make_fixed_length_epochs(seg, duration=win, overlap=win / 2 if win == 2.0 else 0,
+                                      preload=True, verbose="error").pick("eeg")
+    n = len(ep.times)
+    sp = ep.compute_psd(method="welch", fmin=1, fmax=40, n_fft=200, n_per_seg=min(200, n),
                         verbose="error")
-    psd, f = sp.get_data(return_freqs=True)
-    clean_sec = len(ep) * 1.0 + 1.0          # epoch 2 dtk, overlap 1 dtk
-    return (psd.mean(axis=0), sp.ch_names), f, clean_sec, ptp_med
+    psd, f = sp.get_data(return_freqs=True)                 # epoch × kanal × frek
+    ptp = np.ptp(ep.get_data(), axis=2) * 1e6               # epoch × kanal (µV)
+    return dict(psd=psd, f=f, ptp=ptp, chs=ep.ch_names, win=win, step=win / 2 if win == 2 else win)
 
 
-def bp(spec, f, picks, lo, hi, relative=True):
-    psd, chs = spec
-    idx = [chs.index(c) for c in picks]
+def _clean_mean(S, picks, reject_uv):
+    idx = [S["chs"].index(c) for c in picks]
+    ok = (S["ptp"][:, idx] <= reject_uv).all(axis=1)
+    if not ok.any():
+        return None, 0
+    return S["psd"][ok][:, idx].mean(axis=0), int(ok.sum())
+
+
+def bp(S, picks, lo, hi, reject_uv, relative=True):
+    if S is None:
+        return np.nan, 0
+    psd, n = _clean_mean(S, picks, reject_uv)
+    if psd is None:
+        return np.nan, 0
+    f = S["f"]
     m = (f >= lo) & (f < hi)
-    band = np.trapezoid(psd[idx][:, m], f[m], axis=-1)
+    band = np.trapezoid(psd[:, m], f[m], axis=-1)
     if relative:
         tot = (f >= 1) & (f < 35)            # bandwidth efektif perangkat
-        band = band / np.trapezoid(psd[idx][:, tot], f[tot], axis=-1)
-    return float(band.mean())
+        band = band / np.trapezoid(psd[:, tot], f[tot], axis=-1)
+    return float(band.mean()), n
 
 
-def iaf(spec, f, picks, min_peak_db=3.0, k_noise=3.0):
-    """IAF hanya jika ada puncak nyata di atas tren 1/f (lihat EEG_PROCESSING.md 11)."""
-    psd, chs = spec
-    s = psd[[chs.index(c) for c in picks]].mean(axis=0)
+def iaf(S, picks, reject_uv, min_peak_db=3.0, k_noise=3.0):
+    """IAF hanya jika ada puncak nyata di atas tren 1/f (EEG_PROCESSING.md 11)."""
+    if S is None:
+        return np.nan
+    psd, _ = _clean_mean(S, picks, reject_uv)
+    if psd is None:
+        return np.nan
+    f = S["f"]
+    s = psd.mean(axis=0)
     fit = ((f >= 2) & (f < 7)) | ((f > 14) & (f <= 30))
     coef = np.polyfit(np.log10(f[fit]), np.log10(s[fit]), 1)
     resid = 10 * (np.log10(s) - np.polyval(coef, np.log10(f)))
@@ -51,39 +67,40 @@ def iaf(spec, f, picks, min_peak_db=3.0, k_noise=3.0):
     return float((f[w] * ex).sum() / ex.sum())
 
 
+FEATURES = {   # nama: (kondisi, kanal, lo, hi, relatif)
+    "alpha_occ_EC": ("EC", ["O1", "O2"], 8, 13, True),
+    "mu_sm_EC": ("EC", ["C3", "C4"], 8, 13, True),
+    "mu_sm_EO": ("EO", ["C3", "C4"], 8, 13, True),
+    "theta_front_EC": ("EC", ["F3", "F4"], 4, 8, True),
+    "beta_sm_EO": ("EO", ["C3", "C4"], 13, 30, True),
+    "beta_sm_EC": ("EC", ["C3", "C4"], 13, 30, True),
+    "alpha_par_EC": ("EC", ["P3", "P4"], 8, 13, True),
+}
+
+
 def features(raw, segments, pid, cfg):
     """segments: {'EO': (onset_eeg, dur, coverage), 'EC': (...)}."""
     rc = cfg["romberg"]
+    rej = rc["reject_uv"]
     out = dict(participant_id=pid, is_simulated=cfg["is_simulated"])
-    specs, f = {}, None
+    S = {}
     for cond in ("EO", "EC"):
-        if cond not in segments:
-            out[f"coverage_{cond}"] = 0.0
-            out[f"clean_sec_{cond}"] = 0.0
-            continue
-        onset, dur, cov = segments[cond]
-        spec, f_, clean_sec, ptp_med = seg_psd(raw, onset, dur, rc["pad_sec"], rc["reject_uv"])
-        f = f_ if f_ is not None else locals().get("f")
-        out[f"ptp_median_{cond}"] = ";".join(f"{k}:{v:.0f}" for k, v in ptp_med.items())
-        out[f"coverage_{cond}"] = round(cov, 3)
-        out[f"clean_sec_{cond}"] = clean_sec
-        if spec is not None and clean_sec >= rc["min_clean_sec"]:
-            specs[cond] = spec
-    nan = np.nan
-    eo, ec = specs.get("EO"), specs.get("EC")
-    out.update(
-        alpha_occ_EC=bp(ec, f, ["O1", "O2"], 8, 13) if ec else nan,
-        alpha_reactivity_EC_EO=(bp(ec, f, ["O1", "O2"], 8, 13, False) /
-                                bp(eo, f, ["O1", "O2"], 8, 13, False)) if ec and eo else nan,
-        mu_sm_EC=bp(ec, f, ["C3", "C4"], 8, 13) if ec else nan,
-        mu_sm_EO=bp(eo, f, ["C3", "C4"], 8, 13) if eo else nan,
-        theta_front_EC=bp(ec, f, ["F3", "F4"], 4, 8) if ec else nan,
-        iaf_occ_EC=iaf(ec, f, ["O1", "O2"]) if ec else nan,
-        iaf_par_EC=iaf(ec, f, ["P3", "P4"]) if ec else nan,
-        beta_sm_EO=bp(eo, f, ["C3", "C4"], 13, 30) if eo else nan,
-        beta_sm_EC=bp(ec, f, ["C3", "C4"], 13, 30) if ec else nan,
-        alpha_par_EC=bp(ec, f, ["P3", "P4"], 8, 13) if ec else nan,
-        theta_alpha_ratio_EC=(bp(ec, f, ["F3", "F4"], 4, 8, False) /
-                              bp(ec, f, ["O1", "O2"], 8, 13, False)) if ec else nan,
-    )
+        out[f"coverage_{cond}"] = round(segments[cond][2], 3) if cond in segments else 0.0
+        S[cond] = seg_epochs(raw, segments[cond][0], segments[cond][1], rc["pad_sec"]) \
+            if cond in segments else None
+        s = S[cond]
+        out[f"sec_available_{cond}"] = 0.0 if s is None else round(
+            s["win"] + (len(s["ptp"]) - 1) * s["step"], 1)
+        if s is not None:
+            med = np.median(s["ptp"], axis=0)
+            out[f"ptp_median_{cond}"] = ";".join(f"{c}:{v:.0f}" for c, v in zip(s["chs"], med))
+    for name, (cond, picks, lo, hi, rel) in FEATURES.items():
+        out[name], out[f"{name}_n_win"] = bp(S[cond], picks, lo, hi, rej, rel)
+    ec_a, n1 = bp(S["EC"], ["O1", "O2"], 8, 13, rej, False)
+    eo_a, n2 = bp(S["EO"], ["O1", "O2"], 8, 13, rej, False)
+    out["alpha_reactivity_EC_EO"] = ec_a / eo_a if np.isfinite(ec_a * eo_a) else np.nan
+    th, n3 = bp(S["EC"], ["F3", "F4"], 4, 8, rej, False)
+    out["theta_alpha_ratio_EC"] = th / ec_a if np.isfinite(th * ec_a) else np.nan
+    out["iaf_occ_EC"] = iaf(S["EC"], ["O1", "O2"], rej)
+    out["iaf_par_EC"] = iaf(S["EC"], ["P3", "P4"], rej)
     return out

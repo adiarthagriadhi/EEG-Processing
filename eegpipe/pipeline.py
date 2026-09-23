@@ -137,6 +137,11 @@ def stage_erd(P, cfg, clean, reps, offset, force=False):
     tab, _ = erd.erd_table(ep, P.pid, cfg)
     tab["interpolated"] = tab.channel.isin(P.decisions().get("bad_channels", []))
     tab.to_csv(out, index=False)
+    tt, times, freqs, chs = erd.task_tfr(ep, cfg)
+    np.savez(P.out("task_tfr.npz"), times=times, freqs=freqs, ch_names=np.array(chs),
+             tasks=np.array(list(tt)), **{f"data_{i}": v["data"] for i, v in enumerate(tt.values())},
+             **{f"phases_{i}": v["phases"] for i, v in enumerate(tt.values())},
+             n=np.array([v["n"] for v in tt.values()]))
     erd.lateralization(tab).to_csv(P.results_dir / f"{P.pid}_li.csv", index=False)
     _log(P.pid, f"ERD: {len(ep)} epoch, {len(tab)} baris")
     return tab

@@ -49,15 +49,18 @@ phases:
   min_depth_px: 15
 
 erd:
-  tmin: -2.5
-  baseline: [-2.0, -0.5]
+  # Baseline dimundurkan agar tidak tumpang tindih jendela PRA-gerak (−2…0 dtk; permintaan
+  # pengguna). −5…−3 dtk dari onset aktual = periode BERDIRI RILEKS/BERSIAP (diam).
+  tmin: -6.5
+  baseline: [-5.0, -3.0]
+  pre_window: [-2.0, 0.0]     # fase PRA: 2 dtk sebelum onset TURUN aktual
   min_phase_sec: 0.5
   freqs: [4, 30]
   bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}
   roi: [C3, C4, P3, P4, O1, O2, F3, F4]
 
 romberg:
-  pad_sec: 2.0
+  pad_sec: 1.0              # buang transisi (tutup/buka mata) di awal & akhir segmen
   reject_uv: 150.0          # peak-to-peak per epoch 2 dtk (standar; jangan dilonggarkan agar lolos)
-  min_clean_sec: 20.0
+  min_clean_sec: 2.0         # pakai data yang tersedia (≥ 1 epoch 2 dtk); detik terpakai dilaporkan
   labels: {EO: BERDIRI FOKUS MATA TERBUKA, EC: BERDIRI MATA TERTUTUP}

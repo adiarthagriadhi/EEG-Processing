@@ -86,11 +86,27 @@ def test_coverage():
 
 def test_iaf_rejects_flat_and_finds_peak():
     f = np.arange(1, 40.5, 0.5)
-    chs = ["O1"]
-    flat = (1 / f ** 1.2)[None]
-    assert np.isnan(iaf((flat, chs), f, ["O1"]))
-    peak = (1 / f ** 1.2 * (1 + 2.5 * np.exp(-(f - 10.5) ** 2 / 2)))[None]
-    assert iaf((peak, chs), f, ["O1"]) == pytest.approx(10.5, abs=0.1)
+
+    def S(spec):   # 1 jendela × 1 kanal, amplitudo bersih
+        return dict(psd=spec[None, None, :], f=f, ptp=np.array([[50.0]]), chs=["O1"])
+
+    assert np.isnan(iaf(S(1 / f ** 1.2), ["O1"], 150))
+    peak = 1 / f ** 1.2 * (1 + 2.5 * np.exp(-(f - 10.5) ** 2 / 2))
+    assert iaf(S(peak), ["O1"], 150) == pytest.approx(10.5, abs=0.1)
+    # jendela ber-artefak pada kanal fitur ditolak → NaN
+    bad = S(peak)
+    bad["ptp"] = np.array([[400.0]])
+    assert np.isnan(iaf(bad, ["O1"], 150))
+
+
+def test_group_stats_simulated_runs():
+    from eegpipe import simulate, stats as st
+    d = simulate.cohort()
+    assert d.is_simulated.all()
+    a, sens = st.paper_a(d[d.timepoint == "pre"])
+    assert len(a) == 16 and a.p_fdr.notna().all()
+    b, ind, rel = st.paper_b(d)
+    assert 0 < rel["rxx"] < 1 and len(ind) == 14
 
 
 def test_config_loads():

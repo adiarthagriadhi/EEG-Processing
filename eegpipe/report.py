@@ -103,6 +103,81 @@ def fig_erd(tab):
     return _img(fig)
 
 
+def _topo_info(chs, cfg):
+    import mne
+    info = mne.create_info(list(chs), 100.0, "eeg")
+    info.set_montage(cfg["eeg"]["montage"], verbose="error")
+    return info
+
+
+def participant_results(P, cfg):
+    """Bagian 'Hasil partisipan': peta TFR C3/C4 per gerakan, topografi beta TAHAN,
+    ringkasan ERD, dan LI. Endpoint utama = fase TAHAN (keputusan default, Pertanyaan 14)."""
+    import mne
+    import pandas as pd
+    f = P.out("task_tfr.npz")
+    if not f.exists():
+        return ""
+    z = np.load(f, allow_pickle=False)
+    times, freqs, chs, tasks = z["times"], z["freqs"], list(z["ch_names"]), list(z["tasks"])
+    bads = P.decisions().get("bad_channels", [])
+    parts = ["<h2>7. Hasil partisipan</h2>",
+             "<p>Endpoint utama ERD = <b>fase TAHAN</b> (diam menahan posisi). Fase TURUN/NAIK "
+             "ditampilkan tetapi kemungkinan besar didominasi artefak gerak (lihat Pertanyaan 14). "
+             f"Kanal interpolasi: {', '.join(bads) or '—'}.</p>"]
+    # (a) peta TFR C3 & C4 per gerakan
+    fig, axes = plt.subplots(2, len(tasks), figsize=(4.2 * len(tasks), 6), squeeze=False)
+    for j, task in enumerate(tasks):
+        d, ph = z[f"data_{j}"], z[f"phases_{j}"]
+        for i, ch in enumerate(["C3", "C4"]):
+            ax = axes[i][j]
+            im = ax.pcolormesh(times, freqs, d[chs.index(ch)], cmap="RdBu_r", vmin=-100,
+                               vmax=100, shading="auto")
+            for x, lab in zip(ph, ["TURUN", "TAHAN", "NAIK", "akhir"]):
+                ax.axvline(x, color="k", lw=0.8, ls="--")
+            ax.axvspan(ph[1], ph[2], color="none", ec="g", lw=2)
+            ax.set_title(f"{task} — {ch}{' (interp.)' if ch in bads else ''} (n={z['n'][j]})",
+                         fontsize=9)
+            ax.set_xlabel("dtk dari onset TURUN aktual")
+            ax.set_ylabel("Hz")
+    fig.colorbar(im, ax=axes, label="%ERD/ERS", shrink=0.6)
+    parts.append("<h3>a. Peta waktu–frekuensi (%ERD/ERS; biru = ERD). Kotak hijau = TAHAN</h3>"
+                 + _img(fig))
+    # (b) topografi beta pada fase TAHAN per gerakan (nearest, tanpa interpolasi garis tengah)
+    info = _topo_info(chs, cfg)
+    fig, axes = plt.subplots(1, len(tasks), figsize=(3.6 * len(tasks), 3.4), squeeze=False)
+    for j, task in enumerate(tasks):
+        d, ph = z[f"data_{j}"], z[f"phases_{j}"]
+        tm = (times >= ph[1]) & (times < ph[2])
+        fm = (freqs >= 13) & (freqs < 30)
+        val = d[:, fm][:, :, tm].mean(axis=(1, 2))
+        mne.viz.plot_topomap(val, info, axes=axes[0][j], image_interp="nearest", contours=0,
+                             cmap="RdBu_r", vlim=(-80, 80), show=False, names=chs)
+        axes[0][j].set_title(f"{task}\nbeta 13–30 Hz, TAHAN", fontsize=9)
+    parts.append("<h3>b. Topografi ERD beta (fase TAHAN, nearest-neighbour)</h3>" + _img(fig))
+    # (c) ringkasan ERD C3/C4 per gerakan x fase x band
+    tab = pd.read_csv(P.results_dir / f"{P.pid}_erd_ers.csv")
+    s = (tab[tab.channel.isin(["C3", "C4"]) & tab.band.isin(["mu", "beta"])]
+         .groupby(["task", "phase", "band", "channel"]).erd_pct.agg(["median", "count"])
+         .round(1).unstack("channel"))
+    s.columns = [f"{a}_{b}" for a, b in s.columns]
+    parts.append("<h3>c. Ringkasan %ERD/ERS C3/C4 (median antar repetisi)</h3>" +
+                 s.reset_index().to_html(index=False, border=0, classes="t"))
+    # (d) Indeks Lateralisasi (AGEM, fase TAHAN)
+    li_f = P.results_dir / f"{P.pid}_li.csv"
+    if li_f.exists():
+        li = pd.read_csv(li_f)
+        li = li[li.phase == "TAHAN"]
+        if len(li):
+            g = li.groupby(["task", "band"]).agg(contra=("contra", "median"),
+                                                ipsi=("ipsi", "median"),
+                                                li_erd=("li_erd", "median"),
+                                                n_valid=("li_erd", "count")).round(2)
+            parts.append("<h3>d. Indeks Lateralisasi (AGEM, TAHAN; kontra = C3 untuk AGEM KANAN)"
+                         "</h3>" + g.reset_index().to_html(index=False, border=0, classes="t"))
+    return "\n".join(parts)
+
+
 def write(ctx, cfg):
     P = ctx["P"]
     parts = [f"<h1>QC {html.escape(P.pid)}</h1>"]
@@ -149,15 +224,23 @@ def write(ctx, cfg):
     if "romberg" in ctx:
         rb = ctx["romberg"]
         parts.append("<h2>6. Romberg</h2><p>Cakupan EEG: EO "
-                     f"{rb['coverage_EO']:.0%} ({rb['clean_sec_EO']:.0f} dtk bersih), EC "
-                     f"{rb['coverage_EC']:.0%} ({rb['clean_sec_EC']:.0f} dtk bersih). "
-                     f"Fitur dengan cakupan atau data bersih kurang (< "
-                     f"{cfg['romberg']['min_clean_sec']:.0f} dtk) ditulis NaN.</p>")
+                     f"{rb['coverage_EO']:.0%} ({rb.get('sec_available_EO', 0):.1f} dtk tersedia), EC "
+                     f"{rb['coverage_EC']:.0%} ({rb.get('sec_available_EC', 0):.1f} dtk tersedia). "
+                     "Data yang tersedia dipakai walau segmen terpotong; artefak ditolak per "
+                     f"fitur (hanya kanal fitur tsb, batas {cfg['romberg']['reject_uv']:.0f} µV "
+                     "peak-to-peak). <b>n_win = jumlah jendela yang dipakai</b>.</p>")
+        import pandas as pd
+        rows = [dict(fitur=k, nilai=rb.get(k), n_win=rb.get(f"{k}_n_win"))
+                for k in ["alpha_occ_EC", "alpha_reactivity_EC_EO", "mu_sm_EC", "mu_sm_EO",
+                          "theta_front_EC", "theta_alpha_ratio_EC", "beta_sm_EO", "beta_sm_EC",
+                          "alpha_par_EC", "iaf_occ_EC", "iaf_par_EC"]]
+        parts.append(_table(pd.DataFrame(rows), "{:.3f}"))
         for cond in ("EO", "EC"):
-            if rb.get(f"ptp_median_{cond}"):
-                parts.append(f"<p><small>Median peak-to-peak {cond} (µV, batas "
-                             f"{cfg['romberg']['reject_uv']:.0f}): "
-                             f"{html.escape(str(rb[f'ptp_median_{cond}']))}</small></p>")
+            if isinstance(rb.get(f"ptp_median_{cond}"), str):
+                parts.append(f"<p><small>Median peak-to-peak {cond} (µV): "
+                             f"{html.escape(rb[f'ptp_median_{cond}'])}</small></p>")
+    if ctx.get("erd") is not None and len(ctx["erd"]):
+        parts.append(participant_results(P, cfg))
     css = ("body{font-family:system-ui,sans-serif;max-width:1200px;margin:24px auto;padding:0 16px}"
            "img{max-width:100%}.bad{color:#b00020}.ok{color:#1b7e3c}"
            "table.t{border-collapse:collapse;font-size:12px}.t td,.t th{padding:2px 6px;"

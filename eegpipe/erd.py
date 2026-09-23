@@ -36,8 +36,8 @@ def erd_table(epochs, pid, cfg):
     sig = epochs.get_data(picks=roi) * 1e6            # µV, untuk bendera artefak per fase
     rows = []
     for i, m in epochs.metadata.reset_index(drop=True).iterrows():
-        windows = {"TURUN": (0.0, m.rel_tahan), "TAHAN": (m.rel_tahan, m.rel_naik),
-                   "NAIK": (m.rel_naik, m.rel_end)}
+        windows = {"PRA": tuple(ec["pre_window"]), "TURUN": (0.0, m.rel_tahan),
+                   "TAHAN": (m.rel_tahan, m.rel_naik), "NAIK": (m.rel_naik, m.rel_end)}
         if m.compliance == "short_hold":
             windows.pop("TAHAN")
         for phase, (t0, t1) in windows.items():
@@ -78,3 +78,20 @@ def lateralization(erd):
     both = (w.contra < 0) & (w.ipsi < 0)
     w["li_erd"] = np.where(both, (w.contra - w.ipsi) / (w.contra + w.ipsi), np.nan)
     return w
+
+
+def task_tfr(epochs, cfg):
+    """TFR %ERD/ERS rata-rata per gerakan untuk SEMUA kanal EEG (peta & topografi)."""
+    ec = cfg["erd"]
+    freqs = np.arange(ec["freqs"][0], ec["freqs"][1] + 1, 1.0)
+    out = {}
+    for task in epochs.metadata.task.unique():
+        ep = epochs[(epochs.metadata.task == task).to_numpy()]
+        tfr = ep.compute_tfr(method="morlet", freqs=freqs, n_cycles=freqs / 2, picks="eeg",
+                             average=True, return_itc=False, verbose="error")
+        tfr.apply_baseline(baseline=tuple(ec["baseline"]), mode="percent", verbose="error")
+        md = ep.metadata
+        out[task] = dict(data=tfr.data * 100, phases=[0.0, float(md.rel_tahan.median()),
+                                                      float(md.rel_naik.median()),
+                                                      float(md.rel_end.median())], n=len(ep))
+    return out, tfr.times, freqs, tfr.ch_names
