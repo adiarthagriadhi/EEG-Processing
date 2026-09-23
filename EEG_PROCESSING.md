@@ -11,6 +11,51 @@ tabel ERD/ERS gerakan dan fitur Romberg yang siap dianalisis statistik.
 
 ---
 
+## Menjalankan Pipeline (`eegpipe`)
+
+Semua tahap di panduan ini sudah diimplementasikan di paket `eegpipe/`. Parameter ada
+di `config.yaml`, keputusan per partisipan di `data/decisions/PXX.yaml`.
+
+```bash
+pip install -r requirements.txt          # + sistem: tesseract-ocr (Linux: libegl1 libgles2)
+# model pose (sekali): simpan ke models/pose_landmarker_full.task
+#   https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task
+# data per partisipan: data/raw/PXX/{PXX_Baseline.EDF, PXX_Trial.EDF, motor_PXX_Trial_*.webm}
+python -m eegpipe run P02                # semua tahap, lanjut dari cache
+python -m eegpipe run P02 --force sync   # ulang tahap sync + semua tahap sesudahnya
+python -m eegpipe run-all                # semua folder di data/raw/
+pytest -q                                # uji sintetis
+```
+
+| Tahap | Hasil | Waktu (P02, 4 core) |
+|---|---|---|
+| OCR panel HUD | `data/derivatives/PXX/timeline.csv` | ~1,5 mnt |
+| Pose partisipan | `pose.npz` | ~5 mnt (15 fps) |
+| Sinkronisasi | `sync.json` (+ gerbang QC) | detik |
+| Fase aktual | `reps.csv` | detik |
+| Preprocessing + ICA | `clean_raw.fif`, `ica.fif` | < 1 mnt |
+| ERD/ERS, LI | `results/PXX_erd_ers.csv`, `PXX_li.csv` | < 1 mnt |
+| Romberg | `results/PXX_romberg_features.csv` | detik |
+| Laporan QC | `reports/PXX_qc.html` | detik |
+
+Pipeline **berhenti hanya bila gerbang QC gagal** (sinkronisasi tidak meyakinkan, kanal
+buruk > 3). Keputusan otomatis dicatat di `data/decisions/PXX.yaml`; untuk mengoreksi,
+ubah nilainya dan set `method: manual` (sync) / `ica_method: manual` / hapus
+`bad_channels_method`, lalu jalankan ulang dengan `--force` pada tahap tersebut.
+
+### Hasil pertama pada data riil (P02) dan perubahan metode yang dipicunya
+
+| Temuan P02 | Konsekuensi di pipeline |
+|---|---|
+| Protokol panel tetap: hitungan 1–8 @1 dtk (TURUN 1–3, TAHAN 4–5, NAIK 6–8); RILEKS 8 dtk; ISTIRAHAT UTAMA 180 dtk; Romberg EO 30 → BERDIRI ISTIRAHAT 15 → EC 30 dtk | Batas fase HUD diturunkan dari onset TURUN + protokol (OCR sub-fase kecil kadang meleset 1 dtk) |
+| Offset EEG = video **+0,75 dtk** (6 kombinasi sinyal sepakat ±0,05; SD per repetisi 0,24; drift tidak signifikan p=0,23) | Sinkronisasi dua tahap: boxcar HUD (kasar, = offset + waktu reaksi) lalu kecepatan tubuh × envelope EEG 1–4 Hz (halus) |
+| Latensi gerak 1,2–1,8 dtk setelah instruksi TURUN | "late" = mulai turun setelah fase TURUN (> 3 dtk) |
+| Gerak persiapan lengan agem menggeser bahu sebelum turun | Onset = titik terakhir < 10% sebelum mencapai 90% kedalaman |
+| **P3 & P4 bising sepanjang rekaman** (saat istirahat z +3,6, ~4× kanal lain) | Deteksi kanal buruk otomatis pada segmen istirahat; kanal interpolasi ditandai di output |
+| ICA sesi penuh didominasi artefak gerak; kedipan tidak terpisah | ICA di-fit pada ISTIRAHAT UTAMA; komponen kedipan dipilih serakah → ERP kedipan Fp 241 → 32 µV |
+| **Romberg EC hanya 13% terekam** (EDF berhenti ~26 dtk sebelum video selesai); EO lengkap tetapi kanal kiri (referensi A1) terganggu → hanya 6 dtk bersih | Fitur Romberg P02 = NaN (aturan cakupan/data bersih); amplitudo per kanal dilaporkan |
+| ERD fase TAHAN −44…−52% (mu/beta C3/C4); fase TURUN/NAIK "ERS" +26…+93% | ⚠️ ERS fase dinamis kemungkinan artefak gerak; belum ada metode pembeda yang tervalidasi → lihat Pertanyaan 14 |
+
 ## Daftar Isi
 
 1. [Ringkasan Data & Implikasi Teknis](#1-ringkasan-data--implikasi-teknis)
@@ -1295,6 +1340,8 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 | 10 | Definisi "Rasio Theta/Alpha Romberg": kondisi (EC/EO) dan kanal (theta F3/F4 ÷ alpha O1/O2, atau kanal yang sama)? | 🔎 Baru (default: EC, F3/F4 ÷ O1/O2) | 5b, 6 |
 | 11 | `PXX_Baseline.EDF`: istirahat mata tertutup atau terbuka? Duduk atau berdiri? (menentukan sumber PAF untuk NDV) | 🔎 Data P02 menunjukkan **mata terbuka** (~6 kedipan/menit). Mohon konfirmasi protokol | 6 |
 | 12 | LRP: dipertahankan sebagai eksploratif atau dihapus dari Paper A? (high-pass perangkat ≈ 0,5–1 Hz) | 🔎 Baru | 5, 6 |
+| 14 | ERD fase dinamis (TURUN/NAIK) terkontaminasi artefak gerak (P02). Endpoint utama ERD = fase TAHAN saja, atau tambahkan pembersihan artefak (mis. ASR) untuk fase dinamis? | 🔎 Baru | 5, 6 |
+| 15 | Romberg EC tidak terekam penuh (P02). Apakah ini terjadi pada partisipan lain? Untuk perekaman berikutnya: hentikan EEG **setelah** video/tugas selesai | 🔎 Baru | 5b, perekaman |
 | 13 | Apakah perangkat KT88 bisa diatur ke *time constant* lebih panjang (HP ≤ 0,1 Hz) dan low-pass lebih tinggi untuk perekaman berikutnya (mis. post-test Paper B)? | 🔎 Baru | Perekaman |
 
 ---

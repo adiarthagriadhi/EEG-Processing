@@ -5,7 +5,10 @@ import pandas as pd
 
 
 def make_epochs(raw, reps, offset, cfg):
-    ph = reps[reps.compliance.isin(["ok", "late", "short_hold"])].reset_index(drop=True)
+    ok = reps.compliance.isin(["ok", "late", "short_hold"])
+    if "baseline_still" in reps:
+        ok &= reps.baseline_still.astype(bool)
+    ph = reps[ok].reset_index(drop=True)
     if ph.empty:
         return None
     sf = raw.info["sfreq"]
@@ -30,6 +33,7 @@ def erd_table(epochs, pid, cfg):
                              average=False, return_itc=False, verbose="error")
     tfr.apply_baseline(baseline=tuple(ec["baseline"]), mode="percent", verbose="error")
     data = tfr.get_data() * 100
+    sig = epochs.get_data(picks=roi) * 1e6            # µV, untuk bendera artefak per fase
     rows = []
     for i, m in epochs.metadata.reset_index(drop=True).iterrows():
         windows = {"TURUN": (0.0, m.rel_tahan), "TAHAN": (m.rel_tahan, m.rel_naik),
@@ -40,15 +44,23 @@ def erd_table(epochs, pid, cfg):
             if not np.isfinite([t0, t1]).all() or t1 - t0 < ec["min_phase_sec"]:
                 continue
             tm = (tfr.times >= t0) & (tfr.times < t1)
+            # P02: TURUN/NAIK memberi "ERS" +26…+93% (median), TAHAN memberi ERD −44…−52%.
+            # Apakah ERS fase dinamis = artefak gerak belum terjawab: ptp tidak membedakan
+            # (baseline berdiri sama "besar"), jadi hanya dicatat sebagai informasi.
+            ptp = np.ptp(sig[i][:, (epochs.times >= t0) & (epochs.times < t1)], axis=1)
+            bw = (epochs.times >= ec["baseline"][0]) & (epochs.times < ec["baseline"][1])
+            ptp_ratio = ptp / np.maximum(np.ptp(sig[i][:, bw], axis=1), 1e-6)
             for band, (lo, hi) in ec["bands"].items():
                 if band == "theta" and t1 - t0 < 1.0:     # wavelet 4 Hz ≈ 0,5 dtk
                     continue
                 fm = (freqs >= lo) & (freqs < hi)
                 vals = data[i][:, fm][:, :, tm].mean(axis=(1, 2))
-                for ch, v in zip(roi, vals):
+                for ch, v, pp, pr in zip(roi, vals, ptp, ptp_ratio):
                     rows.append(dict(participant_id=pid, task=m.task, rep=m.rep, phase=phase,
                                      compliance=m.compliance, latency_hud=m.latency_hud,
                                      band=band, channel=ch, erd_pct=v, phase_dur=t1 - t0,
+                                     phase_ptp_uv=round(float(pp), 1),
+                                     ptp_ratio_vs_baseline=round(float(pr), 2),
                                      is_simulated=cfg["is_simulated"]))
     return pd.DataFrame(rows), tfr
 

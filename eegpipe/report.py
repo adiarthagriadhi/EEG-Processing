@@ -47,10 +47,16 @@ def fig_sync(P, res):
     ax[0].axvline(res["coarse_sec"], color="r", ls="--")
     ax[0].set_title("Kasar: boxcar HUD vs EEG 20–34 Hz")
     ax[0].set_xlabel("lag (dtk)")
-    ax[1].plot(c["lags_fine"], c["cc_fine"])
-    ax[1].axvline(res["fine_sec"], color="r", ls="--")
-    ax[1].set_title("Halus: gerak video vs EEG (sekitar hasil kasar)")
-    ax[1].set_xlabel("lag tambahan (dtk)")
+    pr = res.get("per_rep", [])
+    if pr:
+        ax[1].scatter([p["t"] for p in pr], [p["offset"] for p in pr],
+                      c=[p["r"] for p in pr], cmap="viridis")
+        ax[1].axhline(res["offset_sec"], color="r", ls="--", label="offset sesi")
+        ax[1].legend()
+    ax[1].set_title(f"Offset lokal per repetisi (drift {res['drift_sec']:+.2f} dtk, "
+                    f"p={res.get('drift_p', 1):.2f})")
+    ax[1].set_xlabel("waktu video (dtk)")
+    ax[1].set_ylabel("offset (dtk)")
     return _img(fig)
 
 
@@ -119,15 +125,18 @@ def write(ctx, cfg):
         res = json.loads(P.out("sync.json").read_text())
         parts.append("<h2>2. Sinkronisasi</h2>")
         parts.append(f"<p>kasar {res['coarse_sec']:+.1f} dtk (r {res['r_coarse']:.2f}; puncak "
-                     f"lain {res['r_coarse_second']:.2f}), halus {res['fine_sec']:+.1f} dtk "
-                     f"(r {res['r_fine']:.2f}), drift {res['drift_sec']:+.2f} dtk</p>")
+                     f"lain {res['r_coarse_second']:.2f}; kasar = offset + waktu reaksi). "
+                     f"Offset akhir {res['offset_sec']:+.2f} dtk = median {len(res['combos'])} "
+                     f"kombinasi sinyal (sebaran {res['spread_sec']:.2f} dtk, r {res['r_fine']:.2f}); "
+                     f"SD offset per repetisi {res.get('per_rep_sd', float('nan')):.2f} dtk.</p>")
         parts.append(fig_sync(P, res))
     if "reps" in ctx:
         reps = ctx["reps"]
         parts.append("<h2>3. Fase gerak aktual</h2>")
         parts.append(fig_reps(reps, ctx["pose"]))
         cols = ["task", "rep", "compliance", "hud_turun", "act_turun", "act_tahan", "act_naik",
-                "act_end", "depth_px", "pose_valid_frac", "ocr_protocol_dev"]
+                "act_end", "depth_px", "baseline_range_frac", "baseline_still", "pose_valid_frac",
+                "ocr_protocol_dev"]
         parts.append(_table(reps[[c for c in cols if c in reps]]))
     dec = P.decisions()
     if "clean" in ctx:
@@ -142,7 +151,13 @@ def write(ctx, cfg):
         parts.append("<h2>6. Romberg</h2><p>Cakupan EEG: EO "
                      f"{rb['coverage_EO']:.0%} ({rb['clean_sec_EO']:.0f} dtk bersih), EC "
                      f"{rb['coverage_EC']:.0%} ({rb['clean_sec_EC']:.0f} dtk bersih). "
-                     f"Fitur dengan cakupan kurang ditulis NaN.</p>")
+                     f"Fitur dengan cakupan atau data bersih kurang (< "
+                     f"{cfg['romberg']['min_clean_sec']:.0f} dtk) ditulis NaN.</p>")
+        for cond in ("EO", "EC"):
+            if rb.get(f"ptp_median_{cond}"):
+                parts.append(f"<p><small>Median peak-to-peak {cond} (µV, batas "
+                             f"{cfg['romberg']['reject_uv']:.0f}): "
+                             f"{html.escape(str(rb[f'ptp_median_{cond}']))}</small></p>")
     css = ("body{font-family:system-ui,sans-serif;max-width:1200px;margin:24px auto;padding:0 16px}"
            "img{max-width:100%}.bad{color:#b00020}.ok{color:#1b7e3c}"
            "table.t{border-collapse:collapse;font-size:12px}.t td,.t th{padding:2px 6px;"

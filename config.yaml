@@ -15,6 +15,8 @@ eeg:
   sfreq: 100
   filter: {l_freq: 1.0, h_freq: 35.0}   # perangkat KT88 sudah LP ≈ 35 Hz, HP ≈ 0,5–1 Hz
   misc_channels: [Add_lead1, Add_lead2] # datar (terverifikasi P02)
+  bad_z: 3.0                  # z robust log-SD saat istirahat
+  max_bad: 3                  # lebih dari ini → berhenti untuk ditinjau
   montage: standard_1020
 
 video:
@@ -24,15 +26,16 @@ video:
   pose_frame_step: 2         # 15 fps: ~5 mnt/partisipan; presisi waktu ~66 ms
 
 sync:
-  fs: 10.0
+  fs: 20.0
   coarse_lag_sec: 60.0        # boxcar HUD vs EEG (lihat EEG_PROCESSING.md 7)
   fine_lag_sec: 2.0           # gerak video vs EEG di sekitar hasil kasar
   prior_max_abs_sec: 5.0      # start manual pada hitungan ke-3
   min_peak_margin: 0.03
-  min_r_fine: 0.2
+  min_r_fine: 0.25
+  max_spread_sec: 0.5
   eeg_motion_channels: [Fp1, Fp2, F7, F8, T3, T4]
   eeg_motion_band: [20.0, 34.0]
-  max_drift_sec: 0.2
+  max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)
 
 phases:
   # Protokol panel (software, hitungan 1–8 @1 dtk; terverifikasi P02): TURUN 1–3,
@@ -40,7 +43,8 @@ phases:
   hud_protocol: {TURUN: 0.0, TAHAN: 3.0, NAIK: 5.0, END: 8.0}
   search_before_sec: 1.0     # jendela pencarian relatif HUD TURUN
   search_after_sec: 3.0      # setelah akhir HUD NAIK
-  late_sec: 1.5
+  late_sec: 3.0              # mulai turun setelah fase TURUN HUD berakhir (P02: latensi tipikal 1,2–1,7 dtk)
+  baseline_max_frac: 0.2     # rentang gerak di jendela baseline < 20% kedalaman gerak
   short_hold_sec: 1.0
   min_depth_px: 15
 
@@ -54,5 +58,6 @@ erd:
 
 romberg:
   pad_sec: 2.0
+  reject_uv: 150.0          # peak-to-peak per epoch 2 dtk (standar; jangan dilonggarkan agar lolos)
   min_clean_sec: 20.0
   labels: {EO: BERDIRI FOKUS MATA TERBUKA, EC: BERDIRI MATA TERTUTUP}

@@ -3,21 +3,23 @@ import mne
 import numpy as np
 
 
-def seg_psd(raw, onset, dur, pad):
+def seg_psd(raw, onset, dur, pad, reject_uv=150.0):
     a, b = onset + pad, min(onset + dur - pad, raw.times[-1])
     if b - a < 2.0:
-        return None, None, 0.0
+        return None, None, 0.0, {}
     seg = raw.copy().crop(a, b)
     ep = mne.make_fixed_length_epochs(seg, duration=2.0, overlap=1.0, preload=True,
                                       verbose="error")
-    ep.drop_bad(reject=dict(eeg=150e-6), verbose="error")
+    ptp = np.ptp(ep.get_data(picks="eeg"), axis=2) * 1e6
+    ptp_med = dict(zip(ep.copy().pick("eeg").ch_names, np.median(ptp, axis=0).round(0).tolist()))
+    ep.drop_bad(reject=dict(eeg=reject_uv * 1e-6), verbose="error")
     if len(ep) == 0:
-        return None, None, 0.0
+        return None, None, 0.0, ptp_med
     sp = ep.compute_psd(method="welch", fmin=1, fmax=40, n_fft=200, picks="eeg",
                         verbose="error")
     psd, f = sp.get_data(return_freqs=True)
     clean_sec = len(ep) * 1.0 + 1.0          # epoch 2 dtk, overlap 1 dtk
-    return (psd.mean(axis=0), sp.ch_names), f, clean_sec
+    return (psd.mean(axis=0), sp.ch_names), f, clean_sec, ptp_med
 
 
 def bp(spec, f, picks, lo, hi, relative=True):
@@ -53,14 +55,16 @@ def features(raw, segments, pid, cfg):
     """segments: {'EO': (onset_eeg, dur, coverage), 'EC': (...)}."""
     rc = cfg["romberg"]
     out = dict(participant_id=pid, is_simulated=cfg["is_simulated"])
-    specs = {}
+    specs, f = {}, None
     for cond in ("EO", "EC"):
         if cond not in segments:
             out[f"coverage_{cond}"] = 0.0
             out[f"clean_sec_{cond}"] = 0.0
             continue
         onset, dur, cov = segments[cond]
-        spec, f, clean_sec = seg_psd(raw, onset, dur, rc["pad_sec"])
+        spec, f_, clean_sec, ptp_med = seg_psd(raw, onset, dur, rc["pad_sec"], rc["reject_uv"])
+        f = f_ if f_ is not None else locals().get("f")
+        out[f"ptp_median_{cond}"] = ";".join(f"{k}:{v:.0f}" for k, v in ptp_med.items())
         out[f"coverage_{cond}"] = round(cov, 3)
         out[f"clean_sec_{cond}"] = clean_sec
         if spec is not None and clean_sec >= rc["min_clean_sec"]:

@@ -53,6 +53,15 @@ def test_segment_phases_accuracy():
     assert np.nanmax(np.abs(errs)) < 0.25
 
 
+def test_segment_phases_ignores_preparatory_bump():
+    """Gerak persiapan kecil (~12% kedalaman) sebelum turun tidak boleh jadi onset."""
+    t = np.arange(0, 12, 1 / 30)
+    y = np.interp(t, [0, 0.5, 0.8, 1.2, 2, 3.5, 6, 7.5, 12],
+                  [300, 300, 310, 300, 300, 380, 380, 300, 300])
+    r = phases.segment_phases(t, y)
+    assert r["act_turun"] == pytest.approx(2.15, abs=0.1)
+
+
 def test_segment_phases_no_movement():
     t = np.arange(0, 10, 1 / 30)
     r = phases.segment_phases(t, 300 + np.random.default_rng(0).normal(0, 2, len(t)))

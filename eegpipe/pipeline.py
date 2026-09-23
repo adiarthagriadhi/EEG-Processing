@@ -56,16 +56,17 @@ def stage_sync(P, cfg, tl, pose, raw, force=False):
     if out.exists() and not force:
         res = json.loads(out.read_text())
     else:
-        res = sync.two_stage(tl, pose["t"], pose["motion"], raw, cfg)
+        res = sync.two_stage(tl, pose, raw, cfg)
         np.savez(P.out("sync_curves.npz"), **res.pop("curves"))
-        res = {k: (float(v) if isinstance(v, (np.floating, float)) else v) for k, v in res.items()}
+        res = json.loads(json.dumps(res, default=float))
         res["problems"] = sync.qc(res, cfg)
         out.write_text(json.dumps(res, indent=2))
     dec["sync"] = dict(offset_sec=res["offset_sec"], method="auto",
                        accepted=not res["problems"], problems=res["problems"])
     P.save_decisions(dec)
-    _log(P.pid, f"sync: offset {res['offset_sec']:+.2f} dtk (r_kasar {res['r_coarse']:.2f}, "
-                f"r_halus {res['r_fine']:.2f}, drift {res['drift_sec']:+.2f})")
+    _log(P.pid, f"sync: offset {res['offset_sec']:+.2f} dtk (kasar {res['coarse_sec']:+.1f}, "
+                f"r_halus {res['r_fine']:.2f}, sebaran {res['spread_sec']:.2f}, "
+                f"drift {res['drift_sec']:+.2f})")
     if res["problems"]:
         raise QCStop(f"sync QC gagal: {res['problems']}. Periksa reports/{P.pid}_qc.html; "
                      f"isi sync.offset_sec dan method: manual di {P.decisions_path}")
@@ -88,22 +89,39 @@ def stage_phases(P, cfg, tl, pose, force=False):
     return reps
 
 
-def stage_preprocess(P, cfg, raw, force=False):
+def stage_preprocess(P, cfg, raw, tl, offset, force=False):
     out = P.out("clean_raw.fif")
     if out.exists() and not force:
         return mne.io.read_raw_fif(out, preload=True, verbose="error")
     dec = P.decisions()
-    bads = dec.get("bad_channels", [])
     filt = preprocess.filter_raw(raw.copy(), cfg)
-    ica, eog = preprocess.fit_ica(filt, bads)
+    r = tl[tl.task == "ISTIRAHAT UTAMA"]
+    rest = None
+    if len(r):
+        a, b = r.start.iloc[0] + offset + 5, r.end.iloc[0] + offset - 5
+        rest = (max(a, 0), min(b, raw.times[-1])) if b - a > 20 else None
+    if "bad_channels" not in dec or dec.get("bad_channels_method", "").startswith("auto"):
+        bads, z = preprocess.detect_bad_channels(filt, rest, cfg["eeg"]["bad_z"])
+        dec["bad_channels"], dec["bad_channels_method"] = bads, "auto: z log-SD istirahat"
+        dec["bad_channels_z"] = z
+        if len(bads) > cfg["eeg"]["max_bad"]:
+            P.save_decisions(dec)
+            raise QCStop(f"{len(bads)} kanal buruk {bads} > batas {cfg['eeg']['max_bad']}")
+    bads = dec["bad_channels"]
+    ica = preprocess.fit_ica(filt, bads, rest)
     ica.save(P.out("ica.fif"), overwrite=True, verbose="error")
-    exclude = dec.get("ica_exclude", eog)
-    dec.setdefault("ica_exclude", exclude)
-    dec.setdefault("ica_method", "auto: find_bads_eog Fp1/Fp2")
+    eog, blink = preprocess.blink_components(ica, filt, bads)
+    dec["ica_blink_qc"] = blink
+    # nomor komponen hanya berlaku untuk ICA yang sama: keputusan otomatis selalu diperbarui
+    # saat ICA di-fit ulang; keputusan manual dipertahankan (hapus bila kanal buruk berubah)
+    if dec.get("ica_method", "auto").startswith("auto"):
+        dec["ica_exclude"], dec["ica_method"] = eog, "auto: serakah, ERP kedipan Fp1+Fp2"
+    exclude = dec["ica_exclude"]
     P.save_decisions(dec)
     clean = preprocess.clean(raw, cfg, bads, ica, exclude)
     clean.save(out, overwrite=True, verbose="error")
-    _log(P.pid, f"preprocess: kanal buruk {bads}, ICA dibuang {exclude}")
+    _log(P.pid, f"preprocess: kanal buruk {bads}, ICA dibuang {exclude}, kedipan "
+                f"{blink.get('before')}→{blink.get('after')} µV ({blink.get('n_blinks')} kedipan)")
     return clean
 
 
@@ -117,6 +135,7 @@ def stage_erd(P, cfg, clean, reps, offset, force=False):
         return pd.DataFrame()
     ep.save(P.out("move-epo.fif"), overwrite=True, verbose="error")
     tab, _ = erd.erd_table(ep, P.pid, cfg)
+    tab["interpolated"] = tab.channel.isin(P.decisions().get("bad_channels", []))
     tab.to_csv(out, index=False)
     erd.lateralization(tab).to_csv(P.results_dir / f"{P.pid}_li.csv", index=False)
     _log(P.pid, f"ERD: {len(ep)} epoch, {len(tab)} baris")
@@ -136,6 +155,7 @@ def stage_romberg(P, cfg, clean, tl, offset, force=False):
         on, dur = float(r.start.iloc[0]), float(r.end.iloc[-1] - r.start.iloc[0])
         segs[cond] = (on + offset, dur, sync.coverage(on, dur, offset, eeg_dur))
     feat = romberg.features(clean, segs, P.pid, cfg)
+    feat["interpolated_channels"] = ";".join(P.decisions().get("bad_channels", []))
     pd.DataFrame([feat]).to_csv(out, index=False)
     _log(P.pid, f"Romberg: cakupan EO {feat['coverage_EO']:.0%}, EC {feat['coverage_EC']:.0%}")
     return feat
@@ -145,7 +165,10 @@ def run(pid, cfg, stages=None, force=()):
     from . import report
     P = Participant(pid, cfg)
     stages = stages or STAGES
-    f = lambda s: s in force or "all" in force
+    # memaksa satu tahap = memaksa semua tahap sesudahnya (hasilnya bergantung)
+    first = min([STAGES.index(s) for s in force if s in STAGES] +
+                [0 if "all" in force else len(STAGES)])
+    f = lambda s: STAGES.index(s) >= first
     raw = load_edf(P.trial_edf, cfg)
     tl = stage_ocr(P, cfg, f("ocr"))
     pose = stage_pose(P, cfg, f("pose"))
@@ -157,7 +180,7 @@ def run(pid, cfg, stages=None, force=()):
         reps = stage_phases(P, cfg, tl, pose, f("phases"))
         ctx["reps"] = reps
         if "preprocess" in stages:
-            clean = stage_preprocess(P, cfg, raw, f("preprocess"))
+            clean = stage_preprocess(P, cfg, raw, tl, offset, f("preprocess"))
             ctx["clean"] = clean
             if "erd" in stages:
                 ctx["erd"] = stage_erd(P, cfg, clean, reps, offset, f("erd"))

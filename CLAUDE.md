@@ -358,6 +358,20 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   Romberg adalah segmen terakhir. Harus diverifikasi dengan timeline video setelah
   sinkronisasi — **QC wajib: EDF harus mencakup seluruh segmen Romberg**.
 
+## Temuan dari Video + Pipeline P02 (2026-09-23)
+- Video 441,5 dtk, VFR (11–129 ms/frame), tanpa durasi di header; audio ada. Panel HUD
+  x 960–1280, y 270–449; webcam x 0–960; area partisipan tanpa operator x 340–740, y 90–640.
+- Protokol panel: BERSIAP 5 dtk; tiap repetisi 8 dtk (TURUN hitungan 1–3, TAHAN 4–5,
+  NAIK 6–8); BERDIRI RILEKS 8 dtk; blok 1 = rep 1–2 tiap gerakan, ISTIRAHAT UTAMA 180 dtk,
+  blok 2 = rep 3–4; Romberg EO 30 dtk → BERDIRI ISTIRAHAT 15 dtk → EC 30 dtk.
+  Label baru: `BERSIAP`, `Berdiri Istirahat (15 Detik)`. Label `NGEED` terkonfirmasi.
+- Offset EEG = video + 0,75 dtk (tanpa drift signifikan). **Romberg EC P02 hanya 13%
+  di dalam EDF** → EEG dihentikan sebelum video selesai.
+- P3/P4 bising (kontak elektroda?) → diinterpolasi; kanal kiri terganggu saat Romberg EO
+  (kemungkinan elektroda telinga A1).
+- ERD TAHAN plausibel (−44…−52%); TURUN/NAIK kemungkinan didominasi artefak gerak.
+- Pipeline `eegpipe` (lihat EEG_PROCESSING.md "Menjalankan Pipeline") berjalan penuh pada P02.
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
 > 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,

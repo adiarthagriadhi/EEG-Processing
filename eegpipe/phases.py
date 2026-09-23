@@ -39,8 +39,16 @@ def segment_phases(t, y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2, min_de
     if depth < min_depth_px:
         return nan
     n = max(2, int(min_run_sec * fps))
-    i_turun = first_run(z > lo, 0, n)
-    i_tahan = first_run(z > hi, i_turun, n) if i_turun is not None else None
+    # Onset TURUN = saat TERAKHIR di bawah 10% sebelum tubuh mencapai 90%. Persilangan 10%
+    # PERTAMA keliru bila ada gerak persiapan kecil (lengan agem menggeser bahu; P02 AGEM
+    # KANAN rep1–2 terdeteksi 1–2 dtk terlalu awal).
+    i_tahan = first_run(z > hi, 0, n)
+    i_turun = None
+    if i_tahan is not None:
+        below = np.where(z[:i_tahan] <= lo)[0]
+        i_turun = int(below[-1]) + 1 if len(below) else None
+    if i_turun is None:
+        i_tahan = None
     i_naik = first_run(z < hi, i_tahan, n) if i_tahan is not None else None
     i_end = first_run(z < lo, i_naik, n) if i_naik is not None else None
     pick = lambda i: t[i] if i is not None else np.nan
@@ -57,10 +65,13 @@ def extrapolated_onset(t, y, smooth_sec=0.3):
     t, y = t[ok], y[ok]
     z, depth, fps = _normalize(t, y, smooth_sec)
     n = max(2, int(0.2 * fps))
-    i10 = first_run(z > 0.1, 0, n)
-    i50 = first_run(z > 0.5, i10, n) if i10 is not None else None
+    i50 = first_run(z > 0.5, 0, n)
     if i50 is None:
         return np.nan
+    below = np.where(z[:i50] <= 0.1)[0]           # 10% terakhir sebelum 50% (lihat di atas)
+    if not len(below):
+        return np.nan
+    i10 = int(below[-1]) + 1
     return t[i10] - 0.1 * (t[i50] - t[i10]) / 0.4
 
 
@@ -101,5 +112,19 @@ def detect_reps(timeline, pose_t, pose_y, cfg):
                    act_turun_extrap=extrapolated_onset(pose_t[m], pose_y[m]),
                    pose_valid_frac=float(np.isfinite(pose_y[m]).mean()) if m.any() else 0.0)
         row["compliance"] = compliance(row, pc["late_sec"], pc["short_hold_sec"])
+        # jendela baseline ERD (relatif onset aktual) harus diam: rentang posisi batang tubuh
+        # (dihaluskan 0,3 dtk) < baseline_max_frac × kedalaman gerak. Kecepatan mentah tidak
+        # dipakai karena jitter pose saja sudah 30–45 px/dtk (P02).
+        b0, b1 = cfg["erd"]["baseline"]
+        row["baseline_range_frac"], row["baseline_still"] = np.nan, False
+        if np.isfinite(row["act_turun"]) and np.isfinite(row["depth_px"]):
+            mb = (pose_t >= row["act_turun"] + b0) & (pose_t <= row["act_turun"] + b1)
+            yb = pose_y[mb]
+            yb = yb[np.isfinite(yb)]
+            if len(yb) > 5:
+                yb = median_filter(yb, size=9, mode="nearest")
+                frac = float((yb.max() - yb.min()) / row["depth_px"])
+                row["baseline_range_frac"] = frac
+                row["baseline_still"] = frac <= pc["baseline_max_frac"]
         rows.append(row)
     return pd.DataFrame(rows)
