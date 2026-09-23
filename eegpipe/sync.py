@@ -33,6 +33,19 @@ def pose_speed(pose):
     return t, np.hypot(np.gradient(y, t), np.gradient(x, t)), np.abs(np.gradient(y, t))
 
 
+def wrist_speed(pose):
+    """Kecepatan kedua pergelangan tangan (piksel/dtk); None bila tidak tersedia."""
+    from scipy.ndimage import median_filter
+    if "wrists" not in pose:
+        return None
+    t, w = pose["t"], pose["wrists"]
+    W = np.column_stack([pd.Series(w[:, k]).interpolate(limit_direction="both").to_numpy()
+                         for k in range(w.shape[1])])
+    W = median_filter(W, size=(5, 1))
+    return sum(np.hypot(np.gradient(W[:, k], t), np.gradient(W[:, k + 1], t))
+               for k in range(0, W.shape[1], 2))
+
+
 def xcorr_offset(v, e, fs, max_lag_sec):
     """Lag (dtk) yang memaksimalkan korelasi; positif = kejadian muncul lebih akhir di EEG."""
     z = lambda x: (x - x.mean()) / x.std()
@@ -72,13 +85,22 @@ def two_stage(timeline, pose, raw, cfg):
     _, e_coarse = eeg_motion(raw, cfg)
     t, speed, vy = pose_speed(pose)
     videos = {"speed": to_grid(t, speed, fs)[1], "vy": to_grid(t, vy, fs)[1]}
+    ws = wrist_speed(pose)
+    if ws is not None:
+        # Batang tubuh + pergelangan (masing-masing dinormalisasi median): lengan agem/ngeed
+        # memberi artefak EEG yang lebih tajam. Uji P01–P10: SE per-repetisi 0,04–0,24 dtk
+        # (batang tubuh saja 0,08–0,29; P03 bimodal → unimodal +1,0 dtk).
+        w_ = to_grid(t, ws, fs)[1]
+        videos["wrist"] = w_
+        videos["body"] = videos["speed"] / np.median(videos["speed"]) + w_ / np.median(w_)
+    main_v = "body" if "body" in videos else "speed"
     eegs = {"1-4Hz_all": eeg_envelope(raw, (1, 4), all_eeg, fs)[1],
             "0.5-2Hz_all": eeg_envelope(raw, (0.5, 2), all_eeg, fs)[1],
             "emg": e_coarse}
     # Kasar: kecepatan tubuh (gerak AKTUAL) vs envelope EEG 1–4 Hz, ±coarse_lag.
     # Boxcar HUD saja gagal pada P10 (EEG tanpa perbedaan power antar blok, r 0,09),
     # sedangkan gerak aktual tetap memberi puncak konsisten (+0,8 dtk, r 0,33).
-    coarse, r_coarse, lags_c, cc_c = xcorr_offset(videos["speed"], eegs["1-4Hz_all"], fs,
+    coarse, r_coarse, lags_c, cc_c = xcorr_offset(videos[main_v], eegs["1-4Hz_all"], fs,
                                                   sc["coarse_lag_sec"])
     far = np.abs(lags_c - coarse) > 3
     r_second = float(cc_c[far].max()) if far.any() else np.nan
@@ -97,7 +119,7 @@ def two_stage(timeline, pose, raw, cfg):
     combos = {f"{vn}×{en}": best(v, e) for vn, v in videos.items() for en, e in eegs.items()}
     offs = np.array([c[0] for c in combos.values()])
     offset = float(np.median(offs))
-    main = combos["speed×1-4Hz_all"]
+    main = combos[f"{main_v}×1-4Hz_all"]
 
     # Offset UTAMA = median offset lokal per repetisi (jendela di sekitar tiap TURUN HUD,
     # pencarian ±fine_lag di sekitar median kombinasi); ketidakpastian = SE median.
@@ -105,7 +127,7 @@ def two_stage(timeline, pose, raw, cfg):
     # konsisten (SE 0,18–0,23 dtk) → estimator per-repetisi lebih tahan terhadap satu
     # sinyal lemah. Regresi offset vs waktu = drift.
     from scipy import stats
-    v, e = videos["speed"], eegs["1-4Hz_all"]
+    v, e = videos[main_v], eegs["1-4Hz_all"]
     lv = np.log1p(v)
     turun = timeline[timeline.subphase == "TURUN"].start
 
@@ -146,7 +168,7 @@ def two_stage(timeline, pose, raw, cfg):
         drift, drift_p, rep_sd = 0.0, 1.0, np.nan
     return dict(offset_sec=round(offset, 2), offset_se_sec=round(rep_se, 3),
                 n_rep=len(pr), rep_edge_frac=edge_frac, combo_offset_sec=round(combo_offset, 2),
-                method="median_per_rep", coarse_sec=coarse, r_coarse=r_coarse,
+                method=f"median_per_rep ({main_v})", coarse_sec=coarse, r_coarse=r_coarse,
                 hud_boxcar_lag=hud_lag, hud_boxcar_r=hud_r,
                 r_coarse_second=r_second, fine_sec=round(combo_offset - coarse, 2),
                 r_fine=main[1], spread_sec=float(np.subtract(*np.percentile(offs, [75, 25]))),
