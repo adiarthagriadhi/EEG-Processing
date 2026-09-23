@@ -6,7 +6,7 @@ import pandas as pd
 CONTRA = {"AGEM KANAN": "C3", "AGEM KIRI": "C4"}     # asumsi pemetaan sisi (Pertanyaan 8)
 
 
-PHASES = ["PRA", "TURUN", "TAHAN", "NAIK"]
+PHASES = ["PRA", "TURUN", "TAHAN", "NAIK", "POST"]
 
 
 def participant_endpoints(erd, li, romberg):

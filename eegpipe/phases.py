@@ -96,7 +96,7 @@ def compliance(row, late_sec=1.5, short_hold_sec=1.0):
     return "ok"
 
 
-def detect_reps(timeline, pose_t, pose_y, cfg):
+def detect_reps(timeline, pose_t, pose_y, cfg, wrists=None):
     """Satu baris per repetisi gerakan: onset HUD, fase aktual, kepatuhan.
     Waktu dalam detik VIDEO (dikonversi ke EEG di tahap epoching)."""
     pc = cfg["phases"]
@@ -124,13 +124,18 @@ def detect_reps(timeline, pose_t, pose_y, cfg):
                    track_noise_px=track_noise,
                    pose_valid_frac=float(np.isfinite(pose_y[m]).mean()) if m.any() else 0.0)
         row["compliance"] = compliance(row, pc["late_sec"], pc["short_hold_sec"])
+        # gerak lengan pertama: 8 dtk sebelum instruksi s.d. onset batang tubuh
+        a = arm_onset(pose_t, wrists, hud_turun - pc["arm_search_sec"],
+                      row["act_turun"] if np.isfinite(row["act_turun"]) else hud_turun + 3)
+        row["act_arm"] = min(a, row["act_turun"]) if np.isfinite(a) else row["act_turun"]
+        row["first_move"] = "lengan" if np.isfinite(a) and a < row["act_turun"] else "batang_tubuh"
         # jendela baseline ERD (relatif onset aktual) harus diam: rentang posisi batang tubuh
         # (dihaluskan 0,3 dtk) < baseline_max_frac × kedalaman gerak. Kecepatan mentah tidak
         # dipakai karena jitter pose saja sudah 30–45 px/dtk (P02).
         b0, b1 = cfg["erd"]["baseline"]
         row["baseline_range_frac"], row["baseline_still"] = np.nan, False
-        if np.isfinite(row["act_turun"]) and np.isfinite(row["depth_px"]):
-            mb = (pose_t >= row["act_turun"] + b0) & (pose_t <= row["act_turun"] + b1)
+        if np.isfinite(row.get("act_arm", np.nan)) and np.isfinite(row["depth_px"]):
+            mb = (pose_t >= row["act_arm"] + b0) & (pose_t <= row["act_arm"] + b1)
             yb = pose_y[mb]
             yb = yb[np.isfinite(yb)]
             if len(yb) > 5:
@@ -152,6 +157,7 @@ def hud_fallback(df, pc):
     good = df.compliance.isin(["ok", "late"]) & (df.track_noise_px <= pc["max_track_noise_px"])
     lat = float((df.act_turun - df.hud_turun)[good].median()) if good.any() else pc["default_latency_sec"]
     bad = df.track_noise_px > pc["max_track_noise_px"]
+    df.loc[bad, "act_arm"] = df.loc[bad, "hud_turun"] + lat
     for c, h in [("act_turun", "hud_turun"), ("act_tahan", "hud_tahan"),
                  ("act_naik", "hud_naik"), ("act_end", "hud_end")]:
         df.loc[bad, c] = df.loc[bad, h] + lat
@@ -160,3 +166,22 @@ def hud_fallback(df, pc):
     df.loc[bad, "phase_source"] = "hud_fallback"
     df["fallback_latency_sec"] = lat
     return df
+
+
+def arm_onset(t, wrists, t_search0, t_search1, min_px=15.0, k_mad=5.0, run_sec=0.2):
+    """Gerak PERTAMA lengan (pergelangan kiri/kanan) dalam [t_search0, t_search1].
+    Referensi diam = median posisi pada 2 dtk pertama jendela; onset = awal run ≥ run_sec
+    dengan jarak > max(min_px, k_mad × MAD). Dipakai untuk mengunci fase PRA (bukan
+    batang tubuh: lengan agem bergerak lebih dulu)."""
+    m = (t >= t_search0) & (t <= t_search1)
+    if m.sum() < 10 or wrists is None:
+        return np.nan
+    tt, w = t[m], wrists[m]
+    fps = 1 / np.median(np.diff(tt))
+    w = median_filter(np.nan_to_num(w, nan=np.nanmedian(w, axis=0)), size=(5, 1), mode="nearest")
+    ref = tt <= tt[0] + 2.0
+    d = np.max([np.hypot(w[:, 0] - np.median(w[ref, 0]), w[:, 1] - np.median(w[ref, 1])),
+                np.hypot(w[:, 2] - np.median(w[ref, 2]), w[:, 3] - np.median(w[ref, 3]))], axis=0)
+    thr = max(min_px, k_mad * 1.4826 * np.median(np.abs(d[ref] - np.median(d[ref]))))
+    i = first_run(d > thr, int(ref.sum()), max(2, int(run_sec * fps)))
+    return float(tt[i]) if i is not None else np.nan

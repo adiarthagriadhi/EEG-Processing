@@ -12,17 +12,18 @@ def make_epochs(raw, reps, offset, cfg):
     if ph.empty:
         return None
     sf = raw.info["sfreq"]
-    samp = np.round((ph.act_turun + offset) * sf).astype(int)
+    t0 = ph.act_arm if "act_arm" in ph else ph.act_turun          # gerak PERTAMA
+    samp = np.round((t0 + offset) * sf).astype(int)
     events = np.column_stack([samp, np.zeros(len(ph), int), np.arange(1, len(ph) + 1)])
     event_id = {f"{r.task.replace(' ', '_')}/rep{r.rep}": i + 1 for i, r in ph.iterrows()}
     meta = ph[["task", "rep", "compliance"]].copy()
     meta["phase_source"] = ph.get("phase_source", "video")
-    for c in ["act_tahan", "act_naik", "act_end"]:
-        meta[c.replace("act_", "rel_")] = ph[c] - ph.act_turun
+    for c in ["act_turun", "act_tahan", "act_naik", "act_end"]:
+        meta[c.replace("act_", "rel_")] = ph[c] - t0
     meta["latency_hud"] = ph.act_turun - ph.hud_turun
     ec = cfg["erd"]
     return mne.Epochs(raw, events, event_id, tmin=ec["tmin"],
-                      tmax=float(meta.rel_end.max()) + 1.0, baseline=None, metadata=meta,
+                      tmax=float(meta.rel_end.max()) + ec["post_window"][1] + 1.0, baseline=None, metadata=meta,
                       reject_by_annotation=True, preload=True, verbose="error")
 
 
@@ -37,8 +38,9 @@ def erd_table(epochs, pid, cfg):
     sig = epochs.get_data(picks=roi) * 1e6            # µV, untuk bendera artefak per fase
     rows = []
     for i, m in epochs.metadata.reset_index(drop=True).iterrows():
-        windows = {"PRA": tuple(ec["pre_window"]), "TURUN": (0.0, m.rel_tahan),
-                   "TAHAN": (m.rel_tahan, m.rel_naik), "NAIK": (m.rel_naik, m.rel_end)}
+        windows = {"PRA": tuple(ec["pre_window"]), "TURUN": (m.rel_turun, m.rel_tahan),
+                   "TAHAN": (m.rel_tahan, m.rel_naik), "NAIK": (m.rel_naik, m.rel_end),
+                   "POST": (m.rel_end + ec["post_window"][0], m.rel_end + ec["post_window"][1])}
         if m.compliance == "short_hold":
             windows.pop("TAHAN")
         for phase, (t0, t1) in windows.items():

@@ -50,13 +50,15 @@ phases:
   min_depth_px: 15
   max_track_noise_px: 3.0    # median |Δy| antar frame; di atas ini pose dianggap tidak andal
   default_latency_sec: 1.2
+  arm_search_sec: 8.0         # cari gerak lengan mulai 8 dtk sebelum instruksi TURUN
 
 erd:
   # Baseline dimundurkan agar tidak tumpang tindih jendela PRA-gerak (−2…0 dtk; permintaan
   # pengguna). −5…−3 dtk dari onset aktual = periode BERDIRI RILEKS/BERSIAP (diam).
-  tmin: -6.5
-  baseline: [-5.0, -3.0]
-  pre_window: [-2.0, 0.0]     # fase PRA: 2 dtk sebelum onset TURUN aktual
+  tmin: -7.5                  # epoch dikunci GERAK PERTAMA (lengan)
+  baseline: [-6.0, -4.0]      # periode BERDIRI RILEKS, relatif gerak pertama
+  pre_window: [-2.0, 0.0]     # fase PRA: 2 dtk sebelum gerak pertama (lengan)
+  post_window: [0.5, 2.0]     # beta rebound: setelah NAIK selesai (berdiri diam)
   min_phase_sec: 0.5
   freqs: [4, 30]
   bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}

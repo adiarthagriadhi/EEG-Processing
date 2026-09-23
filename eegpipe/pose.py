@@ -8,6 +8,7 @@ from .video import crop, iter_frames
 TRUNK = [11, 12, 23, 24]      # bahu & pinggul (lutut tertutup kamen)
 HIPS = [23, 24]
 SHOULDERS = [11, 12]
+WRISTS = [15, 16]
 
 
 def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
@@ -21,7 +22,7 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
         running_mode=vision.RunningMode.VIDEO, num_poses=2,
         min_pose_detection_confidence=0.2, min_pose_presence_confidence=0.2,
         min_tracking_confidence=0.5)
-    ts, ys, xs, motion, hip_y, sh_y = [], [], [], [], [], []
+    ts, ys, xs, motion, hip_y, sh_y, wr = [], [], [], [], [], [], []
     prev, prev_g, lost = None, None, 0
     with vision.PoseLandmarker.create_from_options(opts) as lm:
         for k, (t, img) in enumerate(iter_frames(video_path)):
@@ -41,6 +42,7 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
                     if np.mean([p[i].visibility for i in TRUNK]) > 0.5]
             ts.append(t)
             y = x = hy = sy = np.nan
+            w_xy = [np.nan] * 4
             if cand:
                 if prev is None or lost > 15:          # (re)inisialisasi: orang tertinggi
                     best = max(cand, key=lambda L: L[:, 1].max() - L[:, 1].min())
@@ -55,6 +57,7 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
                     y = best[TRUNK, 1].mean() + y0
                     hy = best[HIPS, 1].mean() + y0
                     sy = best[SHOULDERS, 1].mean() + y0
+                    w_xy = list(best[WRISTS].ravel() + [x0, y0, x0, y0])
                 else:
                     lost += 1
             else:
@@ -63,5 +66,7 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
             xs.append(x)
             hip_y.append(hy)
             sh_y.append(sy)
+            wr.append(w_xy)
     return dict(t=np.array(ts), trunk_y=np.array(ys), x=np.array(xs), motion=np.array(motion),
-                hip_y=np.array(hip_y), shoulder_y=np.array(sh_y))
+                hip_y=np.array(hip_y), shoulder_y=np.array(sh_y),
+                wrists=np.array(wr))

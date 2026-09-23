@@ -82,7 +82,7 @@ def stage_phases(P, cfg, tl, pose, force=False):
     # lintasan vertikal (config video.trajectory): trunk_y (bahu+pinggul) default
     yk = cfg["video"].get("trajectory", "trunk_y")
     ytraj = pose[yk] if yk in pose else pose["trunk_y"]
-    reps = phases.detect_reps(tl, pose["t"], ytraj, cfg)
+    reps = phases.detect_reps(tl, pose["t"], ytraj, cfg, pose.get("wrists"))
     # koreksi manual (jika ada) menimpa hasil otomatis
     for fix in P.decisions().get("phase_fixes", []):
         m = (reps.task == fix["task"]) & (reps.rep == fix["rep"])
