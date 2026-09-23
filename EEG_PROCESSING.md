@@ -36,12 +36,15 @@ tabel ERD/ERS gerakan dan fitur Romberg yang siap dianalisis statistik.
 
 | Fakta data (dari `CLAUDE.md`) | Implikasi pada pipeline |
 |---|---|
-| Sampling rate **100 Hz** (Nyquist = 50 Hz) | **Notch 50 Hz tidak bisa diterapkan.** MNE akan error karena 50 Hz tepat di Nyquist. Interferensi listrik dihilangkan oleh **low-pass 40 Hz** saja. Jangan *resample*. |
+| Sampling rate **100 Hz** (Nyquist = 50 Hz) | **Notch 50 Hz tidak bisa diterapkan.** MNE akan error karena 50 Hz tepat di Nyquist. Jangan *resample*. |
+| **Filter perangkat sudah terpasang** (terlihat di spektrum P02; header `prefilter` kosong): low-pass curam ≈ **35 Hz**, high-pass ≈ **0,5–1 Hz** | Bandwidth efektif ≈ 1–35 Hz. Filter software 1–35 Hz hanya menyamakan antar-file. Interferensi 50 Hz sudah hilang. **Potensial lambat (LRP) sudah terlemahkan oleh perangkat** (10.3). |
 | Analisis sampai beta (≤ 30 Hz) | Masih aman di bawah Nyquist; gamma tidak dapat dianalisis. |
 | 16 kanal KT88, **tanpa midline** (Fz/Cz/Pz) | Gunakan proksi: C3/C4 (sensorimotor), F3/F4 atau F7/F8 (frontal), P3/P4, O1/O2. |
 | Referensi **ipsilateral**: kiri → A1, kanan → A2 | **Bukan linked-ear dan bukan referensi bersama.** Perbandingan kiri–kanan (C3 vs C4) ikut dipengaruhi beda aktivitas A1 vs A2. *Average reference* tidak sepenuhnya valid di sini (lihat Tahap 3). |
 | Nama kanal `Fp1-A1`, `T3-A1`, … | Harus di-*rename* ke `Fp1`, `T3`, … sebelum *montage*. T3/T4/T5/T6 dikenali di montage 10-20 MNE. |
-| `Add_lead1`, `Add_lead2` "sepertinya lead referensi" (belum pasti) | Diset tipe `misc` sampai diverifikasi empiris (Tahap 3). Jika terbukti A1/A2, referensi linked-ear bisa direkonstruksi. |
+| `Add_lead1`, `Add_lead2` **datar** (P02: SD 0,4 µV, hanya noise kuantisasi) | Tidak berisi sinyal → diabaikan (`misc`). Referensi *linked-ear* **tidak bisa** direkonstruksi; referensi telinga ipsilateral adalah final. |
+| P02: **tidak ada puncak alpha jelas** di semua segmen; Baseline kemungkinan mata terbuka | IAF/PAF bisa tidak terdefinisi → aturan `NaN` (11). Sumber PAF untuk NDV perlu dikonfirmasi. |
+| P02: EDF 17–34 dtk lebih pendek dari video; Romberg adalah segmen terakhir | Romberg EC mungkin **terpotong**. QC wajib: EDF harus mencakup seluruh segmen Romberg setelah sinkronisasi. |
 | Start EEG & video manual oleh dua operator pada hitungan ke-3 | Offset awal ≈ 0 ± 1–2 dtk. Tidak cukup presisi untuk ERD/ERS, jadi disempurnakan dengan korelasi silang sinyal gerak (Tahap 2). |
 | Sebagian partisipan tidak mengikuti TURUN→TAHAN→NAIK dengan tepat | Fase aktual **wajib** ditentukan dari video (Tahap 4); onset HUD hanya sebagai jendela pencarian. |
 | Header EDF `startdate` palsu (2013-04-01) | Tidak boleh dipakai untuk sinkronisasi. |
@@ -109,7 +112,7 @@ Tahap 1  Video ─► crop HUD ─► OCR ─► PXX_task_timeline.csv   (waktu 
 Tahap 2  Prior hitungan ke-3 (≈0) ─► xcorr gerak video×EEG ─► validasi Romberg
          ─► sync_offset_sec ─► manifest   ⛔ gerbang validasi
    │
-Tahap 3  EDF ─► rename/montage ─► filter 1–40 Hz ─► kanal buruk ─► ICA (mata saja)
+Tahap 3  EDF ─► rename/montage ─► filter 1–35 Hz ─► kanal buruk ─► ICA (mata saja)
          (+ verifikasi isi Add_lead)
    │
 Tahap 4  Pose video ─► fase aktual TURUN/TAHAN/NAIK + kepatuhan (verifikasi manual)
@@ -119,7 +122,8 @@ Tahap 4  Pose video ─► fase aktual TURUN/TAHAN/NAIK + kepatuhan (verifikasi 
    ├─► Tahap 5   LRP (cabang filter 0,05–8 Hz, onset ekstrapolasi) ─► lrp.csv
    └─► Tahap 5b  Romberg EO/EC ─► romberg_features.csv (join dgn Stork Test)
    │
-Tahap 6  Mixed model; Welch 5 indeks + BH + sensitivitas usia (Paper A);
+Tahap 6  Mixed model; Welch indeks gerakan + BH + sensitivitas usia (Paper A);
+         Welch + korelasi parsial Romberg Tier 1 × Stork (Paper D);
          RCI, NDV, Gap Closure (Paper B); korelasi parsial Romberg × Stork
 ```
 
@@ -127,7 +131,7 @@ Semua parameter disimpan di satu file `config.yaml`, jangan ditulis langsung (*h
 
 ```yaml
 sfreq_expected: 100
-filter: {l_freq: 1.0, h_freq: 40.0}
+filter: {l_freq: 1.0, h_freq: 35.0}   # perangkat KT88 sudah LP ≈ 35 Hz & HP ≈ 0,5–1 Hz
 hud_box: {x0: 960, y0: 250, x1: 1280, y1: 480}   # verifikasi per file
 webcam_box: {x0: null, y0: null, x1: null, y1: null}   # area webcam di frame komposit
 participant_box: {x0: null, y0: null, x1: null, y1: null}   # area partisipan saja, TANPA operator
@@ -321,9 +325,9 @@ def video_motion(path, box, fs=FS):
     return grid, np.interp(grid, ts, energy)      # interpolasi → aman untuk VFR
 
 def eeg_motion(raw, fs=FS):
-    """Envelope artefak gerak/otot di kanal frontal-temporal."""
+    """Envelope artefak gerak/otot di kanal frontal-temporal (20–34 Hz: perangkat LP ≈ 35 Hz)."""
     picks = ["Fp1", "Fp2", "F7", "F8", "T3", "T4"]
-    env = raw.copy().pick(picks).filter(20, 45).apply_hilbert(envelope=True) \
+    env = raw.copy().pick(picks).filter(20, 34).apply_hilbert(envelope=True) \
              .get_data().mean(axis=0)
     grid = np.arange(0, raw.times[-1], 1 / fs)
     return grid, np.interp(grid, raw.times, env)
@@ -400,8 +404,9 @@ raw.rename_channels(lambda ch: ch.split("-")[0])          # "C3-A1" → "C3"
 raw.set_channel_types({"Add_lead1": "misc", "Add_lead2": "misc"})   # sampai terverifikasi (8.1)
 raw.set_montage("standard_1020")  # MNE ≥1.13 menyarankan nama baru "colin27_1020"
 
-# 2) Filter — TANPA notch (50 Hz = Nyquist); low-pass 40 Hz sudah menekan 50 Hz
-raw.filter(l_freq=1.0, h_freq=40.0)
+# 2) Filter — TANPA notch (50 Hz = Nyquist). Perangkat sudah LP ≈ 35 Hz dan HP ≈ 0,5–1 Hz;
+#    filter software menyamakan karakteristik antar-file
+raw.filter(l_freq=1.0, h_freq=35.0)
 
 # 3) Kanal buruk (inspeksi visual), lalu interpolasi
 raw.plot(duration=30, scalings=dict(eeg=100e-6))
@@ -419,6 +424,11 @@ Data direkam dengan **referensi telinga ipsilateral** (kiri–A1, kanan–A2).
 | Linked-ear matematis | **Hanya jika** verifikasi 8.1.1 membuktikan `Add_lead` berisi A1/A2 | `Ckiri_linked = Ckiri − ½(A2−A1)`, `Ckanan_linked = Ckanan + ½(A2−A1)`. |
 
 #### 8.1.1 Verifikasi isi `Add_lead1` / `Add_lead2`
+
+> **Hasil P02 (2026-09-23): datar.** SD 0,4 µV; nilai hanya −3,0 s.d. +0,2 µV dengan
+> langkah 0,1 µV (resolusi EDF), sedangkan kanal EEG ber-SD 18–95 µV. Kanal ini tidak
+> berisi sinyal, jadi rekonstruksi *linked-ear* tidak mungkin. Tetap jalankan cek di
+> bawah untuk beberapa partisipan lain; jika semuanya datar, kanal ini diabaikan.
 
 Menurut pengguna, kedua kanal ini "sepertinya lead referensi". Sebelum dipakai,
 periksa secara empiris untuk tiap beberapa partisipan:
@@ -454,7 +464,8 @@ perekaman. Keputusan final dicatat di `CLAUDE.md`.
 ```python
 from mne.preprocessing import ICA
 
-ica = ICA(n_components=len(raw.info["ch_names"]) - len(raw.info["bads"]) - 1,
+n_eeg = len(mne.pick_types(raw.info, eeg=True))          # 16; Add_lead (misc) tidak dihitung
+ica = ICA(n_components=n_eeg - len(raw.info["bads"]) - 1,  # rank turun karena interpolasi
           method="picard", fit_params=dict(extended=True, ortho=False),
           random_state=97, max_iter="auto")
 ica.fit(raw.copy().pick("eeg"), reject_by_annotation=True)
@@ -482,6 +493,10 @@ raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
   untuk *fit* ICA.
 
 ### 8.3 Cabang preprocessing terpisah untuk LRP (Paper A)
+
+> ⚠️ **Temuan P02:** perangkat KT88 sudah menerapkan *high-pass* ≈ 0,5–1 Hz saat
+> perekaman (power turun > 15 dB di bawah ~0,8 Hz). Filter software 0,05 Hz tidak bisa
+> mengembalikan komponen lambat yang sudah hilang. Lihat 10.3 sebelum memakai cabang ini.
 
 LRP adalah **potensial lambat**, sedangkan *high-pass* 1 Hz untuk ERD/ERS akan
 menghapusnya. Karena itu LRP memakai salinan data sendiri dari EDF mentah. ICA tetap
@@ -866,6 +881,15 @@ lrp_amp_uV = lrp[win].mean() * 1e6
 
 ⚠️ **Hal-hal yang membatasi LRP pada data ini (wajib dibaca sebelum dijadikan temuan):**
 
+0. **High-pass perangkat ≈ 0,5–1 Hz (temuan P02) — kendala paling berat.** LRP adalah
+   pergeseran lambat yang naik selama ratusan milidetik sebelum gerak. Filter high-pass
+   pada 0,5–1 Hz melemahkan dan mendistorsi bentuknya (menjadi bifasik), dan efek ini
+   tidak bisa dibalik di software. **Rekomendasi:** LRP tidak dijadikan hasil
+   konfirmatori di Paper A. Pilihannya: (a) dihapus dari Paper A, atau (b) dilaporkan
+   sebagai analisis eksploratif dengan pernyataan eksplisit tentang filter perangkat.
+   Lateralisasi motorik tetap bisa diwakili oleh **LI dari ERD mu/beta** (10.1), yang
+   tidak terpengaruh high-pass.
+
 1. **Jumlah trial sangat sedikit.** Hanya 4 repetisi per sisi, sedangkan LRP biasanya
    butuh puluhan trial per sisi agar sinyalnya terlihat di atas noise. Dengan 4 trial,
    amplitudo per partisipan sangat berisik. Perlakukan sebagai **eksploratif**, laporkan
@@ -916,10 +940,25 @@ def bp(psd, f, chs, picks, lo, hi, relative=True):
 eo, f, chs, n_eo = seg_psd(raw, "BERDIRI_FOKUS_MATA_TERBUKA")
 ec, _, _, n_ec   = seg_psd(raw, "BERDIRI_MATA_TERTUTUP")
 
-def iaf(psd, picks):
-    m = (f >= 7) & (f <= 13)
-    spec = psd[[chs.index(c) for c in picks]][:, m].mean(axis=0)
-    return (f[m] * spec).sum() / spec.sum()          # center of gravity
+def iaf(psd, picks, min_peak_db=3.0, k_noise=3.0):
+    """Center of gravity alpha, HANYA jika ada puncak alpha nyata di atas tren 1/f.
+    Tren aperiodik = garis lurus log-log pada 2–30 Hz (tanpa 7–14 Hz). Residual
+    dihaluskan 3 bin; puncak harus ≥ min_peak_db DAN ≥ k_noise × SD residual di luar
+    alpha, serta tidak di tepi jendela. P02 (fluktuasi ±1,5–3 dB tanpa puncak) → NaN."""
+    spec = psd[[chs.index(c) for c in picks]].mean(axis=0)
+    fit = ((f >= 2) & (f < 7)) | ((f > 14) & (f <= 30))
+    coef = np.polyfit(np.log10(f[fit]), np.log10(spec[fit]), 1)
+    resid_db = 10 * (np.log10(spec) - np.polyval(coef, np.log10(f)))
+    smooth = np.convolve(resid_db, np.ones(3) / 3, mode="same")
+    noise = np.std(smooth[fit])
+    m = (f >= 7) & (f <= 14)
+    i = np.argmax(smooth[m])
+    if smooth[m][i] < max(min_peak_db, k_noise * noise) or i in (0, m.sum() - 1):
+        return np.nan
+    pk = f[m][i]
+    w = (f >= pk - 2) & (f <= pk + 2)
+    excess = np.clip(10 ** (resid_db[w] / 10) - 1, 0, None)        # hanya bagian di atas tren
+    return (f[w] * excess).sum() / excess.sum()
 
 feat = dict(
     participant_id=pid,
@@ -950,6 +989,20 @@ pd.DataFrame([feat]).to_csv(f"results/{pid}_romberg_features.csv", index=False)
 - Untuk non-penari yang punya pre/post, tambahkan kolom `timepoint` agar penggabungan
   tidak tertukar.
 - Tier 3 (entropi, koherensi) ditunda sampai Tier 1–2 selesai.
+- **Cakupan segmen (QC wajib):** setelah sinkronisasi, pastikan onset + durasi segmen
+  EO dan EC berada di dalam rentang EDF. Pada P02, EDF 17–34 dtk lebih pendek dari
+  video dan Romberg adalah segmen terakhir, sehingga EC mungkin terpotong. Segmen yang
+  tidak lengkap (< 20 dtk bersih) → fitur `NaN` dengan catatan, **jangan** memakai
+  sisa segmen tanpa ditandai.
+- **Validasi `iaf`:** pada data P02 hasilnya `NaN` di semua segmen (tanpa puncak). Pada
+  spektrum sintetis dengan puncak +5 dB, deteksi 100% untuk 9 dan 10,5 Hz dengan galat
+  < 0,05 Hz, tetapi hanya 75% untuk 7,5 Hz karena dekat tepi jendela 7–14 Hz. Tidak ada
+  deteksi palsu pada 50 spektrum tanpa puncak. Untuk partisipan lansia (alpha melambat),
+  pertimbangkan jendela 6–14 Hz.
+- **Tanpa puncak alpha:** partisipan seperti P02 tidak menunjukkan puncak alpha. Power
+  band 8–13 Hz tetap bisa dihitung, tetapi pertimbangkan *specparam*/FOOOF untuk
+  memisahkan komponen aperiodik (1/f), dan laporkan jumlah partisipan tanpa puncak
+  alpha per grup.
 
 ---
 
@@ -971,7 +1024,24 @@ print(m.summary())
 # atau group × timepoint bila desainnya memungkinkan.
 ```
 
-### 12.2 Romberg × Standing Stork Test
+### 12.2 Paper D — Kontrol postural: Romberg EEG × Standing Stork Test
+
+Desain **cross-sectional**, seluruh 38 partisipan pada satu timepoint (non-penari
+peserta pelatihan: data **pre**, sama seperti Paper A). Tidak memakai RCI/NDV/Gap
+Closure dan tidak bergantung pada Paper A, jadi bisa dikerjakan paralel.
+
+**Analisis utama:** Welch's t-test penari vs non-penari (fungsi `welch` di 12.3) untuk
+fitur Tier 1 dan durasi Stork Test, dengan BH dalam keluarga Paper D:
+
+```python
+paper_d = ["alpha_occ_EC", "alpha_reactivity_EC_EO", "mu_sm_EC", "mu_sm_EO",
+           "theta_front_EC", "stork_time_sec"]
+res_d = pd.DataFrame([welch(pp, c) for c in paper_d])
+res_d["p_fdr"] = multipletests(res_d.p, method="fdr_bh")[1]
+```
+
+**Analisis sekunder:** korelasi parsial fitur Tier 1 × durasi Stork Test pada **sampel
+gabungan** (bukan per grup), dikontrol usia:
 
 ```python
 import pingouin as pg
@@ -992,17 +1062,31 @@ res["p_fdr"] = multipletests(res["p-val"], method="fdr_bh")[1]
 Tier 1 dianalisis sebagai hipotesis utama dengan koreksi FDR. Tier 2/3 dilaporkan
 terpisah sebagai eksploratif.
 
+Catatan Paper D:
+- Korelasi pada sampel gabungan bisa didorong oleh **perbedaan grup** (penari punya
+  Stork Test lebih lama **dan** EEG berbeda → korelasi tanpa hubungan dalam grup).
+  Sebagai uji sensitivitas, tambahkan `group` sebagai kovariat kedua
+  (`covar=["age", "group"]`) dan laporkan keduanya.
+- Pastikan `n` per fitur dilaporkan, karena segmen Romberg yang terpotong
+  (lihat 11) menghasilkan `NaN`.
+
 ### 12.3 Paper A — uji grup Welch untuk 5 indeks konvensional
 
 Satu nilai per partisipan per indeks (rata-rata repetisi). Definisi default di bawah
 ditandai 🔎 dan perlu dikonfirmasi (Bagian 15).
 
+> **Strategi 4 naskah (CLAUDE.md):** jika Paper D dibuat, indeks Romberg (Alpha
+> Oksipital Romberg-EC, rasio Theta/Alpha Romberg) **tidak ditonjolkan** di Paper A/B.
+> Indeks tersebut hanya dirujuk singkat ke Paper D, untuk menghindari *salami slicing*.
+> Keluarga BH Paper A lalu hanya berisi indeks gerakan + LI (+ LRP bila dipertahankan)
+> + interaksi usia.
+
 | Indeks | Definisi default | Sumber |
 |---|---|---|
 | ERD Beta Agem | %ERD beta di C **kontralateral**, fase TURUN 🔎, rata-rata AGEM KANAN + KIRI | 10 |
 | Theta Frontal Agem | %ERS theta F3/F4, fase TURUN+TAHAN 🔎, AGEM KANAN + KIRI | 10 |
-| Alpha Oksipital Romberg-EC | `alpha_occ_EC` (relatif) | 11 |
-| Rasio Theta/Alpha Romberg | `theta_alpha_ratio_EC` 🔎 | 11 |
+| Alpha Oksipital Romberg-EC | `alpha_occ_EC` (relatif) → **dipindah ke Paper D** | 11 |
+| Rasio Theta/Alpha Romberg | `theta_alpha_ratio_EC` 🔎 → **dipindah ke Paper D** | 11 |
 | Durasi Stork Test | data eksternal | — |
 
 ```python
@@ -1096,8 +1180,10 @@ t, p = stats.ttest_rel(paf["post"], paf["pre"])
 w = stats.wilcoxon(paf["post"], paf["pre"])     # pembanding non-parametrik (n kecil)
 ```
 
-🔎 Sumber PAF: `PXX_Baseline.EDF` (jika istirahatnya mata tertutup), atau segmen Romberg
-EC (berdiri, bukan istirahat duduk). Perlu dikonfirmasi.
+🔎 Sumber PAF: `PXX_Baseline.EDF` P02 **kemungkinan mata terbuka** (~6 kedipan/menit)
+dan tidak punya puncak alpha. Alternatifnya segmen Romberg EC (berdiri), tetapi segmen
+itu mungkin terpotong (11). Jika PAF `NaN` untuk banyak partisipan, NDV ini tidak dapat
+dipakai. Perlu dikonfirmasi apakah protokol Baseline memang mata terbuka.
 
 **Gap Closure (%)** = (Post − Pre) / (Benchmark penari − Pre) × 100
 
@@ -1146,11 +1232,12 @@ Log per partisipan (`results/qc_log.csv`):
 - [ ] Offset xcorr: puncak tunggal, |offset| ≤ 2 dtk, drift paruh-sesi < 0,2 dtk
 - [ ] Offset divalidasi dengan transisi alpha Romberg (residual < 0,5 dtk)
 - [ ] Fase aktual TURUN/TAHAN/NAIK diverifikasi manual untuk **semua** 12 repetisi; kode kepatuhan terisi
-- [ ] Sampling rate = 100 Hz; filter 1–40 Hz; tanpa notch
+- [ ] Sampling rate = 100 Hz; filter 1–35 Hz; tanpa notch; `Add_lead` datar (dicek)
 - [ ] Kanal buruk dicatat & diinterpolasi (C3/C4 buruk → pertimbangkan eksklusi)
 - [ ] Hanya komponen ICA mata yang dibuang, diverifikasi visual
 - [ ] Jendela baseline tidak tumpang tindih dengan gerakan sebelumnya
-- [ ] PSD Romberg EC menunjukkan puncak alpha oksipital
+- [ ] Segmen Romberg EO/EC **lengkap di dalam EDF** setelah sinkronisasi (P02: EC mungkin terpotong)
+- [ ] PSD Romberg EC: ada puncak alpha? Jika tidak, catat `no_alpha_peak` (P02: tidak ada)
 - [ ] Cabang LRP: filter 0,05–8 Hz, ICA yang sama diterapkan, onset ekstrapolasi dipakai, jumlah trial per sisi dicatat
 - [ ] `is_simulated` benar di semua output
 - [ ] Laporan QC HTML tersimpan (`mne.Report`) di `reports/`
@@ -1163,7 +1250,10 @@ Log per partisipan (`results/qc_log.csv`):
   frontal pada F3/F4, bukan Fz.
 - **Sampling rate 100 Hz.** Analisis dibatasi ≤ 40 Hz, gamma tidak dapat dianalisis, dan
   notch 50 Hz tidak diterapkan.
-- **Referensi telinga ipsilateral.** Membatasi interpretasi asimetri hemisfer.
+- **Referensi telinga ipsilateral.** Membatasi interpretasi asimetri hemisfer. Tidak
+  dapat dikoreksi karena `Add_lead` tidak berisi sinyal.
+- **Filter perangkat KT88** (≈ 0,5–1 Hz s.d. ≈ 35 Hz) diterapkan saat perekaman.
+  Laporkan di Metode. Hal ini membatasi analisis potensial lambat (LRP) dan beta atas.
 - **Sinkronisasi EEG–video**: start manual oleh dua operator (aba-aba hitungan ke-3),
   lalu disempurnakan pasca-perekaman dengan korelasi silang sinyal gerak dan divalidasi
   dengan transisi alpha Romberg. Laporkan offset, r, drift, dan residual (rata-rata ± SD).
@@ -1194,7 +1284,7 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 | # | Pertanyaan | Status / jawaban | Tahap |
 |---|---|---|---|
 | 1 | Mekanisme start EEG vs video | ✅ Dua device, start manual pada aba-aba hitungan ke-3 → prior offset ≈ 0, disempurnakan dengan xcorr (7.2) | 2 |
-| 2 | Isi `Add_lead1` / `Add_lead2` | ⚠️ "Sepertinya lead referensi". Perlu verifikasi empiris (8.1.1) | 3 |
+| 2 | Isi `Add_lead1` / `Add_lead2` | ✅ Diverifikasi pada P02: **datar**, tidak berisi sinyal → diabaikan; linked-ear tidak mungkin | 3 |
 | 3 | Label HUD ngeed | ✅ `NGEED`, `AGEM KANAN`, `AGEM KIRI` | 1 |
 | 4 | Urutan sub-fase | ✅ `TURUN → TAHAN → NAIK` untuk semua gerakan; kepatuhan dikonfirmasi dari video (9.1) | 4, 5 |
 | 5 | Struktur folder untuk ke-38 partisipan | ✅ Satu folder per partisipan: video + EDF Baseline + EDF Trial. ❓ Sisa: bagaimana folder **pre vs post** non-penari dibedakan (nama folder/kode berbeda?) | 0 |
@@ -1203,7 +1293,9 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 | 8 | Pemetaan sisi untuk LI/LRP: AGEM KANAN → hemisfer kontralateral = **C3**? (agem melibatkan lengan dan tungkai; "tangan kanan" di draft = AGEM KANAN?) | 🔎 Baru | 5 |
 | 9 | Fase mana yang dipakai untuk "ERD Beta Agem" dan "Theta Frontal Agem" (TURUN, TAHAN, atau gabungan)? | 🔎 Baru (default: TURUN; TURUN+TAHAN) | 6 |
 | 10 | Definisi "Rasio Theta/Alpha Romberg": kondisi (EC/EO) dan kanal (theta F3/F4 ÷ alpha O1/O2, atau kanal yang sama)? | 🔎 Baru (default: EC, F3/F4 ÷ O1/O2) | 5b, 6 |
-| 11 | `PXX_Baseline.EDF`: istirahat mata tertutup atau terbuka? Duduk atau berdiri? (menentukan sumber PAF untuk NDV) | 🔎 Baru | 6 |
+| 11 | `PXX_Baseline.EDF`: istirahat mata tertutup atau terbuka? Duduk atau berdiri? (menentukan sumber PAF untuk NDV) | 🔎 Data P02 menunjukkan **mata terbuka** (~6 kedipan/menit). Mohon konfirmasi protokol | 6 |
+| 12 | LRP: dipertahankan sebagai eksploratif atau dihapus dari Paper A? (high-pass perangkat ≈ 0,5–1 Hz) | 🔎 Baru | 5, 6 |
+| 13 | Apakah perangkat KT88 bisa diatur ke *time constant* lebih panjang (HP ≤ 0,1 Hz) dan low-pass lebih tinggi untuk perekaman berikutnya (mis. post-test Paper B)? | 🔎 Baru | Perekaman |
 
 ---
 

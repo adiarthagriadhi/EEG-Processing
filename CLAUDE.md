@@ -256,6 +256,41 @@ disetujui untuk diadopsi:
 - Tidak ada koreksi multiple comparison disebutkan di Paper A untuk 5 indeks +
   LI + LRP + interaksi usia yang diuji sekaligus.
 
+## Strategi Publikasi: 4 Naskah (A/B/C/D)
+
+Berdasarkan diskusi evaluasi draft, dataset ini direncanakan menghasilkan **4
+naskah**, bukan 3 — supaya analisis kontrol postural (Romberg + Stork Test) tidak
+"terselip" sebagai 1 dari 5 indeks di Paper A/B, mengingat kerangka Tier 1–3 di
+Tahap 5b cukup dalam untuk jadi kontribusi tersendiri.
+
+| Paper | Fokus | Desain | Sampel |
+|---|---|---|---|
+| **A** | *Movement generation* (ngeed/agem): ERD/ERS, LRP, LI, topografi | Cross-sectional | Penari vs non-penari, 1 timepoint |
+| **B** | Neuroplastisitas jangka pendek (RCI/NDV/Gap Closure) | Longitudinal pre-post 6 minggu | Non-penari saja (n=14) |
+| **C** | Data descriptor — dokumentasi dataset mentah, tanpa klaim analitik | — | Seluruh data (gerakan + Romberg + Stork) |
+| **D (baru)** | Kontrol postural/keseimbangan: EEG Romberg (Tahap 5b) × Stork Test | **Cross-sectional saja** (BUKAN gabungan pre-post) | Seluruh 38 partisipan, 1 timepoint (untuk non-penari peserta pelatihan: pakai data pre-training, sama seperti Paper A) |
+
+**Rancangan Paper D (ringkas, disepakati):**
+- **Analisis utama:** Welch's t-test antar grup (penari vs non-penari) untuk tiap
+  fitur EEG Tier 1 dari Tahap 5b (alpha oksipital EC, rasio reaktivitas alpha
+  EC/EO, alpha sensorimotor C3/C4, theta frontal EC) + durasi Stork Test.
+- **Analisis sekunder:** korelasi Pearson/Spearman antara fitur EEG Tier 1 dan
+  durasi Stork Test di **seluruh sampel gabungan** (bukan per grup), dikontrol
+  usia (korelasi parsial/kovariat regresi) — ini yang membedakan Paper D dari
+  sekadar mengulang perbandingan grup Paper A dengan metrik berbeda.
+- **Tidak memakai** RCI/NDV/Gap Closure (khusus desain pre-post Paper B) — jauh
+  lebih sederhana untuk ditulis & direview dibanding opsi gabungan yang sempat
+  dipertimbangkan.
+- **Tidak ada dependency ke Paper A** (tidak butuh benchmark rata-rata penari
+  seperti Gap Closure Paper B) — bisa dikerjakan paralel dengan Paper A.
+
+**Syarat supaya tidak dianggap *salami slicing*:** kalau Paper D dibuat, tabel
+5-indeks di Paper A & B sebaiknya **tidak lagi menonjolkan** indeks Romberg
+(Alpha Oksipital Romberg-EC, rasio Theta/Alpha Romberg) sebagai temuan utama —
+cukup dirujuk singkat ke Paper D untuk detail, supaya tidak ada klaim substantif
+yang dilaporkan dua kali. Prinsipnya: A = eksekusi motorik dinamis, D = kontrol
+postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
+
 ## Jawaban Pengguna (2026-09-23)
 1. **Start rekaman:** EEG dan video direkam di dua device berbeda, dimulai manual
    oleh dua operator pada aba-aba **hitungan ke-3** (terlihat oleh kedua operator).
@@ -293,12 +328,35 @@ disetujui untuk diadopsi:
   menolak). Interferensi listrik ditangani low-pass 40 Hz. (Mengoreksi Tahap 3.)
 - **Referensi bukan linked-ear**: kanal kiri → A1, kanan → A2 (referensi telinga
   ipsilateral). Asimetri A1 vs A2 masuk langsung ke selisih C3/C4 — relevan untuk
-  LRP dan LI. (Mengoreksi Tahap 3.)
+  LRP dan LI. `Add_lead` terbukti datar (P02), jadi tidak bisa dikoreksi. (Mengoreksi Tahap 3.)
 - **Refinement onset dari video wajib** (lihat jawaban no. 4), bukan opsional.
 - **LRP butuh cabang preprocessing terpisah**: high-pass ≤ 0,1 Hz (filter 1 Hz untuk
   ERD/ERS akan menghapus potensial lambat), dan presisi onset jauh di bawah 200 ms.
   Dengan hanya 4 repetisi per sisi, SNR LRP sangat rendah — laporkan sebagai
   eksploratif. Detail di EEG_PROCESSING.md.
+
+## Temuan dari Data Riil P02 (EDF Baseline + Trial, dianalisis 2026-09-23)
+- **`Add_lead1` / `Add_lead2` datar**: SD 0,4 µV, nilai hanya −3 s.d. +0,2 µV
+  (kuantisasi 0,1 µV). **Tidak berisi sinyal** → tidak bisa dipakai untuk
+  rekonstruksi linked-ear. Referensi telinga ipsilateral (A1/A2) adalah **final**.
+  Kanal diabaikan (`misc`).
+- **Filter perangkat KT88 sudah terpasang saat rekaman** (header `prefilter`
+  kosong, tetapi terlihat di spektrum):
+  - **Low-pass ≈ 35 Hz** yang curam (turun ~40 dB antara 34 dan 37 Hz) → bandwidth
+    efektif ≤ 35 Hz. Beta 13–30 Hz aman; "EMG" untuk sinkronisasi pakai 20–34 Hz.
+  - **High-pass ≈ 0,5–1 Hz** (power turun > 15 dB di bawah ~0,8 Hz, mean blok ≈ 0)
+    → **potensial lambat (LRP) sudah terlemahkan oleh perangkat**. LRP kemungkinan
+    besar tidak dapat diukur secara valid dari data ini (lihat EEG_PROCESSING.md 10.3).
+- **Tidak ada clipping**: rentang fisik ±3280 µV, resolusi 0,1 µV, puncak ±450 µV.
+- **Tidak ada puncak alpha yang jelas** pada P02 di semua segmen (Baseline "puncak"
+  7,5–8 Hz hanya +0 dB di atas flank). Implikasi: IAF/PAF bisa tidak terdefinisi
+  untuk sebagian partisipan (terutama lansia) → perlu aturan NaN / specparam.
+- **Baseline kemungkinan mata terbuka** (P02: ~6 kedipan/menit). Konfirmasi ke
+  pengguna — memengaruhi sumber PAF untuk NDV Paper B.
+- **Romberg EC mungkin tidak terekam penuh di EDF P02**: 46 dtk terakhir EDF tanpa
+  kedipan tetapi tanpa kenaikan alpha; EDF P02 17–34 dtk lebih pendek dari video dan
+  Romberg adalah segmen terakhir. Harus diverifikasi dengan timeline video setelah
+  sinkronisasi — **QC wajib: EDF harus mencakup seluruh segmen Romberg**.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
