@@ -204,9 +204,12 @@ def write(ctx, cfg):
         parts.append(f"<p>kasar {res['coarse_sec']:+.1f} dtk (r {res['r_coarse']:.2f}; puncak "
                      f"lain {res['r_coarse_second']:.2f}; diagnostik boxcar HUD "
                      f"{res.get('hud_boxcar_lag', float('nan')):+.1f} dtk, r {res.get('hud_boxcar_r', float('nan')):.2f}). "
-                     f"Offset akhir {res['offset_sec']:+.2f} dtk = median {len(res['combos'])} "
-                     f"kombinasi sinyal (IQR {res['spread_sec']:.2f} dtk, rentang {res.get('range_sec', float('nan')):.2f} dtk, r {res['r_fine']:.2f}); "
-                     f"SD offset per repetisi {res.get('per_rep_sd', float('nan')):.2f} dtk.</p>")
+                     f"Offset akhir {res['offset_sec']:+.2f} ± {res.get('offset_se_sec', float('nan')):.2f} dtk (SE) "
+                     f"= median offset lokal {res.get('n_rep', '?')} repetisi (SD {res.get('per_rep_sd', float('nan')):.2f} dtk). "
+                     f"Median {len(res['combos'])} kombinasi sinyal {res.get('combo_offset_sec', res['offset_sec']):+.2f} dtk "
+                     f"(IQR {res['spread_sec']:.2f} dtk, r {res['r_fine']:.2f}).</p>")
+        if res.get("warnings"):
+            parts.append("<p><b>Peringatan sinkronisasi:</b> " + html.escape("; ".join(res["warnings"])) + "</p>")
         parts.append(fig_sync(P, res))
     if "reps" in ctx:
         reps = ctx["reps"]

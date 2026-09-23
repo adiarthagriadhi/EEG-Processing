@@ -61,12 +61,14 @@ def stage_sync(P, cfg, tl, pose, raw, force=False):
         res = sync.two_stage(tl, pose, raw, cfg)
         np.savez(P.out("sync_curves.npz"), **res.pop("curves"))
         res = json.loads(json.dumps(res, default=float))
-        res["problems"] = sync.qc(res, cfg)
+        res["problems"], res["warnings"] = sync.qc(res, cfg)
         out.write_text(json.dumps(res, indent=2))
-    dec["sync"] = dict(offset_sec=res["offset_sec"], method="auto",
-                       accepted=not res["problems"], problems=res["problems"])
+    dec["sync"] = dict(offset_sec=res["offset_sec"], offset_se_sec=res.get("offset_se_sec"),
+                       method="auto", accepted=not res["problems"], problems=res["problems"],
+                       warnings=res.get("warnings", []))
     P.save_decisions(dec)
-    _log(P.pid, f"sync: offset {res['offset_sec']:+.2f} dtk (kasar {res['coarse_sec']:+.1f}, "
+    _log(P.pid, f"sync: offset {res['offset_sec']:+.2f} ± {res.get('offset_se_sec', float('nan')):.2f} dtk "
+                f"(n_rep {res.get('n_rep')}, kasar {res['coarse_sec']:+.1f}, "
                 f"r_halus {res['r_fine']:.2f}, sebaran {res['spread_sec']:.2f}, "
                 f"drift {res['drift_sec']:+.2f})")
     if res["problems"]:

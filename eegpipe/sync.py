@@ -99,8 +99,11 @@ def two_stage(timeline, pose, raw, cfg):
     offset = float(np.median(offs))
     main = combos["speed×1-4Hz_all"]
 
-    # drift: offset lokal per repetisi (jendela di sekitar tiap TURUN HUD), lalu regresi
-    # offset vs waktu. P02: SD 0,25 dtk, kemiringan tidak signifikan → offset konstan.
+    # Offset UTAMA = median offset lokal per repetisi (jendela di sekitar tiap TURUN HUD,
+    # pencarian ±fine_lag di sekitar median kombinasi); ketidakpastian = SE median.
+    # Kombinasi sinyal pada P01/P03/P04 tidak sepakat (IQR 0,5–1,6 dtk) walau 12 repetisi
+    # konsisten (SE 0,18–0,23 dtk) → estimator per-repetisi lebih tahan terhadap satu
+    # sinyal lemah. Regresi offset vs waktu = drift.
     from scipy import stats
     v, e = videos["speed"], eegs["1-4Hz_all"]
     lv = np.log1p(v)
@@ -108,7 +111,7 @@ def two_stage(timeline, pose, raw, cfg):
     for t0 in timeline[timeline.subphase == "TURUN"].start:
         a, b = int((t0 - 3) * fs), int((t0 + 13) * fs)
         cands = []
-        for lag in np.arange(offset - 1.0, offset + 1.0 + 1e-9, 1 / fs):
+        for lag in np.arange(offset - sc["fine_lag_sec"], offset + sc["fine_lag_sec"] + 1e-9, 1 / fs):
             k = int(round(lag * fs))
             if a + k < 0 or b + k > len(e) or b > len(v):
                 continue
@@ -117,15 +120,23 @@ def two_stage(timeline, pose, raw, cfg):
             lag, r = max(cands, key=lambda c: c[1])
             per_rep.append((float(t0), float(lag), float(r)))
     pr = np.array(per_rep)
+    combo_offset = offset
+    rep_se, edge_frac = np.nan, np.nan
+    if len(pr) >= 4:
+        offset = float(np.median(pr[:, 1]))
+        rep_se = float(1.2533 * pr[:, 1].std(ddof=1) / np.sqrt(len(pr)))
+        edge_frac = float(np.mean(np.abs(pr[:, 1] - combo_offset) >= sc["fine_lag_sec"] - 1 / fs))
     if len(pr) >= 4:
         lr = stats.linregress(pr[:, 0], pr[:, 1])
         span = pr[:, 0].max() - pr[:, 0].min()
         drift, drift_p, rep_sd = float(lr.slope * span), float(lr.pvalue), float(pr[:, 1].std())
     else:
         drift, drift_p, rep_sd = 0.0, 1.0, np.nan
-    return dict(offset_sec=round(offset, 2), coarse_sec=coarse, r_coarse=r_coarse,
+    return dict(offset_sec=round(offset, 2), offset_se_sec=round(rep_se, 3),
+                n_rep=len(pr), rep_edge_frac=edge_frac, combo_offset_sec=round(combo_offset, 2),
+                method="median_per_rep", coarse_sec=coarse, r_coarse=r_coarse,
                 hud_boxcar_lag=hud_lag, hud_boxcar_r=hud_r,
-                r_coarse_second=r_second, fine_sec=round(offset - coarse, 2),
+                r_coarse_second=r_second, fine_sec=round(combo_offset - coarse, 2),
                 r_fine=main[1], spread_sec=float(np.subtract(*np.percentile(offs, [75, 25]))),
                 range_sec=float(offs.max() - offs.min()),
                 combos={k: round(v[0], 2) for k, v in combos.items()},
@@ -136,19 +147,31 @@ def two_stage(timeline, pose, raw, cfg):
 
 
 def qc(res, cfg):
+    """Mengembalikan (masalah, peringatan). Masalah = BERHENTI; peringatan = dicatat saja.
+    Kriteria utama: offset median per-repetisi dengan SE ≤ max_se_sec dari ≥ min_reps
+    repetisi, tidak menempel batas pencarian. Ketidaksepakatan kombinasi sinyal dan puncak
+    kasar yang tidak tegas menjadi peringatan bila kriteria utama terpenuhi."""
     sc = cfg["sync"]
-    problems = []
-    if res["r_coarse"] - res["r_coarse_second"] < sc["min_peak_margin"]:
-        problems.append(f"puncak kasar tidak tegas (r {res['r_coarse']:.2f} vs "
-                        f"{res['r_coarse_second']:.2f})")
+    problems, warnings = [], []
+    se, n = res.get("offset_se_sec", np.nan), res.get("n_rep", 0)
+    if n < sc["min_reps"] or not np.isfinite(se):
+        problems.append(f"repetisi terukur terlalu sedikit ({n} < {sc['min_reps']})")
+    elif se > sc["max_se_sec"]:
+        problems.append(f"offset per-repetisi tidak konsisten (SE {se:.2f} > {sc['max_se_sec']} dtk)")
+    if res.get("rep_edge_frac", 0) > 0.25:
+        problems.append(f"{res['rep_edge_frac']:.0%} repetisi menempel batas pencarian "
+                        "→ puncak kasar kemungkinan salah")
     if abs(res["offset_sec"]) > sc["prior_max_abs_sec"]:
         problems.append(f"|offset| {res['offset_sec']:.1f} dtk > prior hitungan-3 "
                         f"({sc['prior_max_abs_sec']} dtk)")
     if abs(res["drift_sec"]) > sc["max_drift_sec"] and res["drift_p"] < 0.05:
         problems.append(f"drift signifikan {res['drift_sec']:+.2f} dtk sepanjang sesi "
                         f"(p={res['drift_p']:.3f}) → pertimbangkan pemetaan linear")
+    if res["r_coarse"] - res["r_coarse_second"] < sc["min_peak_margin"]:
+        warnings.append(f"puncak kasar tidak tegas (r {res['r_coarse']:.2f} vs "
+                        f"{res['r_coarse_second']:.2f})")
     if res["r_fine"] < sc["min_r_fine"]:
-        problems.append(f"korelasi halus rendah (r {res['r_fine']:.2f})")
+        warnings.append(f"korelasi halus rendah (r {res['r_fine']:.2f})")
     if res["spread_sec"] > sc["max_spread_sec"]:
-        problems.append(f"kombinasi sinyal tidak sepakat (IQR {res['spread_sec']:.2f} dtk)")
-    return problems
+        warnings.append(f"kombinasi sinyal tidak sepakat (IQR {res['spread_sec']:.2f} dtk)")
+    return problems, warnings
