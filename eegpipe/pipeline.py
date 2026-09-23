@@ -26,7 +26,8 @@ def stage_ocr(P, cfg, force=False):
     out = P.out("timeline.csv")
     if out.exists() and not force:
         return pd.read_csv(out)
-    samples = ocr.run_ocr(P.video, cfg["video"]["hud_box"], cfg["video"]["ocr_coarse_step_sec"])
+    hud = P.decisions().get("hud_box", cfg["video"]["hud_box"])      # override per partisipan
+    samples = ocr.run_ocr(P.video, hud, cfg["video"]["ocr_coarse_step_sec"])
     samples.to_csv(P.out("ocr_samples.csv"), index=False)
     tl = ocr.segments(samples)
     tl.to_csv(out, index=False)
@@ -40,7 +41,8 @@ def stage_pose(P, cfg, force=False):
     if out.exists() and not force:
         return dict(np.load(out))
     from .pose import track
-    res = track(P.video, cfg["video"]["participant_box"],
+    box = P.decisions().get("participant_box", cfg["video"]["participant_box"])  # override per partisipan
+    res = track(P.video, box,
                 cfg["_root"] / cfg["paths"]["pose_model"], cfg["video"]["pose_frame_step"])
     np.savez(out, **res)
     _log(P.pid, f"pose: {len(res['t'])} frame, tanpa deteksi "
@@ -77,7 +79,10 @@ def stage_phases(P, cfg, tl, pose, force=False):
     out = P.out("reps.csv")
     if out.exists() and not force:
         return pd.read_csv(out)
-    reps = phases.detect_reps(tl, pose["t"], pose["trunk_y"], cfg)
+    # lintasan vertikal (config video.trajectory): trunk_y (bahu+pinggul) default
+    yk = cfg["video"].get("trajectory", "trunk_y")
+    ytraj = pose[yk] if yk in pose else pose["trunk_y"]
+    reps = phases.detect_reps(tl, pose["t"], ytraj, cfg)
     # koreksi manual (jika ada) menimpa hasil otomatis
     for fix in P.decisions().get("phase_fixes", []):
         m = (reps.task == fix["task"]) & (reps.rep == fix["rep"])

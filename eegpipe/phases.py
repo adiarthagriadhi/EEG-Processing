@@ -17,14 +17,22 @@ def first_run(mask, start=0, min_len=6):
     return None
 
 
-def _normalize(t, y, smooth_sec):
+def _normalize(t, y, smooth_sec, stand_until=None, low_pct=90):
     fps = 1 / np.median(np.diff(t))
     y = median_filter(y, size=max(3, int(smooth_sec * fps) | 1), mode="nearest")
-    stand, low = np.percentile(y, 5), np.percentile(y, 95)
+    # level berdiri = median sebelum instruksi (bila diberikan); persentil-5 keliru bila
+    # posisi setelah NAIK sedikit lebih tinggi dari awal (P10 NGEED rep2)
+    pre = y[t <= stand_until] if stand_until is not None else []
+    stand = np.median(pre) if len(pre) >= 5 else np.percentile(y, 5)
+    low = np.percentile(y, low_pct)
     return (y - stand) / (low - stand) if low > stand else y * 0, low - stand, fps
 
 
-def segment_phases(t, y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2, min_depth_px=15):
+def segment_phases(t, y, lo=0.1, hi=0.9, smooth_sec=0.5, min_run_sec=0.2, min_depth_px=15,
+                   stand_until=None):
+    """Level terendah = persentil-90 dan penghalusan 0,5 dtk: lonjakan pelacakan pada agem
+    (P10) membuat persentil-95 berada di bawah plato sehingga TAHAN terpotong. P02 tidak
+    berubah (12/12 ok)."""
     """t: waktu video (PTS); y: posisi vertikal batang tubuh (piksel, besar = bawah).
     Fase dari persilangan 10%/90% kedalaman gerak."""
     t, y = np.asarray(t, float), np.asarray(y, float)
@@ -34,7 +42,7 @@ def segment_phases(t, y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2, min_de
     if ok.sum() < 10:
         return nan
     t, y = t[ok], y[ok]
-    z, depth, fps = _normalize(t, y, smooth_sec)
+    z, depth, fps = _normalize(t, y, smooth_sec, stand_until)
     nan["depth_px"] = depth
     if depth < min_depth_px:
         return nan
@@ -56,14 +64,14 @@ def segment_phases(t, y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2, min_de
                 act_end=pick(i_end), depth_px=depth)
 
 
-def extrapolated_onset(t, y, smooth_sec=0.3):
+def extrapolated_onset(t, y, smooth_sec=0.5, stand_until=None):
     """Onset TURUN presisi (untuk LRP): garis 10%→50% diekstrapolasi ke 0%."""
     t, y = np.asarray(t, float), np.asarray(y, float)
     ok = np.isfinite(y)
     if ok.sum() < 10:
         return np.nan
     t, y = t[ok], y[ok]
-    z, depth, fps = _normalize(t, y, smooth_sec)
+    z, depth, fps = _normalize(t, y, smooth_sec, stand_until)
     n = max(2, int(0.2 * fps))
     i50 = first_run(z > 0.5, 0, n)
     if i50 is None:
@@ -106,10 +114,14 @@ def detect_reps(timeline, pose_t, pose_y, cfg):
         hud_end = hud["END"]
         w0, w1 = hud_turun - pc["search_before_sec"], hud_end + pc["search_after_sec"]
         m = (pose_t >= w0) & (pose_t <= w1)
-        seg = segment_phases(pose_t[m], pose_y[m], min_depth_px=pc["min_depth_px"])
+        seg = segment_phases(pose_t[m], pose_y[m], min_depth_px=pc["min_depth_px"],
+                             stand_until=hud_turun)
+        yy = pose_y[m][np.isfinite(pose_y[m])]
+        track_noise = float(np.median(np.abs(np.diff(yy)))) if len(yy) > 5 else np.nan
         row = dict(task=task, rep=int(rep), hud_turun=hud_turun, hud_tahan=hud["TAHAN"],
                    hud_naik=hud["NAIK"], hud_end=hud_end, ocr_protocol_dev=ocr_dev, **seg,
-                   act_turun_extrap=extrapolated_onset(pose_t[m], pose_y[m]),
+                   act_turun_extrap=extrapolated_onset(pose_t[m], pose_y[m], stand_until=hud_turun),
+                   track_noise_px=track_noise,
                    pose_valid_frac=float(np.isfinite(pose_y[m]).mean()) if m.any() else 0.0)
         row["compliance"] = compliance(row, pc["late_sec"], pc["short_hold_sec"])
         # jendela baseline ERD (relatif onset aktual) harus diam: rentang posisi batang tubuh
@@ -127,4 +139,24 @@ def detect_reps(timeline, pose_t, pose_y, cfg):
                 row["baseline_range_frac"] = frac
                 row["baseline_still"] = frac <= pc["baseline_max_frac"]
         rows.append(row)
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    return hud_fallback(df, pc)
+
+
+def hud_fallback(df, pc):
+    """Repetisi dengan pelacakan pose tidak andal (track_noise > batas; P10: pengamat
+    duduk tepat di belakang partisipan → MediaPipe menggabungkan dua orang saat agem)
+    diberi fase dari PROTOKOL HUD digeser latensi median partisipan (dari repetisi yang
+    bersih). Ditandai phase_source='hud_fallback' agar bisa dikecualikan di analisis."""
+    df["phase_source"] = "video"
+    good = df.compliance.isin(["ok", "late"]) & (df.track_noise_px <= pc["max_track_noise_px"])
+    lat = float((df.act_turun - df.hud_turun)[good].median()) if good.any() else pc["default_latency_sec"]
+    bad = df.track_noise_px > pc["max_track_noise_px"]
+    for c, h in [("act_turun", "hud_turun"), ("act_tahan", "hud_tahan"),
+                 ("act_naik", "hud_naik"), ("act_end", "hud_end")]:
+        df.loc[bad, c] = df.loc[bad, h] + lat
+    df.loc[bad, "act_turun_extrap"] = np.nan
+    df.loc[bad, "compliance"] = "hud_fallback"
+    df.loc[bad, "phase_source"] = "hud_fallback"
+    df["fallback_latency_sec"] = lat
+    return df

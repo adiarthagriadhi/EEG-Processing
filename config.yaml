@@ -23,6 +23,7 @@ video:
   hud_box: [960, 270, 1280, 449]          # x0, y0, x1, y1 (terverifikasi P02)
   participant_box: [340, 90, 740, 640]    # area partisipan tanpa operator (P02)
   ocr_coarse_step_sec: 0.5   # OCR kasar + pencarian biner di sekitar perubahan label
+  trajectory: trunk_y         # bahu+pinggul; derau pelacakan lebih kecil dari pinggul saja (P10)
   pose_frame_step: 2         # 15 fps: ~5 mnt/partisipan; presisi waktu ~66 ms
 
 sync:
@@ -32,7 +33,7 @@ sync:
   prior_max_abs_sec: 5.0      # start manual pada hitungan ke-3
   min_peak_margin: 0.03
   min_r_fine: 0.25
-  max_spread_sec: 0.5
+  max_spread_sec: 0.5         # IQR antar 6 kombinasi sinyal (rentang penuh sensitif thd 1 sinyal lemah; P10)
   eeg_motion_channels: [Fp1, Fp2, F7, F8, T3, T4]
   eeg_motion_band: [20.0, 34.0]
   max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)
@@ -47,6 +48,8 @@ phases:
   baseline_max_frac: 0.2     # rentang gerak di jendela baseline < 20% kedalaman gerak
   short_hold_sec: 1.0
   min_depth_px: 15
+  max_track_noise_px: 3.0    # median |Δy| antar frame; di atas ini pose dianggap tidak andal
+  default_latency_sec: 1.2
 
 erd:
   # Baseline dimundurkan agar tidak tumpang tindih jendela PRA-gerak (−2…0 dtk; permintaan

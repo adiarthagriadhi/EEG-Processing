@@ -45,7 +45,7 @@ def fig_sync(P, res):
     fig, ax = plt.subplots(1, 2, figsize=(12, 3))
     ax[0].plot(c["lags_coarse"], c["cc_coarse"])
     ax[0].axvline(res["coarse_sec"], color="r", ls="--")
-    ax[0].set_title("Kasar: boxcar HUD vs EEG 20–34 Hz")
+    ax[0].set_title("Kasar: kecepatan tubuh (pose) vs EEG 1–4 Hz")
     ax[0].set_xlabel("lag (dtk)")
     pr = res.get("per_rep", [])
     if pr:
@@ -64,7 +64,8 @@ def fig_reps(reps, pose):
     moves = ["NGEED", "AGEM KANAN", "AGEM KIRI"]
     n = int(reps.rep.max()) if len(reps) else 4
     fig, axes = plt.subplots(len(moves), n, figsize=(3.2 * n, 2.2 * len(moves)), squeeze=False)
-    t, y = pose["t"], pose["trunk_y"]
+    t = pose["t"]
+    y = pose["trunk_y"]
     for i, mv in enumerate(moves):
         for j in range(n):
             ax = axes[i][j]
@@ -84,7 +85,8 @@ def fig_reps(reps, pose):
                 ax.axvline(r.act_end - r.hud_turun, color="grey", lw=1.5)
             ax.invert_yaxis()
             ax.set_title(f"{mv} rep{j + 1}: {r.compliance}", fontsize=9,
-                         color="k" if r.compliance in ("ok", "late") else "red")
+                         color="k" if r.compliance in ("ok", "late") else
+                         "darkorange" if r.compliance == "hud_fallback" else "red")
             ax.tick_params(labelsize=7)
     fig.suptitle("Batang tubuh (y, piksel; turun = ke bawah). Titik-titik = HUD, garis = aktual",
                  fontsize=10)
@@ -200,9 +202,10 @@ def write(ctx, cfg):
         res = json.loads(P.out("sync.json").read_text())
         parts.append("<h2>2. Sinkronisasi</h2>")
         parts.append(f"<p>kasar {res['coarse_sec']:+.1f} dtk (r {res['r_coarse']:.2f}; puncak "
-                     f"lain {res['r_coarse_second']:.2f}; kasar = offset + waktu reaksi). "
+                     f"lain {res['r_coarse_second']:.2f}; diagnostik boxcar HUD "
+                     f"{res.get('hud_boxcar_lag', float('nan')):+.1f} dtk, r {res.get('hud_boxcar_r', float('nan')):.2f}). "
                      f"Offset akhir {res['offset_sec']:+.2f} dtk = median {len(res['combos'])} "
-                     f"kombinasi sinyal (sebaran {res['spread_sec']:.2f} dtk, r {res['r_fine']:.2f}); "
+                     f"kombinasi sinyal (IQR {res['spread_sec']:.2f} dtk, rentang {res.get('range_sec', float('nan')):.2f} dtk, r {res['r_fine']:.2f}); "
                      f"SD offset per repetisi {res.get('per_rep_sd', float('nan')):.2f} dtk.</p>")
         parts.append(fig_sync(P, res))
     if "reps" in ctx:
@@ -210,7 +213,8 @@ def write(ctx, cfg):
         parts.append("<h2>3. Fase gerak aktual</h2>")
         parts.append(fig_reps(reps, ctx["pose"]))
         cols = ["task", "rep", "compliance", "hud_turun", "act_turun", "act_tahan", "act_naik",
-                "act_end", "depth_px", "baseline_range_frac", "baseline_still", "pose_valid_frac",
+                "act_end", "depth_px", "track_noise_px", "phase_source", "baseline_range_frac",
+                "baseline_still", "pose_valid_frac",
                 "ocr_protocol_dev"]
         parts.append(_table(reps[[c for c in cols if c in reps]]))
     dec = P.decisions()

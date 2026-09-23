@@ -6,6 +6,8 @@ import numpy as np
 from .video import crop, iter_frames
 
 TRUNK = [11, 12, 23, 24]      # bahu & pinggul (lutut tertutup kamen)
+HIPS = [23, 24]
+SHOULDERS = [11, 12]
 
 
 def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
@@ -19,8 +21,8 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
         running_mode=vision.RunningMode.VIDEO, num_poses=2,
         min_pose_detection_confidence=0.2, min_pose_presence_confidence=0.2,
         min_tracking_confidence=0.5)
-    ts, ys, xs, motion = [], [], [], []
-    prev_x, prev_g = None, None
+    ts, ys, xs, motion, hip_y, sh_y = [], [], [], [], [], []
+    prev, prev_g, lost = None, None, 0
     with vision.PoseLandmarker.create_from_options(opts) as lm:
         for k, (t, img) in enumerate(iter_frames(video_path)):
             if k % frame_step:
@@ -32,16 +34,34 @@ def track(video_path, box, model_path, frame_step=1, max_jump=0.15):
             prev_g = g
             res = lm.detect_for_video(mp.Image(image_format=mp.ImageFormat.SRGB, data=c),
                                       int(t * 1000))
-            cand = [(np.mean([p[i].x for i in TRUNK]) * w, np.mean([p[i].y for i in TRUNK]) * h)
-                    for p in res.pose_landmarks
+            # Identitas dilacak dari KESELURUHAN kerangka (33 titik), bukan ukuran batang
+            # tubuh saja: saat partisipan berjongkok (agem) batang tubuhnya memendek dan
+            # pengamat duduk di belakangnya (P10) bisa tampak "lebih besar".
+            cand = [np.array([[q.x * w, q.y * h] for q in p]) for p in res.pose_landmarks
                     if np.mean([p[i].visibility for i in TRUNK]) > 0.5]
             ts.append(t)
-            y = x = np.nan
+            y = x = hy = sy = np.nan
             if cand:
-                ref = prev_x if prev_x is not None else w / 2
-                cx, cy = min(cand, key=lambda q: abs(q[0] - ref))
-                if abs(cx - ref) <= max_jump * w:
-                    prev_x, x, y = cx, cx + x0, cy + y0
+                if prev is None or lost > 15:          # (re)inisialisasi: orang tertinggi
+                    best = max(cand, key=lambda L: L[:, 1].max() - L[:, 1].min())
+                    ok = True
+                else:
+                    d = [np.nanmean(np.linalg.norm(L - prev, axis=1)) for L in cand]
+                    best = cand[int(np.argmin(d))]
+                    ok = min(d) <= max_jump * w
+                if ok:
+                    prev, lost = best, 0
+                    x = best[TRUNK, 0].mean() + x0
+                    y = best[TRUNK, 1].mean() + y0
+                    hy = best[HIPS, 1].mean() + y0
+                    sy = best[SHOULDERS, 1].mean() + y0
+                else:
+                    lost += 1
+            else:
+                lost += 1
             ys.append(y)
             xs.append(x)
-    return dict(t=np.array(ts), trunk_y=np.array(ys), x=np.array(xs), motion=np.array(motion))
+            hip_y.append(hy)
+            sh_y.append(sy)
+    return dict(t=np.array(ts), trunk_y=np.array(ys), x=np.array(xs), motion=np.array(motion),
+                hip_y=np.array(hip_y), shoulder_y=np.array(sh_y))

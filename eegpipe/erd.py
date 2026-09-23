@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def make_epochs(raw, reps, offset, cfg):
-    ok = reps.compliance.isin(["ok", "late", "short_hold"])
+    ok = reps.compliance.isin(["ok", "late", "short_hold", "hud_fallback"])
     if "baseline_still" in reps:
         ok &= reps.baseline_still.astype(bool)
     ph = reps[ok].reset_index(drop=True)
@@ -16,6 +16,7 @@ def make_epochs(raw, reps, offset, cfg):
     events = np.column_stack([samp, np.zeros(len(ph), int), np.arange(1, len(ph) + 1)])
     event_id = {f"{r.task.replace(' ', '_')}/rep{r.rep}": i + 1 for i, r in ph.iterrows()}
     meta = ph[["task", "rep", "compliance"]].copy()
+    meta["phase_source"] = ph.get("phase_source", "video")
     for c in ["act_tahan", "act_naik", "act_end"]:
         meta[c.replace("act_", "rel_")] = ph[c] - ph.act_turun
     meta["latency_hud"] = ph.act_turun - ph.hud_turun
@@ -58,6 +59,7 @@ def erd_table(epochs, pid, cfg):
                 for ch, v, pp, pr in zip(roi, vals, ptp, ptp_ratio):
                     rows.append(dict(participant_id=pid, task=m.task, rep=m.rep, phase=phase,
                                      compliance=m.compliance, latency_hud=m.latency_hud,
+                                     phase_source=m.phase_source,
                                      band=band, channel=ch, erd_pct=v, phase_dur=t1 - t0,
                                      phase_ptp_uv=round(float(pp), 1),
                                      ptp_ratio_vs_baseline=round(float(pr), 2),

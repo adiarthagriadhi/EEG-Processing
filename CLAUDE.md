@@ -372,6 +372,27 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
 - ERD TAHAN plausibel (−44…−52%); TURUN/NAIK kemungkinan didominasi artefak gerak.
 - Pipeline `eegpipe` (lihat EEG_PROCESSING.md "Menjalankan Pipeline") berjalan penuh pada P02.
 
+## Temuan P10 (non-penari) dan perbandingan dengan P02 (2026-09-23)
+- Video 441,6 dtk, EDF Trial 429 dtk; tata letak panel & area partisipan sama dengan P02.
+  **Pengamat duduk tepat di belakang partisipan** (di dalam area partisipan) → saat agem
+  MediaPipe menggabungkan dua orang (kepala/bahu pada pengamat). Identitas kini dilacak
+  dari kontinuitas seluruh kerangka; lintasan batang tubuh dihaluskan 0,5 dtk, plato =
+  persentil-90; repetisi dengan derau pelacakan > 3 px memakai fallback protokol HUD
+  (ditandai `phase_source=hud_fallback`). Rekomendasi perekaman: tidak ada orang di
+  belakang partisipan dalam garis pandang kamera.
+- **Sinkronisasi:** boxcar HUD gagal (EEG P10 tanpa perbedaan power antar blok, r 0,09);
+  tahap kasar kini memakai kecepatan tubuh (pose) → offset +0,90 dtk (IQR 0,07; tanpa
+  drift). P02 dengan metode baru: +0,68 dtk (sebelumnya +0,75; dalam ketidakpastian).
+- Fase: P10 8 ok / 4 short_hold; median TAHAN agem 0,94 dtk (P02 2,84 dtk) — non-penari
+  menahan agem lebih singkat/tidak stabil. Kanal buruk: F7. ICA kedipan hanya −42%.
+- ERD: P02 menunjukkan ERD pada TAHAN (mu −41%, beta −29%); **P10 tidak menunjukkan ERD
+  di fase mana pun** (TAHAN +125%). n=1 per grup → belum bisa disimpulkan.
+- Romberg: P10 EC 55% terekam (15 dtk). **Kedua partisipan tidak punya alpha oksipital
+  yang jelas** (alpha relatif 5–12% di EO/EC/Baseline; reaktivitas EC/EO P10 1,08) →
+  kemungkinan alpha tenggelam dalam derau broadband (SD 40–90 µV). Risiko besar untuk
+  fitur Paper D berbasis alpha. Rekomendasi: cek impedansi dan uji mata-tertutup
+  singkat (efek Berger) di awal sesi sebagai QC perekaman.
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
 > 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,

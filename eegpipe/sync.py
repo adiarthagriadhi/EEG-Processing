@@ -61,8 +61,7 @@ def hud_boxcar(timeline, t_end, fs):
 
 
 def two_stage(timeline, pose, raw, cfg):
-    """Kasar: boxcar HUD vs EEG (±coarse_lag; pola blok istirahat 180 dtk mencegah salah
-    periode 16 dtk). Hasil kasar = offset + waktu reaksi (gerak mulai ~0,8 dtk setelah HUD).
+    """Kasar: kecepatan tubuh (pose) vs envelope EEG 1–4 Hz (±coarse_lag).
     Halus: kecepatan tubuh (pose) vs envelope artefak EEG, ±fine_lag di sekitar kasar,
     median atas beberapa kombinasi sinyal; sebarannya = ketidakpastian.
     Drift: offset halus per blok gerakan (dipisah ISTIRAHAT UTAMA).
@@ -71,16 +70,21 @@ def two_stage(timeline, pose, raw, cfg):
     fs = sc["fs"]
     all_eeg = [c for c in raw.ch_names if c not in cfg["eeg"]["misc_channels"]]
     _, e_coarse = eeg_motion(raw, cfg)
-    _, box = hud_boxcar(timeline, pose["t"][-1], fs)
-    coarse, r_coarse, lags_c, cc_c = xcorr_offset(box + 0.01, e_coarse, fs, sc["coarse_lag_sec"])
-    far = np.abs(lags_c - coarse) > 3
-    r_second = float(cc_c[far].max()) if far.any() else np.nan
-
     t, speed, vy = pose_speed(pose)
     videos = {"speed": to_grid(t, speed, fs)[1], "vy": to_grid(t, vy, fs)[1]}
     eegs = {"1-4Hz_all": eeg_envelope(raw, (1, 4), all_eeg, fs)[1],
             "0.5-2Hz_all": eeg_envelope(raw, (0.5, 2), all_eeg, fs)[1],
-            "emg": e_coarse if sc["fs"] == fs else eeg_motion(raw, cfg)[1]}
+            "emg": e_coarse}
+    # Kasar: kecepatan tubuh (gerak AKTUAL) vs envelope EEG 1–4 Hz, ±coarse_lag.
+    # Boxcar HUD saja gagal pada P10 (EEG tanpa perbedaan power antar blok, r 0,09),
+    # sedangkan gerak aktual tetap memberi puncak konsisten (+0,8 dtk, r 0,33).
+    coarse, r_coarse, lags_c, cc_c = xcorr_offset(videos["speed"], eegs["1-4Hz_all"], fs,
+                                                  sc["coarse_lag_sec"])
+    far = np.abs(lags_c - coarse) > 3
+    r_second = float(cc_c[far].max()) if far.any() else np.nan
+    # diagnostik: boxcar HUD (kasar lama = offset + waktu reaksi)
+    _, box = hud_boxcar(timeline, pose["t"][-1], fs)
+    hud_lag, hud_r, _, _ = xcorr_offset(box + 0.01, e_coarse, fs, sc["coarse_lag_sec"])
     lo, hi = coarse - sc["fine_lag_sec"], coarse + sc["fine_lag_sec"]
 
     def best(v, e, a=0, b=None):
@@ -120,8 +124,10 @@ def two_stage(timeline, pose, raw, cfg):
     else:
         drift, drift_p, rep_sd = 0.0, 1.0, np.nan
     return dict(offset_sec=round(offset, 2), coarse_sec=coarse, r_coarse=r_coarse,
+                hud_boxcar_lag=hud_lag, hud_boxcar_r=hud_r,
                 r_coarse_second=r_second, fine_sec=round(offset - coarse, 2),
-                r_fine=main[1], spread_sec=float(offs.max() - offs.min()),
+                r_fine=main[1], spread_sec=float(np.subtract(*np.percentile(offs, [75, 25]))),
+                range_sec=float(offs.max() - offs.min()),
                 combos={k: round(v[0], 2) for k, v in combos.items()},
                 per_rep=[dict(t=t0, offset=o, r=r) for t0, o, r in per_rep],
                 per_rep_sd=rep_sd, drift_sec=round(drift, 2), drift_p=drift_p,
@@ -144,5 +150,5 @@ def qc(res, cfg):
     if res["r_fine"] < sc["min_r_fine"]:
         problems.append(f"korelasi halus rendah (r {res['r_fine']:.2f})")
     if res["spread_sec"] > sc["max_spread_sec"]:
-        problems.append(f"kombinasi sinyal tidak sepakat (sebaran {res['spread_sec']:.2f} dtk)")
+        problems.append(f"kombinasi sinyal tidak sepakat (IQR {res['spread_sec']:.2f} dtk)")
     return problems
