@@ -92,3 +92,28 @@ hypotheses:
        endpoint: mu_relative_FCP_left_TURUN, expect: non-penari < penari}
   H5: {label: "Postur/skema tubuh: lateralisasi kanan saat TAHAN pada penari",
        endpoint: mu_relative_right_minus_left_TAHAN, expect: penari < non-penari}
+
+# Hipotesis v2 (ditetapkan 2026-09-23 dari EKSPLORASI 11 partisipan: P01–P07, P10, P36–P38;
+# lihat CLAUDE.md "Audit segmen"). Kerangka subsegmen dari pengguna: TURUN = koordinasi/stabilitas
+# dinamis; TAHAN = kontrol keseimbangan/kekuatan; NAIK = gerak sehari-hari (kontrol internal).
+# UJI KONFIRMATORI hanya pada partisipan BARU (di luar 11 partisipan eksplorasi) untuk menghindari
+# sirkularitas; hasil pada seluruh sampel dilaporkan terpisah. Welch satu arah per 'expect', FDR atas
+# H6–H13. Endpoint dihitung dengan pendekatan baru (offset tetap 0,85 dtk, 12 segmen gabungan,
+# acuan gabungan). BELUM diimplementasikan di eegpipe/hypotheses.py (paket kerja berikutnya).
+hypotheses_v2:
+  H6:  {label: "TURUN terkontrol: durasi turun lebih panjang pada penari",
+        endpoint: dur_turun_sec, expect: penari > non-penari, explor_d: 0.75}
+  H7:  {label: "TAHAN konsisten: variabilitas (CV) durasi tahan lebih kecil pada penari",
+        endpoint: cv_tahan, expect: penari < non-penari, explor_d: -2.12}
+  H8:  {label: "NAIK efisien: durasi naik lebih singkat pada penari",
+        endpoint: dur_naik_sec, expect: penari < non-penari, explor_d: -2.34}
+  H9:  {label: "Efisiensi kortikal TURUN: ERD mu periodik sentral (C3/C4) lebih kecil pada penari",
+        endpoint: mu_periodic_central_TURUN, expect: penari > non-penari, explor_d: 1.75}
+  H10: {label: "Kestabilan motorik: kenaikan garis latar sentral lebih kecil pada penari (TURUN, TAHAN)",
+        endpoint: [offset_central_TURUN, offset_central_TAHAN], expect: penari < non-penari, explor_d: [-0.90, -0.87]}
+  H11: {label: "Kontrol keseimbangan TAHAN: mu periodik temporo-posterior/parietal lebih rendah pada penari",
+        endpoint: mu_periodic_posterior_TAHAN, expect: penari < non-penari, explor_d: -2.00}
+  H12: {label: "Spesifisitas tuntutan gerak: beda grup EEG (H9–H11) lebih besar di TURUN/TAHAN daripada NAIK",
+        endpoint: interaksi_grup_x_subsegmen, expect: "|d_TURUN|,|d_TAHAN| > |d_NAIK|"}
+  H13: {label: "Hubungan otak–perilaku: garis latar TAHAN berkorelasi dengan CV durasi tahan (seluruh sampel, kontrol usia)",
+        endpoint: [offset_central_TAHAN, cv_tahan], expect: "rho > 0"}
