@@ -428,6 +428,10 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
 - P04: artefak broadband pada PRA (+7,7 dB) tanpa gerak video yang sepadan — belum terjelaskan.
 - Endpoint H (penari n=4 vs non-penari n=1): arah H1–H5 sesuai harapan; H3 paling tegas
   (tahan agem 2,40–2,97 vs 0,94 dtk). Uji formal menunggu ≥3 non-penari.
+- **P36–P38 (non-penari, 2026-09-23):** offset +0,70/+0,95/+1,05 dtk (SE 0,10–0,17), Romberg EC
+  99–100% terekam. P38: pose kurang andal (4 hud_fallback, hanya 2 epoch ERD, batas ketelitian
+  8,2 dB). Uji H1–H5 (4 vs 4, Welch satu arah, FDR): arah H1/H2/H3/H5 sesuai harapan, H4 tidak;
+  tidak ada yang signifikan (p 0,14–0,78; p_FDR ≥ 0,36) — daya uji sangat rendah pada n=4/grup.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
