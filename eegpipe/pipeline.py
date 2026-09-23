@@ -11,7 +11,7 @@ from . import erd, ocr, phases, preprocess, romberg, sync
 from .config import Participant
 from .eeg_io import load_edf
 
-STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "report"]
+STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "baseline", "report"]
 
 
 class QCStop(Exception):
@@ -189,6 +189,36 @@ def stage_romberg(P, cfg, clean, tl, offset, force=False):
     return feat
 
 
+def stage_baseline(P, cfg, force=False):
+    """Baseline.EDF (istirahat terpisah, sebelum Trial): fitur + uji sensitivitas ERD.
+    Kanal buruk dan ICA dari Trial diterapkan (sesi & pemasangan elektroda sama)."""
+    out = P.results_dir / f"{P.pid}_baseline_features.csv"
+    if out.exists() and not force:
+        return pd.read_csv(out).iloc[0].to_dict()
+    from . import baseline
+    from mne.preprocessing import read_ica
+    dec = P.decisions()
+    raw = load_edf(P.baseline_edf, cfg)
+    filt = preprocess.filter_raw(raw.copy(), cfg)
+    ica = read_ica(P.out("ica.fif"), verbose="error") if P.out("ica.fif").exists() else None
+    clean = preprocess.clean(raw, cfg, dec.get("bad_channels", []), ica,
+                             dec.get("ica_exclude", []))
+    feat, _ = baseline.features(clean, filt, P.pid, cfg)
+    pd.DataFrame([feat]).to_csv(out, index=False)
+    msg = (f"baseline: {feat['baseline_sec']} dtk, kedipan {feat['blink_per_min']}/mnt, "
+           f"alpha O1/O2 relatif {feat['rest_alpha_occ']:.2f}, IAF {feat['iaf_occ_rest']}")
+    if P.out("move-epo.fif").exists():
+        ep = mne.read_epochs(P.out("move-epo.fif"), verbose="error")
+        sens = baseline.erd_sensitivity(ep, clean, P.pid, cfg)
+        sens.to_csv(P.results_dir / f"{P.pid}_erd_sensitivity.csv", index=False)
+        if len(sens):
+            g = sens[sens.channel.isin(["C3", "C4"]) & (sens.band == "mu")].groupby("phase")[
+                ["erd_ref_trial_pct", "erd_ref_restEDF_pct"]].median().round(0)
+            msg += f"; ERD mu C3/C4 median (acuan Trial vs Baseline.EDF) {g.to_dict('index')}"
+    _log(P.pid, msg)
+    return feat
+
+
 def run(pid, cfg, stages=None, force=()):
     from . import report
     P = Participant(pid, cfg)
@@ -216,6 +246,8 @@ def run(pid, cfg, stages=None, force=()):
                 ctx["spectral"] = stage_spectral(P, cfg, f("spectral"))
             if "romberg" in stages:
                 ctx["romberg"] = stage_romberg(P, cfg, clean, tl, offset, f("romberg"))
+            if "baseline" in stages:
+                ctx["baseline"] = stage_baseline(P, cfg, f("baseline"))
     except QCStop as e:
         ctx["problems"].append(str(e))
         _log(pid, f"BERHENTI: {e}")

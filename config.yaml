@@ -36,6 +36,7 @@ sync:
   max_spread_sec: 0.5         # PERINGATAN saja; IQR antar 6 kombinasi sinyal (rentang penuh sensitif thd 1 sinyal lemah; P10)
   eeg_motion_channels: [Fp1, Fp2, F7, F8, T3, T4]
   eeg_motion_band: [20.0, 34.0]
+  rep_lag_sec: 1.0            # jendela sempit per-repetisi (langkah 2)
   min_reps: 6                 # offset utama = median per-repetisi (P01/P03/P04)
   max_se_sec: 0.25            # SE median offset per-repetisi (P02 0,08; P01–P04 0,18–0,23)
   max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)

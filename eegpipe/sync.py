@@ -107,25 +107,37 @@ def two_stage(timeline, pose, raw, cfg):
     from scipy import stats
     v, e = videos["speed"], eegs["1-4Hz_all"]
     lv = np.log1p(v)
-    per_rep = []
-    for t0 in timeline[timeline.subphase == "TURUN"].start:
-        a, b = int((t0 - 3) * fs), int((t0 + 13) * fs)
-        cands = []
-        for lag in np.arange(offset - sc["fine_lag_sec"], offset + sc["fine_lag_sec"] + 1e-9, 1 / fs):
-            k = int(round(lag * fs))
-            if a + k < 0 or b + k > len(e) or b > len(v):
-                continue
-            cands.append((lag, np.corrcoef(lv[a:b], np.log1p(e[a + k:b + k]))[0, 1]))
-        if cands:
-            lag, r = max(cands, key=lambda c: c[1])
-            per_rep.append((float(t0), float(lag), float(r)))
-    pr = np.array(per_rep)
+    turun = timeline[timeline.subphase == "TURUN"].start
+
+    def local(center, half):
+        out = []
+        for t0 in turun:
+            a, b = int((t0 - 3) * fs), int((t0 + 13) * fs)
+            cands = []
+            for lag in np.arange(center - half, center + half + 1e-9, 1 / fs):
+                k = int(round(lag * fs))
+                if a + k < 0 or b + k > len(e) or b > len(v):
+                    continue
+                cands.append((lag, np.corrcoef(lv[a:b], np.log1p(e[a + k:b + k]))[0, 1]))
+            if cands:
+                lag, r = max(cands, key=lambda c: c[1])
+                out.append((float(t0), float(lag), float(r)))
+        return np.array(out)
+
+    # Dua langkah: (1) lebar ±fine_lag di sekitar median kombinasi → memastikan LOKASI
+    # (menempel batas = puncak kasar salah); (2) sempit ±rep_lag di sekitar median langkah 1
+    # → presisi (jendela lebar menambah puncak sekunder: SE 0,28–0,34 vs 0,18–0,23 dtk).
     combo_offset = offset
     rep_se, edge_frac = np.nan, np.nan
+    wide = local(combo_offset, sc["fine_lag_sec"])
+    pr = wide
+    if len(wide) >= 4:
+        edge_frac = float(np.mean(np.abs(wide[:, 1] - combo_offset) >= sc["fine_lag_sec"] - 1 / fs))
+        pr = local(float(np.median(wide[:, 1])), sc["rep_lag_sec"])
     if len(pr) >= 4:
         offset = float(np.median(pr[:, 1]))
         rep_se = float(1.2533 * pr[:, 1].std(ddof=1) / np.sqrt(len(pr)))
-        edge_frac = float(np.mean(np.abs(pr[:, 1] - combo_offset) >= sc["fine_lag_sec"] - 1 / fs))
+    per_rep = [tuple(x) for x in pr]
     if len(pr) >= 4:
         lr = stats.linregress(pr[:, 0], pr[:, 1])
         span = pr[:, 0].max() - pr[:, 0].min()

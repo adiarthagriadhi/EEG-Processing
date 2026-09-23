@@ -404,6 +404,24 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   non-penari, H5 lateralisasi kanan saat TAHAN pada penari. P02 vs P10: kelima arah sesuai
   harapan secara deskriptif; H1/H4/H5 di bawah batas ketelitian; uji formal butuh ≥3/grup.
 
+## Temuan P01, P03, P04 (penari) + tahap baseline (2026-09-23)
+- **Sinkronisasi (metode baru):** offset utama = median offset lokal 12 repetisi, dua langkah
+  (lebar ±2 dtk → sempit ±1 dtk), lolos bila SE ≤ 0,25 dtk. Offset: P01 +4,52±0,25; P02
+  +0,58±0,08; P04 +1,37±0,19; P10 +0,95±0,17. **P03 berhenti**: offset per-repetisi bimodal
+  (≈0,5–1,25 vs ≈1,8–2,5 dtk; SE 0,29) → perlu tinjauan manual/anchor lain.
+- **Baseline.EDF = rekaman istirahat terpisah SEBELUM Trial**, di luar video (dikonfirmasi pengguna;
+  isi tidak ada di Trial, sambungan tidak kontinu) → dipakai terpisah (tahap `baseline`):
+  kedipan 18–25/mnt → **mata terbuka**; IAF tidak terdefinisi pada semua partisipan; P10
+  Baseline terlalu bising (0 jendela oksipital bersih ≤150 µV).
+- **Baseline.EDF tidak cocok sebagai acuan ERD**: power-nya jauh lebih rendah dari berdiri di
+  dalam Trial → ERD/ERS membengkak (P02 TAHAN −46% vs +363%). Acuan utama tetap DIAM di Trial.
+- **P01 & P04 didominasi artefak broadband bahkan pada PRA** (indeks global +7,5/+7,9 dB, rasio
+  ptp PRA/baseline 2,3–3,1) → ERD konvensional +100…+1400% tidak dapat ditafsirkan; batas
+  ketelitian P01 6,7 dB. Penyebab belum pasti (gerak/ayunan pra-gerak, lengan agem diangkat
+  lebih awal — onset lengan P04 hingga 7,4 dtk sebelum turun — atau sisa ketidakpastian sync).
+- H3 (durasi tahan agem) konsisten: penari 2,73/2,84/2,97 dtk vs non-penari 0,94 dtk.
+  H1–H5 belum dapat diuji (non-penari n=1).
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
 > 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,
