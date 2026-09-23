@@ -193,6 +193,69 @@ sisa sesi. Simpan offset ini secara eksplisit per partisipan di file metadata
   multiple comparison (Benjamini-Hochberg disarankan dibanding Bonferroni untuk
   konteks eksploratif ini).
 
+## Metode Tambahan Diadopsi dari Draft Naskah (Paper A/B/C)
+
+Pengguna sudah menyusun 3 draft naskah terkait studi ini (Paper A cross-sectional,
+Paper B longitudinal-pilot 6 minggu, Paper C data descriptor). Beberapa pilihan
+metodologis di dalamnya **layak diadopsi ke pipeline ini** — dicatat di sini
+supaya Tahap 5/6 di atas konsisten dengan rencana naskah:
+
+**Dari Paper A (montase 16-channel, revisi terbaru):**
+- **Lateralized Readiness Potential (LRP)** sebagai pengganti Readiness Potential
+  klasik (yang butuh Cz) — dihitung dari **selisih C4−C3, metode
+  double-subtraction (Coles, 1989)**, amplitudo pada jendela **−200 hingga 0 ms
+  pra-onset gerak**, dibandingkan antar grup (trial tangan kanan vs kiri). Domain
+  waktu (low-pass filter), BUKAN dekomposisi pita frekuensi — proses terpisah
+  dari pipeline ERD/ERS di Tahap 5.
+- **Indeks Lateralisasi (LI)** = (ERD kontralateral − ERD ipsilateral) /
+  (ERD kontralateral + ERD ipsilateral), dihitung dari pasangan C3–C4, dibandingkan
+  antar grup.
+- **Topografi ERD beta** (peta skalp 16-channel, tanpa interpolasi area garis
+  tengah) untuk kondisi gerak tangan kanan & kiri terpisah — pelengkap visual
+  untuk Tahap 5.
+- Uji statistik grup: **Welch's t-test** (bukan Student's t biasa, karena varians
+  antar grup penari/non-penari kemungkinan tidak sama) untuk 5 indeks konvensional
+  (ERD Beta Agem, Theta Frontal Agem, Alpha Oksipital Romberg-EC, rasio
+  Theta/Alpha Romberg, durasi Stork Test) + regresi linear usia×kelompok.
+- ⚠️ Regresi usia×kelompok di draft memakai asumsi linear sederhana — dengan
+  rentang usia riil (remaja–102 tahun) dan kemungkinan cuma 1–2 partisipan di
+  ekor ekstrem, WAJIB tambahkan **uji sensitivitas (dengan/tanpa outlier usia
+  ekstrem)** sebelum melaporkan hasil regresi ini sebagai temuan utama.
+
+**Dari Paper B (longitudinal pre-post 6 minggu, desain tanpa kontrol eksternal):**
+- **Reliable Change Index (RCI)**: `RCI = (Post−Pre)/S_diff`, dengan
+  `S_diff = SD_pre × √(2×(1−rxx))`, ambang `|RCI|≥1.96` = perubahan individual
+  nyata. ⚠️ **rxx harus dihitung dari data riil** (test-retest atau split-half
+  pada segmen baseline/rest) — draft masih pakai placeholder (0.70–0.85), belum
+  boleh dipakai apa adanya.
+- **Nonequivalent Dependent Variable (NDV)**: Peak Alpha Frequency saat istirahat
+  mata tertutup sebagai metrik kontrol teoretis (dianggap tidak terkait latihan
+  tari) — uji-t berpasangan terpisah dari 5 indeks target, untuk menyingkirkan
+  efek uji-ulang/familiaritas umum.
+- **Gap Closure (%)** = (Post−Pre)/(Rata-rata Penari−Pre)×100 per individu,
+  memakai rata-rata kelompok penari **dari Paper A** sebagai benchmark. ⚠️
+  **Dependency**: Paper A harus final dulu (nilai rata-rata penari sudah pasti)
+  sebelum Gap Closure Paper B bisa dihitung — perhatikan urutan pengerjaan.
+- Seluruh hasil di draft eksplisit diberi label **"[SIMULATED RESULTS]"** —
+  praktik yang baik, pertahankan pola ini di kode (mis. flag jelas
+  `is_simulated=True` di output) sampai data riil terpasang.
+
+## ⚠️ Isu yang Harus Diperbaiki di Draft Naskah Sebelum Dipakai Sebagai Rujukan Final
+Ditemukan saat meninjau ketiga draft — **belum diperbaiki oleh pengguna**, dicatat
+di sini supaya tidak tercampur dengan bagian "Metode Tambahan" di atas yang sudah
+disetujui untuk diadopsi:
+- Ketiga draft masih mendeskripsikan **N=25 penari/15 non-penari, usia 17–55
+  tahun** — TIDAK sesuai kohort aktual (**N=24/14, usia remaja–102 tahun**).
+  Bagian Metode, Abstrak, dan judul ketiga naskah perlu ditulis ulang.
+- **Paper C masih mendeskripsikan montase 19-channel dengan Cz** — kontradiksi
+  langsung dengan Paper A yang sudah dikoreksi ke 16-channel tanpa elektroda
+  garis tengah. Harus disinkronkan sebelum Paper C dianggap akurat.
+- Bagian "Data Processing" Paper C (Differential Entropy + Relative Difference
+  baseline reduction, dari Wirawan dkk. 2024) belum sinkron dengan metode ERD/LRP
+  yang benar-benar dipakai di Paper A/B — perlu diklarifikasi/ditulis ulang.
+- Tidak ada koreksi multiple comparison disebutkan di Paper A untuk 5 indeks +
+  LI + LRP + interaksi usia yang diuji sekaligus.
+
 ## Jawaban Pengguna (2026-09-23)
 1. **Start rekaman:** EEG dan video direkam di dua device berbeda, dimulai manual
    oleh dua operator pada aba-aba **hitungan ke-3** (terlihat oleh kedua operator).
@@ -211,6 +274,18 @@ sisa sesi. Simpan offset ini secara eksplisit per partisipan di file metadata
    dengan tepat**, sehingga fase aktual **wajib dikonfirmasi dari video**
    (pose/gerak tubuh), bukan hanya dari label HUD. Refinement onset di Tahap 4
    menjadi **wajib**, bukan opsional.
+
+## Catatan Teknis Hasil Verifikasi (menggantikan asumsi di atas bila bertentangan)
+- **Notch 50 Hz tidak dapat diterapkan**: sampling 100 Hz → 50 Hz = Nyquist (MNE
+  menolak). Interferensi listrik ditangani low-pass 40 Hz. (Mengoreksi Tahap 3.)
+- **Referensi bukan linked-ear**: kanal kiri → A1, kanan → A2 (referensi telinga
+  ipsilateral). Asimetri A1 vs A2 masuk langsung ke selisih C3/C4 — relevan untuk
+  LRP dan LI. (Mengoreksi Tahap 3.)
+- **Refinement onset dari video wajib** (lihat jawaban no. 4), bukan opsional.
+- **LRP butuh cabang preprocessing terpisah**: high-pass ≤ 0,1 Hz (filter 1 Hz untuk
+  ERD/ERS akan menghapus potensial lambat), dan presisi onset jauh di bawah 200 ms.
+  Dengan hanya 4 repetisi per sisi, SNR LRP sangat rendah — laporkan sebagai
+  eksploratif. Detail di EEG_PROCESSING.md.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:

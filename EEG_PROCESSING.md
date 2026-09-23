@@ -114,10 +114,12 @@ Tahap 3  EDF ─► rename/montage ─► filter 1–40 Hz ─► kanal buruk �
 Tahap 4  Pose video ─► fase aktual TURUN/TAHAN/NAIK + kepatuhan (verifikasi manual)
          ─► offset ─► Epochs per repetisi (onset aktual)
    │
-   ├─► Tahap 5   ERD/ERS mu & beta per fase (C3/C4, P3/P4, O1/O2) ─► erd_ers_long.csv
+   ├─► Tahap 5   ERD/ERS theta/mu/beta per fase ─► LI, topografi beta ─► erd_ers_long.csv
+   ├─► Tahap 5   LRP (cabang filter 0,05–8 Hz, onset ekstrapolasi) ─► lrp.csv
    └─► Tahap 5b  Romberg EO/EC ─► romberg_features.csv (join dgn Stork Test)
    │
-Tahap 6  Mixed model (ERD/ERS) & korelasi parsial (Romberg × Stork)
+Tahap 6  Mixed model; Welch 5 indeks + BH + sensitivitas usia (Paper A);
+         RCI, NDV, Gap Closure (Paper B); korelasi parsial Romberg × Stork
 ```
 
 Semua parameter disimpan di satu file `config.yaml`, jangan ditulis langsung (*hardcode*) di skrip:
@@ -132,6 +134,8 @@ sync: {prior_offset_sec: 0.0, max_lag_sec: 5.0, max_drift_sec: 0.2, max_residual
 phases: {late_sec: 1.5, short_hold_sec: 1.0, min_phase_sec: 0.5}
 bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}
 roi: [C3, C4, P3, P4, O1, O2]
+is_simulated: true    # ganti ke false saat data riil dipakai (12.6)
+lrp: {l_freq: 0.05, h_freq: 8.0, tmin: -1.5, tmax: 0.5, baseline: [-1.5, -1.0], window: [-0.2, 0.0]}
 erd:
   tmin: -2.5          # detik relatif onset TURUN aktual; tmax = durasi gerak terpanjang + 1 dtk
   baseline: [-2.0, -0.5]
@@ -441,6 +445,7 @@ ica.fit(raw.copy().pick("eeg"), reject_by_annotation=True)
 eog_idx, scores = ica.find_bads_eog(raw, ch_name=["Fp1", "Fp2"])  # Fp sebagai proksi EOG
 ica.plot_components(); ica.plot_sources(raw); ica.plot_properties(raw, picks=eog_idx)
 ica.exclude = eog_idx        # setelah diverifikasi visual
+ica.save(f"data/derivatives/{pid}-ica.fif", overwrite=True)   # dipakai ulang di cabang LRP (8.3)
 ica.apply(raw)
 raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
 ```
@@ -453,6 +458,24 @@ raw.save(f"data/derivatives/{pid}_clean_raw.fif", overwrite=True)
 - Jika `Add_lead1/2` ternyata EOG, ganti `ch_name` di `find_bads_eog` ke kanal tersebut.
 - Segmen dengan artefak gerak besar diberi anotasi `BAD_motion` dan tidak dipakai
   untuk *fit* ICA.
+
+### 8.3 Cabang preprocessing terpisah untuk LRP (Paper A)
+
+LRP adalah **potensial lambat**, sedangkan *high-pass* 1 Hz untuk ERD/ERS akan
+menghapusnya. Karena itu LRP memakai salinan data sendiri dari EDF mentah. ICA tetap
+di-*fit* pada data 1 Hz (lebih stabil), lalu **diterapkan** ke data LRP.
+
+```python
+raw_lrp = mne.io.read_raw_edf(path_trial_edf, preload=True)
+raw_lrp.rename_channels(lambda ch: ch.split("-")[0])
+raw_lrp.set_channel_types({"Add_lead1": "misc", "Add_lead2": "misc"})
+raw_lrp.info["bads"] = bads_from_main_branch            # kanal buruk yang sama
+raw_lrp.filter(l_freq=0.05, h_freq=8.0)                 # potensial lambat; low-pass per Paper A
+raw_lrp.interpolate_bads(reset_bads=True)
+ica = mne.preprocessing.read_ica(f"data/derivatives/{pid}-ica.fif")
+ica.apply(raw_lrp)
+raw_lrp.save(f"data/derivatives/{pid}_lrp_raw.fif", overwrite=True)
+```
 
 ---
 
@@ -516,6 +539,20 @@ def segment_phases(t, hip_y, lo=0.1, hi=0.9, smooth_sec=0.3, min_run_sec=0.2,
     pick = lambda i: t[i] if i is not None else np.nan
     return dict(act_turun=pick(i_turun), act_tahan=pick(i_tahan),
                 act_naik=pick(i_naik), act_end=pick(i_end), depth_px=depth)
+
+def extrapolated_onset(t, hip_y, smooth_sec=0.3):
+    """Onset TURUN yang lebih presisi untuk LRP (10.3): garis melalui persilangan 10% dan
+    50% kedalaman, diekstrapolasi ke 0%. Mengoreksi keterlambatan deteksi 10%."""
+    fps = 1 / np.median(np.diff(t))
+    y = median_filter(hip_y, size=max(3, int(smooth_sec * fps) | 1), mode="nearest")
+    stand, low = np.percentile(y, 5), np.percentile(y, 95)
+    z = (y - stand) / (low - stand)
+    n = max(2, int(0.2 * fps))
+    i10 = first_run(z > 0.1, 0, n)
+    i50 = first_run(z > 0.5, i10, n) if i10 is not None else None
+    if i50 is None:
+        return np.nan
+    return t[i10] - 0.1 * (t[i50] - t[i10]) / 0.4
 ```
 
 3. **Verifikasi manual semua repetisi.** Jumlahnya sedikit (12 per partisipan), jadi
@@ -601,14 +638,14 @@ import pandas as pd
 import mne
 
 epochs = mne.read_epochs(f"data/derivatives/{pid}_move-epo.fif")
-roi = ["C3", "C4", "P3", "P4", "O1", "O2"]
-freqs = np.arange(6, 31, 1.0)
+roi = ["C3", "C4", "P3", "P4", "O1", "O2", "F3", "F4"]   # F3/F4: theta frontal (Paper A)
+freqs = np.arange(4, 31, 1.0)
 tfr = epochs.compute_tfr(method="morlet", freqs=freqs, n_cycles=freqs / 2,
                          picks=roi, average=False, return_itc=False)
 tfr.apply_baseline(baseline=(-2.0, -0.5), mode="percent")   # (A−R)/R
 data = tfr.get_data() * 100                                   # epoch × kanal × freq × waktu
 
-bands = {"mu": (8, 13), "beta": (13, 30)}
+bands = {"theta": (4, 8), "mu": (8, 13), "beta": (13, 30)}
 rows = []
 for i, m in epochs.metadata.reset_index(drop=True).iterrows():
     # Jendela per fase dari onset AKTUAL (video), relatif ke onset TURUN = 0
@@ -636,9 +673,8 @@ tfr.average().plot(picks=["C3", "C4"], title=f"{pid} %ERD/ERS")
 - **Per fase:** ERD dihitung terpisah untuk TURUN, TAHAN, dan NAIK menggunakan batas
   fase aktual dari video. Durasi fase berbeda antar repetisi, jadi `phase_dur` ikut
   disimpan dan fase < 0,5 dtk dibuang (terlalu pendek untuk estimasi mu/beta).
-- **Lateralisasi:** untuk agem kanan, ERD diharapkan lebih kuat di C3 (kontralateral),
-  dan sebaliknya untuk agem kiri. Hitung juga indeks lateralisasi `C3 − C4`, tetapi
-  interpretasikan dengan hati-hati karena referensi ipsilateral (A1 vs A2).
+  Untuk theta (4 Hz, `n_cycles` = 2), fase < 1 dtk sebaiknya tidak dipakai.
+- **Lateralisasi:** lihat Indeks Lateralisasi (10.1).
 - **Band individual** (opsional, direkomendasikan karena rentang usia lebar): definisikan
   mu sebagai IAF−2 s.d. IAF+2 Hz, dengan IAF diambil dari `PXX_Baseline.EDF`.
 - Baseline alternatif: power rata-rata dari `PXX_Baseline.EDF`. Pilih satu definisi dan
@@ -646,6 +682,110 @@ tfr.average().plot(picks=["C3", "C4"], title=f"{pid} %ERD/ERS")
 - Resolusi: 100 Hz dengan Morlet `n_cycles = f/2` memberi panjang wavelet ≈ 0,5 dtk untuk
   semua frekuensi. Pastikan epoch cukup panjang agar tepi (*edge effect*) tidak jatuh ke
   jendela analisis.
+
+### 10.1 Indeks Lateralisasi (LI) — Paper A
+
+Rumus di draft Paper A:
+
+```
+LI = (ERD_kontra − ERD_ipsi) / (ERD_kontra + ERD_ipsi)       # kontra = C3 untuk AGEM KANAN
+```
+
+⚠️ **Masalah numerik**: ERD dinyatakan dalam % yang bisa negatif (ERD) **atau** positif
+(ERS). Jika satu sisi ERD dan sisi lain ERS, penyebut mendekati 0, sehingga LI meledak
+atau keluar dari rentang [−1, 1]. Contoh: kontra −30%, ipsi +30% → pembagian dengan 0.
+Karena itu dihitung dua versi:
+
+| Versi | Rumus | Catatan |
+|---|---|---|
+| `li_erd` (sesuai draft) | seperti di atas | Hanya valid jika **kedua** sisi ERD (< 0); selain itu `NaN` dan dihitung sebagai hilang |
+| `li_power` (disarankan sebagai utama) | `(P_ipsi − P_kontra) / (P_ipsi + P_kontra)` pada power absolut selama fase gerak | Selalu terdefinisi, rentang [−1, 1]; positif = dominasi kontralateral |
+
+```python
+def lateralization(erd_df, power_df=None):
+    """erd_df: baris dari results/PXX_erd_ers.csv (band beta/mu, C3 & C4, per fase)."""
+    agem = erd_df[erd_df.task.isin(["AGEM KANAN", "AGEM KIRI"])]
+    w = agem.pivot_table(index=["participant_id", "task", "rep", "phase", "band"],
+                         columns="channel", values="erd_pct").reset_index()
+    kanan = w.task == "AGEM KANAN"
+    w["contra"] = np.where(kanan, w.C3, w.C4)            # 🔎 konfirmasi pemetaan sisi (15)
+    w["ipsi"] = np.where(kanan, w.C4, w.C3)
+    both_erd = (w.contra < 0) & (w.ipsi < 0)
+    w["li_erd"] = np.where(both_erd, (w.contra - w.ipsi) / (w.contra + w.ipsi), np.nan)
+    return w
+```
+
+`li_power` dihitung dengan cara yang sama dari power absolut TFR (sebelum
+`apply_baseline`). Interpretasi LI tetap dibatasi oleh **referensi telinga ipsilateral**:
+selisih C3/C4 ikut memuat selisih A1/A2, kecuali referensi *linked-ear* berhasil
+direkonstruksi (8.1.1).
+
+### 10.2 Topografi ERD beta — Paper A
+
+Peta skalp 16 kanal untuk AGEM KANAN dan AGEM KIRI secara terpisah. Karena tidak ada
+elektroda garis tengah, gunakan interpolasi **nearest-neighbour** (setiap kanal
+digambar sebagai wilayahnya sendiri, tanpa menghaluskan nilai melewati garis tengah):
+
+```python
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+for ax, task in zip(axes, ["AGEM_KANAN", "AGEM_KIRI"]):
+    tfr_task = tfr_all[task].average()                 # TFR semua 16 kanal, mode percent
+    beta = tfr_task.copy().crop(tmin=0, tmax=None, fmin=13, fmax=30).data.mean(axis=(1, 2)) * 100
+    mne.viz.plot_topomap(beta, tfr_task.info, axes=ax, image_interp="nearest",
+                         contours=0, cmap="RdBu_r", vlim=(-40, 40), show=False)
+    ax.set_title(f"{task} — ERD beta (%)")
+```
+
+Untuk topografi, hitung TFR pada **semua** 16 kanal (bukan hanya `roi`). Rata-rata grup
+dihitung dari rata-rata per partisipan (bukan dari gabungan semua epoch).
+
+### 10.3 Lateralized Readiness Potential (LRP) — Paper A
+
+Domain waktu, memakai data cabang 8.3 (bukan TFR). Metode *double subtraction*
+(Coles, 1989):
+
+```
+LRP = ½ · [ (C3 − C4)_AGEM KANAN + (C4 − C3)_AGEM KIRI ]
+Nilai negatif = aktivasi persiapan di hemisfer kontralateral
+Amplitudo = rata-rata LRP pada jendela −200 s.d. 0 ms sebelum onset gerak
+```
+
+```python
+raw_lrp = mne.io.read_raw_fif(f"data/derivatives/{pid}_lrp_raw.fif", preload=True)
+ep = mne.Epochs(raw_lrp, events, event_id, tmin=-1.5, tmax=0.5,
+                baseline=(-1.5, -1.0), metadata=meta, preload=True)   # events dari 9.2
+ep = ep[ep.metadata.compliance.isin(["ok", "late", "short_hold"]).to_numpy()]
+
+def diff(evk, a, b):
+    return (evk.copy().pick([a]).data - evk.copy().pick([b]).data)[0]
+
+ev_r, ev_l = ep["AGEM_KANAN"].average(), ep["AGEM_KIRI"].average()
+lrp = 0.5 * (diff(ev_r, "C3", "C4") + diff(ev_l, "C4", "C3"))       # Volt
+win = (ev_r.times >= -0.2) & (ev_r.times <= 0.0)
+lrp_amp_uV = lrp[win].mean() * 1e6
+```
+
+⚠️ **Hal-hal yang membatasi LRP pada data ini (wajib dibaca sebelum dijadikan temuan):**
+
+1. **Jumlah trial sangat sedikit.** Hanya 4 repetisi per sisi, sedangkan LRP biasanya
+   butuh puluhan trial per sisi agar sinyalnya terlihat di atas noise. Dengan 4 trial,
+   amplitudo per partisipan sangat berisik. Perlakukan sebagai **eksploratif**, laporkan
+   jumlah trial per partisipan, dan pertimbangkan analisis tingkat grup (*grand average*,
+   *jackknife*) daripada amplitudo per individu.
+2. **Presisi onset.** Jendela −200–0 ms menuntut onset gerak yang presisi jauh di bawah
+   200 ms. Onset dari persilangan 10% (9.1) terlambat ≈ 10% durasi turun (≈ 0,1–0,2 dtk),
+   sehingga jendela bisa berisi awal gerakan dan artefaknya. **Gunakan onset
+   ekstrapolasi** (garis lurus melalui persilangan 10% dan 50%, diekstrapolasi ke 0%)
+   untuk LRP (`extrapolated_onset` di 9.1; pada uji sintetis galatnya ≈ −0,01 ± 0,04 dtk),
+   dan tambahkan ketidakpastian sinkronisasi (±0,1 dtk) ke laporan.
+3. **Gerakan seluruh tubuh.** Ngeed/agem bukan gerakan tangan terisolasi. Lateralisasi
+   motoriknya kurang tegas dibanding tugas menekan tombol, dan artefak gerak mulai
+   muncul tepat di sekitar onset. NGEED (bilateral) tidak dipakai untuk LRP.
+4. **Referensi ipsilateral.** `C3−A1` dikurangi `C4−A2` = `(C3−C4) − (A1−A2)`, jadi
+   aktivitas lambat yang berbeda di kedua telinga masuk langsung ke LRP. Hal ini bisa
+   diatasi jika referensi *linked-ear* berhasil direkonstruksi (8.1.1).
 
 ---
 
@@ -698,8 +838,12 @@ feat = dict(
     beta_sm_EO=bp(eo, f, chs, ["C3", "C4"], 13, 30),
     beta_sm_EC=bp(ec, f, chs, ["C3", "C4"], 13, 30),
     alpha_par_EC=bp(ec, f, chs, ["P3", "P4"], 8, 13),
+    # Paper A: rasio theta/alpha (default: F3/F4 theta ÷ O1/O2 alpha, EC; 🔎 konfirmasi di 15)
+    theta_alpha_ratio_EC=bp(ec, f, chs, ["F3", "F4"], 4, 8, False)
+                        / bp(ec, f, chs, ["O1", "O2"], 8, 13, False),
     # QC
     n_epochs_EO=n_eo, n_epochs_EC=n_ec,
+    is_simulated=IS_SIMULATED,                    # lihat 12.6
 )
 pd.DataFrame([feat]).to_csv(f"results/{pid}_romberg_features.csv", index=False)
 ```
@@ -751,6 +895,142 @@ res["p_fdr"] = multipletests(res["p-val"], method="fdr_bh")[1]
 Tier 1 dianalisis sebagai hipotesis utama dengan koreksi FDR. Tier 2/3 dilaporkan
 terpisah sebagai eksploratif.
 
+### 12.3 Paper A — uji grup Welch untuk 5 indeks konvensional
+
+Satu nilai per partisipan per indeks (rata-rata repetisi). Definisi default di bawah
+ditandai 🔎 dan perlu dikonfirmasi (Bagian 15).
+
+| Indeks | Definisi default | Sumber |
+|---|---|---|
+| ERD Beta Agem | %ERD beta di C **kontralateral**, fase TURUN 🔎, rata-rata AGEM KANAN + KIRI | 10 |
+| Theta Frontal Agem | %ERS theta F3/F4, fase TURUN+TAHAN 🔎, AGEM KANAN + KIRI | 10 |
+| Alpha Oksipital Romberg-EC | `alpha_occ_EC` (relatif) | 11 |
+| Rasio Theta/Alpha Romberg | `theta_alpha_ratio_EC` 🔎 | 11 |
+| Durasi Stork Test | data eksternal | — |
+
+```python
+import numpy as np
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
+
+def welch(d, col):
+    a = d.loc[d.group == "penari", col].dropna()
+    b = d.loc[d.group == "non-penari", col].dropna()
+    t, p = stats.ttest_ind(a, b, equal_var=False)
+    sp = np.sqrt((a.var(ddof=1) + b.var(ddof=1)) / 2)
+    J = 1 - 3 / (4 * (len(a) + len(b)) - 9)                  # koreksi Hedges
+    return dict(index=col, n_penari=len(a), n_nonpenari=len(b),
+                mean_diff=a.mean() - b.mean(), t=t, p=p, hedges_g=J * (a.mean() - b.mean()) / sp)
+
+indices = ["erd_beta_agem", "theta_front_agem", "alpha_occ_EC", "theta_alpha_ratio_EC",
+           "stork_time_sec"]
+res = pd.DataFrame([welch(pp, c) for c in indices])     # pp: tabel 1 baris/partisipan (pre saja)
+```
+
+- **Koreksi multiple comparison** (belum ada di draft Paper A): 5 indeks + LI + LRP +
+  interaksi usia × kelompok diuji sebagai satu **keluarga**. Terapkan Benjamini-Hochberg
+  pada seluruh p-value keluarga itu, bukan per tabel.
+- Untuk non-penari, uji grup hanya memakai data **pre** (timepoint pre), agar tidak ada
+  partisipan yang terhitung dua kali.
+
+**Regresi usia × kelompok + uji sensitivitas (wajib sebelum dilaporkan sebagai temuan utama):**
+
+```python
+import statsmodels.formula.api as smf
+
+def age_models(d, y):
+    full = smf.ols(f"{y} ~ group * age", d).fit(cov_type="HC3")        # SE robust
+    infl = full.get_influence().cooks_distance[0]
+    no_infl = smf.ols(f"{y} ~ group * age", d[infl < 4 / len(d)]).fit(cov_type="HC3")
+    q = d.age.quantile([0.05, 0.95])
+    trimmed = smf.ols(f"{y} ~ group * age", d[d.age.between(*q)]).fit(cov_type="HC3")
+    spline = smf.ols(f"{y} ~ group * cr(age, df=3)", d).fit(cov_type="HC3")  # non-linear
+    return {k: m.params.get("group[T.penari]:age", np.nan)
+            for k, m in dict(full=full, no_influential=no_infl,
+                             trimmed_5_95=trimmed).items()}, spline
+```
+
+Laporkan koefisien interaksi dari ketiga model berdampingan. Jika arah atau
+signifikansinya berubah setelah partisipan dengan usia ekstrem dikeluarkan, temuan
+tersebut **tidak** dilaporkan sebagai temuan utama. Model spline menguji apakah hubungan
+dengan usia memang linear.
+
+### 12.4 Paper B — Reliable Change Index (RCI)
+
+```
+RCI    = (Post − Pre) / S_diff
+S_diff = SD_pre · √(2 · (1 − r_xx))          |RCI| ≥ 1,96 → perubahan individual nyata
+```
+
+⚠️ `r_xx` **harus dihitung dari data riil**. Nilai 0,70–0,85 di draft hanyalah placeholder.
+Tidak ada sesi test-retest tanpa intervensi, jadi yang tersedia adalah **reliabilitas
+internal dalam sesi**:
+
+| Indeks | Cara menghitung `r_xx` |
+|---|---|
+| ERD/ERS (4 repetisi per gerakan) | Split-half ganjil–genap (rep 1+3 vs 2+4) antar partisipan, dikoreksi Spearman-Brown `2r/(1+r)` |
+| Fitur Romberg (30 dtk) | Paruh pertama vs paruh kedua segmen (15 dtk vs 15 dtk), Spearman-Brown |
+
+```python
+def split_half_r(df, value, unit="participant_id", split="rep"):
+    odd = df[df[split] % 2 == 1].groupby(unit)[value].mean()
+    even = df[df[split] % 2 == 0].groupby(unit)[value].mean()
+    r = odd.corr(even)
+    return 2 * r / (1 + r)                     # Spearman-Brown
+
+def rci(pre, post, sd_pre, rxx):
+    s_diff = sd_pre * np.sqrt(2 * (1 - rxx))
+    return (post - pre) / s_diff
+```
+
+Catatan: reliabilitas dalam sesi **lebih tinggi** daripada test-retest antar-hari, sehingga
+`S_diff` terlalu kecil dan RCI menjadi terlalu liberal. Tulis ini sebagai limitasi.
+Hitung `r_xx` dari seluruh sampel pada pengukuran pre (penari + non-penari) agar
+estimasinya lebih stabil, dan laporkan interval kepercayaannya (*bootstrap*).
+
+### 12.5 Paper B — NDV dan Gap Closure
+
+**Nonequivalent Dependent Variable (NDV):** *Peak Alpha Frequency* (PAF) saat istirahat
+mata tertutup, diuji pre vs post **terpisah** dari 5 indeks target.
+
+```python
+paf = pp_nonpenari.pivot(index="participant_id", columns="timepoint", values="paf_rest_EC")
+t, p = stats.ttest_rel(paf["post"], paf["pre"])
+w = stats.wilcoxon(paf["post"], paf["pre"])     # pembanding non-parametrik (n kecil)
+```
+
+🔎 Sumber PAF: `PXX_Baseline.EDF` (jika istirahatnya mata tertutup), atau segmen Romberg
+EC (berdiri, bukan istirahat duduk). Perlu dikonfirmasi.
+
+**Gap Closure (%)** = (Post − Pre) / (Benchmark penari − Pre) × 100
+
+- **Ketergantungan urutan:** benchmark diambil dari hasil **final** Paper A. Gap Closure
+  tidak dihitung sebelum Paper A dikunci. Simpan benchmark di file terpisah
+  (`results/paperA_benchmark.csv`) beserta versi atau tanggalnya.
+- ⚠️ **Penyebut mendekati nol:** partisipan yang nilai pre-nya sudah dekat rata-rata
+  penari akan menghasilkan Gap Closure ekstrem (±ribuan %). Tetapkan aturan sebelum
+  melihat hasil, misalnya `NaN` jika |Benchmark − Pre| < 0,25 SD penari, dan laporkan
+  jumlah partisipan yang terkena aturan ini.
+- **Benchmark disesuaikan usia** (disarankan): dengan rentang usia remaja–102 tahun,
+  gunakan nilai prediksi penari **pada usia partisipan tersebut** (dari regresi usia
+  kelompok penari di Paper A), bukan rata-rata kasar.
+
+```python
+def gap_closure(pre, post, benchmark, sd_dancer, min_gap_sd=0.25):
+    gap = benchmark - pre
+    return np.where(np.abs(gap) < min_gap_sd * sd_dancer, np.nan, (post - pre) / gap * 100)
+```
+
+### 12.6 Penanda data simulasi
+
+Selama data riil belum lengkap, setiap output CSV dan gambar diberi penanda:
+
+- Kolom `is_simulated` (True/False) di semua file `results/*.csv`, diambil dari satu
+  sumber: `config.yaml` → `is_simulated`.
+- Judul gambar diberi awalan `[SIMULATED RESULTS]` jika `is_simulated = True`.
+- Skrip statistik **menolak** mencampur baris simulasi dan riil dalam satu analisis:
+  `assert df.is_simulated.nunique() == 1`.
+
 ---
 
 ## 13. Kontrol Kualitas
@@ -774,6 +1054,8 @@ Log per partisipan (`results/qc_log.csv`):
 - [ ] Hanya komponen ICA mata yang dibuang, diverifikasi visual
 - [ ] Jendela baseline tidak tumpang tindih dengan gerakan sebelumnya
 - [ ] PSD Romberg EC menunjukkan puncak alpha oksipital
+- [ ] Cabang LRP: filter 0,05–8 Hz, ICA yang sama diterapkan, onset ekstrapolasi dipakai, jumlah trial per sisi dicatat
+- [ ] `is_simulated` benar di semua output
 - [ ] Laporan QC HTML tersimpan (`mne.Report`) di `reports/`
 
 ---
@@ -793,8 +1075,14 @@ Log per partisipan (`results/qc_log.csv`):
 - **Kepatuhan instruksi bervariasi**: sebagian partisipan tidak mengikuti
   TURUN→TAHAN→NAIK dengan tepat. Laporkan jumlah repetisi per kode kepatuhan per grup,
   karena perbedaan kepatuhan antara penari dan non-penari sendiri adalah temuan.
-- **Rentang usia sangat lebar.** Usia dikontrol sebagai kovariat, dan IAF individual
-  dipertimbangkan.
+- **Rentang usia sangat lebar.** Usia dikontrol sebagai kovariat, IAF individual
+  dipertimbangkan, dan regresi usia × kelompok disertai uji sensitivitas (12.3).
+- **LRP eksploratif**: hanya 4 trial per sisi, gerakan seluruh tubuh, dan referensi
+  ipsilateral (10.3).
+- **RCI** memakai reliabilitas dalam sesi (split-half), bukan test-retest, sehingga
+  cenderung liberal (12.4).
+- **Paper B tanpa kelompok kontrol eksternal**: NDV (PAF) hanya menyingkirkan sebagian
+  penjelasan alternatif.
 
 ---
 
@@ -811,6 +1099,10 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 | 5 | Struktur folder untuk ke-38 partisipan (subfolder per grup? pre/post?) | ❓ Terbuka | 0 |
 | 6 | Konfirmasi Python + MNE-Python | ❓ Terbuka (diasumsikan ya) | Semua |
 | 7 | Posisi region webcam di frame video (untuk pose & sinyal gerak) | ❓ Baru: dicek dari frame sampel | 2, 4 |
+| 8 | Pemetaan sisi untuk LI/LRP: AGEM KANAN → hemisfer kontralateral = **C3**? (agem melibatkan lengan dan tungkai; "tangan kanan" di draft = AGEM KANAN?) | 🔎 Baru | 5 |
+| 9 | Fase mana yang dipakai untuk "ERD Beta Agem" dan "Theta Frontal Agem" (TURUN, TAHAN, atau gabungan)? | 🔎 Baru (default: TURUN; TURUN+TAHAN) | 6 |
+| 10 | Definisi "Rasio Theta/Alpha Romberg": kondisi (EC/EO) dan kanal (theta F3/F4 ÷ alpha O1/O2, atau kanal yang sama)? | 🔎 Baru (default: EC, F3/F4 ÷ O1/O2) | 5b, 6 |
+| 11 | `PXX_Baseline.EDF`: istirahat mata tertutup atau terbuka? Duduk atau berdiri? (menentukan sumber PAF untuk NDV) | 🔎 Baru | 6 |
 
 ---
 
@@ -825,5 +1117,12 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 - Pion-Tonachini, L., et al. (2019). ICLabel. *NeuroImage*, 198, 181–197.
 - Pernet, C., et al. (2020). Issues and recommendations from the OHBM COBIDAS MEEG
   committee. *Nature Neuroscience*, 23, 1473–1483.
+- Coles, M. G. H. (1989). Modern mind-brain reading: psychophysiology, physiology, and
+  cognition. *Psychophysiology*, 26(3), 251–269.
+- Jacobson, N. S., & Truax, P. (1991). Clinical significance: a statistical approach to
+  defining meaningful change in psychotherapy research. *Journal of Consulting and
+  Clinical Psychology*, 59(1), 12–19.
+- Miller, J., Patterson, T., & Ulrich, R. (1998). Jackknife-based method for measuring
+  LRP onset latency differences. *Psychophysiology*, 35(1), 99–115.
 - Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate.
   *Journal of the Royal Statistical Society B*, 57(1), 289–300.
