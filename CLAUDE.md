@@ -421,6 +421,13 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   lebih awal — onset lengan P04 hingga 7,4 dtk sebelum turun — atau sisa ketidakpastian sync).
 - H3 (durasi tahan agem) konsisten: penari 2,73/2,84/2,97 dtk vs non-penari 0,94 dtk.
   H1–H5 belum dapat diuji (non-penari n=1).
+- **Update sync (akhir 2026-09-23):** sinyal video = batang tubuh + pergelangan (SE 0,04–0,24 dtk)
+  + validasi onset-ke-onset (koreksi bila |lag| > 0,5 dtk, n ≥ 5, IQR ≤ 0,6). Offset final:
+  P01 +3,25 (terkoreksi dari +4,52: ekor artefak panjang membiaskan xcorr), P02 +0,75,
+  P03 +0,48 (terkoreksi dari +1,03; lag −0,55 dtk, marginal — tinjau), P04 +1,23, P10 +1,05.
+- P04: artefak broadband pada PRA (+7,7 dB) tanpa gerak video yang sepadan — belum terjelaskan.
+- Endpoint H (penari n=4 vs non-penari n=1): arah H1–H5 sesuai harapan; H3 paling tegas
+  (tahan agem 2,40–2,97 vs 0,94 dtk). Uji formal menunggu ≥3 non-penari.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
