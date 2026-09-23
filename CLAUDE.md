@@ -451,6 +451,11 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   garis latar TAHAN non-penari +7,9 vs penari +2,7 dB (d −0,87, p 0,20; sejalan H2); mu periodik ≈ 0
   di kedua grup (+0,36 vs −0,27 dB; di bawah batas ketelitian). Beda ERD grup lama kemungkinan
   artefak seleksi segmen + pilihan acuan. **Diimplementasikan penuh minggu depan.**
+  Per fase (specparam, acuan gabungan; scripts/audit_segmen/specparam_fase.py): garis latar
+  non-penari > penari di TURUN (+12,7 vs +5,9 dB, d −0,90) dan TAHAN (d −0,87), hampir sama di NAIK.
+  **Mu periodik TURUN: non-penari −0,71 vs penari +0,50 dB (d +1,75, p 0,018 tanpa koreksi; tidak
+  lolos FDR atas 9 uji)** → non-penari menunjukkan ERD mu saat turun, penari tidak (sejalan H1).
+  Besaran < 1 dB — eksploratif, perlu kohort penuh.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
