@@ -77,6 +77,32 @@ def stage_sync(P, cfg, tl, pose, raw, force=False):
     return dec["sync"]
 
 
+def stage_onset_check(P, cfg, raw, reps, offset, force=False):
+    """Koreksi offset bila onset EEG konsisten menyimpang dari onset lengan video."""
+    dec = P.decisions()
+    s = dec.get("sync", {})
+    if s.get("method") == "manual" or ("onset_check" in s and not force):
+        return s["offset_sec"]
+    oc = cfg["sync"]["onset_check"]
+    chk = sync.onset_check(raw, reps, offset, cfg)
+    s["onset_check"] = chk
+    lag = chk["onset_lag_sec"]
+    if (chk["onset_n"] >= oc["min_n"] and chk["onset_lag_iqr"] <= oc["max_iqr_sec"]
+            and abs(lag) > oc["max_abs_lag_sec"]):
+        s["offset_xcorr_sec"] = offset
+        s["offset_sec"] = offset = round(offset + lag, 2)
+        s["method"] = "auto+onset"
+        _log(P.pid, f"sync: onset EEG {lag:+.2f} dtk dari onset video (IQR "
+                    f"{chk['onset_lag_iqr']:.2f}, n {chk['onset_n']}) → offset dikoreksi ke "
+                    f"{offset:+.2f} dtk")
+    else:
+        _log(P.pid, f"sync: cek onset {lag:+.2f} dtk (IQR {chk['onset_lag_iqr']}, n "
+                    f"{chk['onset_n']}) → offset dipertahankan")
+    dec["sync"] = s
+    P.save_decisions(dec)
+    return offset
+
+
 def stage_phases(P, cfg, tl, pose, force=False):
     out = P.out("reps.csv")
     if out.exists() and not force:
@@ -237,6 +263,8 @@ def run(pid, cfg, stages=None, force=()):
         ctx["offset"] = offset
         reps = stage_phases(P, cfg, tl, pose, f("phases"))
         ctx["reps"] = reps
+        offset = stage_onset_check(P, cfg, raw, reps, offset, f("sync"))
+        ctx["offset"] = offset
         if "preprocess" in stages:
             clean = stage_preprocess(P, cfg, raw, tl, offset, f("preprocess"))
             ctx["clean"] = clean

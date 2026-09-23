@@ -39,6 +39,11 @@ sync:
   rep_lag_sec: 1.0            # jendela sempit per-repetisi (langkah 2)
   min_reps: 6                 # offset utama = median per-repetisi (P01/P03/P04)
   max_se_sec: 0.25            # SE median offset per-repetisi (P02 0,08; P01–P04 0,18–0,23)
+  onset_check:                # validasi onset-ke-onset setelah fase (lihat sync.onset_check)
+    k_mad: 6.0
+    min_n: 5                  # repetisi dengan onset EEG terdeteksi
+    max_iqr_sec: 0.6          # konsistensi antar repetisi
+    max_abs_lag_sec: 0.5      # |lag| lebih besar → offset dikoreksi (offset += lag)
   max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)
 
 phases:

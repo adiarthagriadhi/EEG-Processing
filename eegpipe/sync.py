@@ -209,3 +209,35 @@ def qc(res, cfg):
     if res["spread_sec"] > sc["max_spread_sec"]:
         warnings.append(f"kombinasi sinyal tidak sepakat (IQR {res['spread_sec']:.2f} dtk)")
     return problems, warnings
+
+
+def onset_check(raw, reps, offset, cfg):
+    """Validasi onset-ke-onset: onset artefak broadband EEG (1–30 Hz, median |x| antar kanal,
+    dihaluskan 0,2 dtk; ambang median + k·MAD jendela −6…−3 dtk, bertahan ≥ 0,3 dtk) relatif
+    onset lengan di video (setelah dipetakan dengan offset). Korelasi silang envelope dapat
+    terbias ekor artefak yang panjang (P01: +4,52 dtk, onset EEG −1,38 dtk sebelum onset video;
+    P02: −0,12 dtk). Mengembalikan median lag, IQR, n."""
+    from scipy.ndimage import uniform_filter1d
+    oc = cfg["sync"]["onset_check"]
+    sf = raw.info["sfreq"]
+    x = raw.copy().filter(1, 30, picks="eeg", verbose="error").get_data(picks="eeg") * 1e6
+    env = uniform_filter1d(np.median(np.abs(x), axis=0), int(0.2 * sf))
+    lags = []
+    for a in reps.get("act_arm", reps.act_turun).dropna():
+        c = int(round((a + offset) * sf))
+        if c - 6 * sf < 0 or c + 3 * sf > len(env):
+            continue
+        base = env[int(c - 6 * sf):int(c - 3 * sf)]
+        thr = np.median(base) + oc["k_mad"] * 1.4826 * np.median(np.abs(base - np.median(base)))
+        seg = env[int(c - 3 * sf):int(c + 3 * sf)]
+        run = int(0.3 * sf)
+        above = seg > thr
+        on = next((i for i in range(len(seg) - run) if above[i:i + run].all()), None)
+        lags.append(np.nan if on is None else on / sf - 3.0)
+    lags = np.array(lags, float)
+    ok = np.isfinite(lags)
+    if ok.sum() == 0:
+        return dict(onset_lag_sec=np.nan, onset_lag_iqr=np.nan, onset_n=0)
+    return dict(onset_lag_sec=round(float(np.median(lags[ok])), 2),
+                onset_lag_iqr=round(float(np.subtract(*np.percentile(lags[ok], [75, 25]))), 2),
+                onset_n=int(ok.sum()))
