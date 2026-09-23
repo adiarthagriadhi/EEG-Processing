@@ -439,6 +439,18 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   kemungkinan EEG/video dimulai jauh berbeda atau file tertukar — **tinjau minggu depan**.
   Uji H1–H5 (7 penari vs 4 non-penari): arah H1/H2/H3/H5 sesuai, tidak ada yang signifikan
   (p_FDR ≥ 0,35). Tahan agem penari 2,40–3,10 dtk (n=7) vs non-penari 0,94–3,26 dtk.
+- **Audit segmen & pendekatan baru (uji cepat 2026-09-23, skrip scripts/audit_segmen/):**
+  Pengguna menetapkan: waktu fase sepenuhnya dari video, offset TETAP 0,85 dtk (median 11 partisipan,
+  SD 0,2; dibekukan), pangkas batas fase 0,25 dtk (maks. 15% durasi), TAHAN singkat TETAP dipakai,
+  12 segmen digabung per subfase (turun/tahan/naik) → model campuran; agem ka/ki terpisah untuk LI/H5.
+  Temuan: penyebab utama gugurnya segmen = aturan "jendela acuan per repetisi harus diam" (non-penari
+  kehilangan 5–10 dari 12) → diganti acuan GABUNGAN per partisipan (50% jendela 2 dtk paling diam di
+  BERDIRI RILEKS + ISTIRAHAT UTAMA, dari video). Segmen TAHAN: non-penari 4 → 10, penari 9 → 11.
+  Presisi per partisipan membaik ±40%. **ERD power total berubah arah** dengan acuan gabungan (TAHAN
+  ≈ +5 dB di kedua grup; beda grup lama d −1,25 hilang, d 0,04) → didominasi broadband. Specparam:
+  garis latar TAHAN non-penari +7,9 vs penari +2,7 dB (d −0,87, p 0,20; sejalan H2); mu periodik ≈ 0
+  di kedua grup (+0,36 vs −0,27 dB; di bawah batas ketelitian). Beda ERD grup lama kemungkinan
+  artefak seleksi segmen + pilihan acuan. **Diimplementasikan penuh minggu depan.**
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
