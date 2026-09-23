@@ -291,6 +291,19 @@ cukup dirujuk singkat ke Paper D untuk detail, supaya tidak ada klaim substantif
 yang dilaporkan dua kali. Prinsipnya: A = eksekusi motorik dinamis, D = kontrol
 postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
 
+## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
+**Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
+pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.
+- Data yang dibutuhkan (belum ada): `dance_years`, `age`, idealnya `start_age` & jam latihan/minggu
+  → tambahkan ke data/participants.csv. Non-penari = 0 tahun (atau paparan minimal).
+- **Kolinearitas usia × durasi menari** (penari tua menari lebih lama) → wajib: durasi menari +
+  usia dalam satu model, cek VIF; alternatif: usia mulai menari atau proporsi hidup menari.
+- Model utama: outcome ~ dance_years (+log/kurva jenuh) + usia (+ jenis kelamin); analisis di dalam
+  penari (n=24) + seluruh sampel (non-penari = 0; pertimbangkan model hurdle/grup + tahun).
+- Outcome kandidat (dari eksplorasi): CV durasi TAHAN, durasi NAIK/TURUN, garis latar TURUN/TAHAN,
+  mu periodik sentral TURUN, mu temporo-posterior TAHAN. Batasi ke beberapa outcome utama / skor
+  komposit + FDR. Hipotesis H1–H13 dirumuskan ulang sebagai kemiringan (slope) dosis-respons.
+
 ## Jawaban Pengguna (2026-09-23)
 1. **Start rekaman:** EEG dan video direkam di dua device berbeda, dimulai manual
    oleh dua operator pada aba-aba **hitungan ke-3** (terlihat oleh kedua operator).
