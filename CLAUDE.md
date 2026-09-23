@@ -476,6 +476,11 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   mu/beta, TURUN/TAHAN, ±76 jendela 0,5 dtk per fase. Tidak ada arah konsisten (semua p ≥ 0,09) dan
   tidak ada beda grup (p_FDR ≥ 0,90); wPLI rendah (0,13–0,37). → Alur antar-area tidak terdeteksi
   dengan data ini; bukan prioritas analisis.
+  **Romberg uji cepat (scripts/audit_segmen/romberg_cepat.py; specparam, offset tetap):** EC terekam
+  cukup hanya pada 8/11 (P02 10%, P03/P04 0%). Tonjolan alpha periodik kini TERDETEKSI (EC +1,1…+1,9 dB
+  di atas garis latar), tetapi reaktivitas EC−EO kecil (+0,3…+0,8 dB; oksipital p 0,10, frontal
+  p 0,047 tanpa koreksi) dan tidak berbeda antar grup (p ≥ 0,59). Kendala utama Romberg = cakupan EC,
+  bukan pemotongan segmen.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
