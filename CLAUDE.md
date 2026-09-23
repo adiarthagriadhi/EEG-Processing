@@ -465,6 +465,13 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   (≈ peluang), tidak ada yang lolos FDR; terkuat TAHAN temporo-posterior T5/T6 mu periodik
   (non-penari +2,3 vs +0,2 dB, d −2,0) dan TURUN sentral (d +1,75). Frontopolar kemungkinan artefak
   mata/otot. → Durasi & variabilitas subsegmen = penanda paling kuat saat ini; peta area eksploratif.
+  **Latensi puncak antar-kanal (scripts/audit_segmen/latensi_puncak.py):** puncak ERD mu relatif
+  (mu/broadband) per kanal F3–O2, dikunci onset TURUN, 11 partisipan. Presisi latensi per partisipan
+  SD bootstrap ≈ 1,2 dtk; urutan kanal tidak konsisten antar-partisipan (rho Spearman 0,04) →
+  "perambatan puncak" antar-kanal TIDAK dapat dipetakan dari data ini (100 Hz, 12 segmen, ERD lambat,
+  konduksi volume, referensi telinga ipsilateral). Catatan: mu relatif turun ≈ −3 dB di semua kanal,
+  tetapi sebagian dapat berasal dari kenaikan broadband di penyebut. Alternatif: konektivitas fase
+  berarah (PSI/wPLI) dalam satu belahan per subsegmen — eksploratif.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
