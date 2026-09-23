@@ -456,6 +456,15 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   **Mu periodik TURUN: non-penari −0,71 vs penari +0,50 dB (d +1,75, p 0,018 tanpa koreksi; tidak
   lolos FDR atas 9 uji)** → non-penari menunjukkan ERD mu saat turun, penari tidak (sejalan H1).
   Besaran < 1 dB — eksploratif, perlu kohort penuh.
+  **Kerangka subsegmen (pengguna):** TURUN = koordinasi/stabilitas dinamis; TAHAN = kontrol
+  keseimbangan (durasi = kekuatan/keunggulan, mungkin area selain C3/C4); NAIK = gerak sehari-hari
+  (paling mudah). Uji cepat durasi (11 partisipan, median per partisipan, tanpa hud_fallback):
+  NAIK penari 1,0 vs non-penari 1,7 dtk (d −2,34, p 0,012); variabilitas TAHAN (CV) 0,25 vs 0,62
+  (d −2,12, p 0,019); TAHAN 2,84 vs 1,96 dtk (d +1,18, p 0,19); TURUN 1,50 vs 1,26 dtk (d +0,75).
+  Peta 8 area × 3 fase × 3 ukuran (72 uji; scripts/audit_segmen/specparam_area.py): 6 dengan p<0,1
+  (≈ peluang), tidak ada yang lolos FDR; terkuat TAHAN temporo-posterior T5/T6 mu periodik
+  (non-penari +2,3 vs +0,2 dB, d −2,0) dan TURUN sentral (d +1,75). Frontopolar kemungkinan artefak
+  mata/otot. → Durasi & variabilitas subsegmen = penanda paling kuat saat ini; peta area eksploratif.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
