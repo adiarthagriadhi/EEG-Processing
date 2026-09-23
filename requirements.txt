@@ -1,0 +1,15 @@
+mne>=1.7
+numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+matplotlib>=3.8
+pyyaml>=6.0
+av>=12.0
+pytesseract>=0.3.10
+rapidfuzz>=3.0
+mediapipe>=0.10.14
+python-picard>=0.7
+statsmodels>=0.14
+pingouin>=0.5
+pytest>=8.0
+# Sistem: tesseract-ocr; Linux tanpa GUI juga libegl1 libgles2 (untuk mediapipe)

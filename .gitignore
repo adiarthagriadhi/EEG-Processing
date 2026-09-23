@@ -1,8 +1,12 @@
-data/raw/
-data/derivatives/
 *.EDF
 *.edf
-*.webm
 *.fif
+*.webm
 .venv/
 __pycache__/
+data/
+data/derivatives/
+data/raw/
+models/
+reports/
+results/
