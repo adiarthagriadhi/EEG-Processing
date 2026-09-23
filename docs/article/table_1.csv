@@ -1,0 +1,3 @@
+Group,n,"Age, years (mean ± SD; range)","Agem hold, s (median [IQR])","EEG–video offset, s (mean ± SD)",Interpolated channels (median),"Romberg EC coverage, % (median)"
+Dancers,24,37.1 ± 13.5 (15–78),3.08 [2.65–3.97],0.80 ± 0.14,1,32
+Non-dancers,14,39.1 ± 22.4 (15–102),1.19 [0.89–1.42],0.77 ± 0.16,2,39
