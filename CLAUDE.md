@@ -472,6 +472,10 @@ postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
   konduksi volume, referensi telinga ipsilateral). Catatan: mu relatif turun ≈ −3 dB di semua kanal,
   tetapi sebagian dapat berasal dari kenaikan broadband di penyebut. Alternatif: konektivitas fase
   berarah (PSI/wPLI) dalam satu belahan per subsegmen — eksploratif.
+  **Konektivitas berarah (scripts/audit_segmen/konektivitas.py):** PSI + wPLI, F3→C3→P3 & F4→C4→P4,
+  mu/beta, TURUN/TAHAN, ±76 jendela 0,5 dtk per fase. Tidak ada arah konsisten (semua p ≥ 0,09) dan
+  tidak ada beda grup (p_FDR ≥ 0,90); wPLI rendah (0,13–0,37). → Alur antar-area tidak terdeteksi
+  dengan data ini; bukan prioritas analisis.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
