@@ -29,6 +29,10 @@ def main():
         dec = ROOT / "data/decisions" / f"{d.name}.yaml"
         if dec.exists():
             shutil.copy(dec, o / "keputusan.yaml")
+    sens = ROOT / "results_sensitivitas/ringkasan.csv"
+    if sens.exists():
+        (OUT / "sensitivitas").mkdir()
+        shutil.copy(sens, OUT / "sensitivitas/ringkasan_H1-H13.csv")
     shutil.copy(ROOT / "scripts/README_hasil.md", OUT / "README.md")
     n = sum(1 for _ in OUT.rglob("*") if _.is_file())
     print(f"{n} file → {OUT}")
