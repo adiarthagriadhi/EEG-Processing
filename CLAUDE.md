@@ -419,6 +419,17 @@ pipeline harus dijalankan ulang.
   p ≈ 0,08); H2 melemah dengan tepi datar diperlebar (p 0,11–0,13); H1/H4/H5/H9 tetap nol/berganti tanda.
 - Konfound hari rekaman tetap ada; P29/P30/P34 (penari, hari rekaman non-penari) sedikit mengurainya.
 
+## 🔎 Pola offset EEG−video seluruh kohort (2026-09-24, `scripts/pola_offset.py` → `results/pola_offset.csv`)
+- Pindai korelasi gerak tubuh video × selubung EMG 20–34 Hz (tanpa 4 dtk awal: transien awal rekaman), per blok.
+- 20/28 berkumpul 0,6–1,1 dtk (offset tetap 0,85 wajar), konsisten di keempat hari rekaman, tanpa tren jam.
+- Pencilan jelas (kopling kuat, kedua blok sepakat): **P01 +4,15** (sesi pertama studi, 9 Sep 09:24; EDF 20,5 dtk
+  lebih panjang dari video → EEG dinyalakan lebih dulu), **P09 +1,70**, **P04 +1,65**, **P13 +0,05**, P26 +0,35.
+  Lemah: P14 +2,7 (r 0,21). Tanpa kopling (tidak dapat diverifikasi): P29, P35; lemah P33/P34/P30.
+- P08 hasil pindai konstan ≈ 0,95–1,0 di kedua blok (bertentangan dgn keputusan per blok 1,20→0,95); P11 blok 1
+  0,85 (keputusan 1,28). Ambang alarm 1,0 dtk terlalu longgar untuk deviasi ≈ 0,8 dtk (≈ separuh fase NAIK/TURUN).
+- Selisih durasi EDF−video: 9–10 Sep EDF lebih pendek (−3…−31 dtk; EEG distop lebih awal) vs 12–14 Sep hampir sama
+  (−0,6…+5,5) → prosedur STOP berubah, prosedur START konsisten. Menunggu keputusan pengguna untuk koreksi.
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.
