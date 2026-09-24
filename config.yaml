@@ -33,7 +33,7 @@ sync:
   # → berhenti untuk keputusan manual (data/decisions/PXX.yaml, method: manual). mode: auto = cara lama.
   mode: fixed
   fixed_offset_sec: 0.85
-  alarm_dev_sec: 1.0          # |estimasi − offset tetap| > ini (dtk) DAN ada bukti → alarm
+  alarm_dev_sec: 0.5   # diperketat dari 1,0 (2026-09-24): deviasi ~0,8 dtk sebelumnya lolos          # |estimasi − offset tetap| > ini (dtk) DAN ada bukti → alarm
   alarm_min_r: 0.10           # bukti: r puncak kasar minimal (P35: r 0,01 → tanpa bukti)
   alarm_max_se: 0.30          # bukti: SE offset per-repetisi maksimal
   fs: 20.0
