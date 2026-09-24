@@ -1,0 +1,81 @@
+"""Reklasifikasi repetisi (2026-09-24, keputusan pengguna). Hasil sebelum reklasifikasi disimpan terpisah.
+
+1. SALAH SISI (agem kanan ↔ kiri) — OTOMATIS HANYA MENANDAI KANDIDAT, PENERAPAN LEWAT KEPUTUSAN MANUAL.
+   Penanda: beda tinggi tangan di sisi KIRI GAMBAR − tangan di sisi KANAN GAMBAR (piksel, besar = bawah) selama
+   TAHAN; label kiri/kanan anatomis MediaPipe tidak dipakai karena tertukar saat tubuh berputar. Pada kohort,
+   AGEM KIRI → tangan kanan-gambar lebih tinggi (31/38 partisipan). Ambang per partisipan (Otsu 1-D atas
+   repetisi agem; bias sudut kamera berbeda per partisipan). Repetisi di kelompok sisi lawan dengan jarak ke
+   ambang ≥ margin → `kandidat_salah_sisi`. Uji visual (P04, P07, P24, P31, P32, P36): 3 dari 4 kandidat
+   satu-repetisi KELIRU (titik pergelangan meleset saat tangan dekat wajah/terhalang) → kandidat hanya
+   diterapkan bila dikonfirmasi visual di `data/decisions/PXX.yaml`:
+       reclass_sisi: [{task: AGEM KANAN, rep: 1, jadi: AGEM KIRI, basis: "visual …"}]
+   Repetisi yang dipindah: `reclass = salah_sisi`, rep + 10 (kunci unik), label asli di `task_hud`/`rep_hud`.
+2. TANPA TURUN: repetisi `incomplete` dengan kedalaman < min_depth_px → `reclass = tanpa_turun` (deskriptif;
+   tidak ada sub-fase gerak, tidak dipakai sebagai acuan diam)."""
+import numpy as np
+
+AGEM = ("AGEM KANAN", "AGEM KIRI")
+
+
+def side_feature(reps, pose):
+    """Median (y tangan kiri-gambar − y tangan kanan-gambar) selama TAHAN; > 0 = tangan kanan-gambar lebih tinggi."""
+    t, W = pose["t"], pose.get("wrists")
+    out = np.full(len(reps), np.nan)
+    if W is None:
+        return out
+    lx, ly, rx, ry = np.asarray(W, float).T
+    sw = lx > rx
+    f = np.where(sw, ry, ly) - np.where(sw, ly, ry)
+    for i, (_, m) in enumerate(reps.iterrows()):
+        a, b = m.act_tahan, m.act_naik
+        if np.isfinite([a, b]).all():
+            k = (t >= a) & (t <= b)
+            if k.sum() >= 5:
+                out[i] = np.nanmedian(f[k])
+    return out
+
+
+def _otsu(v):
+    v = np.sort(v)
+    best, thr = -1, None
+    for i in range(1, len(v)):
+        a, b = v[:i], v[i:]
+        s = len(a) * len(b) * (a.mean() - b.mean()) ** 2
+        if s > best:
+            best, thr = s, (a[-1] + b[0]) / 2
+    return thr, v[v < thr].mean(), v[v >= thr].mean()
+
+
+def reclassify(reps, pose, cfg, decisions=None):
+    rc = cfg["reclass"]
+    df = reps.copy()
+    df["task_hud"], df["rep_hud"], df["reclass"] = df.task, df.rep, ""
+    df["side_feature"] = side_feature(df, pose)
+    df["kandidat_salah_sisi"] = False
+    info = dict(side="tidak_dinilai")
+    ag = df.task.isin(AGEM) & np.isfinite(df.side_feature)
+    if ag.sum() >= rc["min_agem_reps"]:
+        thr, c_lo, c_hi = _otsu(df.side_feature[ag].to_numpy())
+        sep = c_hi - c_lo
+        info.update(side_threshold=round(float(thr), 1), side_sep_px=round(float(sep), 1))
+        if sep >= rc["min_sep_px"]:
+            margin = max(rc["margin_px"], rc["margin_frac"] * sep)
+            pred = np.where(df.side_feature >= thr, "AGEM KIRI", "AGEM KANAN")
+            cand = ag & (pred != df.task) & (np.abs(df.side_feature - thr) >= margin)
+            df.loc[cand, "kandidat_salah_sisi"] = True
+            info["side"] = "ok"
+        else:
+            info["side"] = "tidak_terpisah"
+    other = {"AGEM KANAN": "AGEM KIRI", "AGEM KIRI": "AGEM KANAN"}
+    for d in (decisions or {}).get("reclass_sisi", []) or []:
+        k = df.index[(df.task_hud == d["task"]) & (df.rep_hud == int(d["rep"]))]
+        if len(k) and d.get("jadi", other.get(d["task"])) in AGEM:
+            i = k[0]
+            df.at[i, "task"], df.at[i, "rep"] = d.get("jadi", other[d["task"]]), int(d["rep"]) + 10
+            df.at[i, "reclass"] = "salah_sisi"
+    nod = (df.compliance == "incomplete") & (df.depth_px < cfg["phases"]["min_depth_px"])
+    df.loc[nod & (df.reclass == ""), "reclass"] = "tanpa_turun"
+    info.update(n_kandidat=int(df.kandidat_salah_sisi.sum()),
+                n_salah_sisi=int((df.reclass == "salah_sisi").sum()),
+                n_tanpa_turun=int((df.reclass == "tanpa_turun").sum()))
+    return df, info

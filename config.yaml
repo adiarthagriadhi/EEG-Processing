@@ -206,3 +206,10 @@ dose_response:
   outcomes: [cv_tahan, dur_naik_sec, dur_turun_sec, offset_central_TURUN, offset_central_TAHAN,
              mu_periodic_central_TURUN, mu_periodic_posterior_TAHAN]
   min_n: 8
+
+reclass:
+  # eegpipe/reclass.py (2026-09-24): kandidat salah sisi otomatis; penerapan hanya lewat decisions (visual)
+  min_agem_reps: 6
+  min_sep_px: 40
+  margin_px: 20
+  margin_frac: 0.25
