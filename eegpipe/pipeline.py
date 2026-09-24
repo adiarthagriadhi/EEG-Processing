@@ -207,7 +207,7 @@ def stage_area_map(P, cfg, clean, reps, tl, force=False):
     fixed_offset_sec = 0.85
     df = area_map.analyze(clean, reps, tl, P.pid, cfg, offset_sec=fixed_offset_sec)
     df.to_csv(out, index=False)
-    n_per_area = df.groupby("area").n_windows.iloc[:, 0].nunique() if len(df) else 0
+    n_per_area = df["area"].nunique() if len(df) else 0
     _log(P.pid, f"area_map: {len(df)} baris ({n_per_area} area), "
                 f"offset tetap {fixed_offset_sec} dtk")
     return df
