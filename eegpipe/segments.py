@@ -59,7 +59,7 @@ def phase_windows(m, cfg):
     sc = cfg["segments"]
     arm = m.act_arm if np.isfinite(m.get("act_arm", np.nan)) else m.act_turun
     pw, po = cfg["erd"]["pre_window"], cfg["erd"]["post_window"]
-    W = {"PRA": (arm + pw[0], arm + pw[1], pw[1] - pw[0])}
+    W = {"PRA": (arm + pw[0], arm + pw[1], pw[1] - pw[0]) if np.isfinite(arm) else None}
     for ph, (c0, c1) in PHASE_COLS.items():
         a, b = m[c0], m[c1]
         if not np.isfinite([a, b]).all() or b <= a:
@@ -70,6 +70,22 @@ def phase_windows(m, cfg):
     W["POST"] = ((m.act_end + po[0], m.act_end + po[1], po[1] - po[0])
                  if np.isfinite(m.act_end) else None)
     return {ph: W[ph] for ph in sc["phases"]}
+
+
+def flat_mask(raw_unfiltered, cfg):
+    """Kanal × sampel: True = sinyal datar/hilang (reset amplifier). Dihitung dari EDF MENTAH."""
+    sc, sf = cfg["segments"], raw_unfiltered.info["sfreq"]
+    x = raw_unfiltered.get_data(picks=CH) * 1e6
+    w = max(2, int(sc["flat_win_sec"] * sf))
+    n = x.shape[1] // w
+    sd = x[:, :n * w].reshape(len(CH), n, w).std(2)
+    m = np.zeros(x.shape, bool)
+    m[:, :n * w] = np.repeat(sd < sc["flat_sd_uv"], w, axis=1)
+    pad = int(sc["flat_pad_sec"] * sf)
+    if pad:
+        from scipy.ndimage import binary_dilation
+        m = binary_dilation(m, structure=np.ones((1, 2 * pad + 1), bool))
+    return m
 
 
 def body_motion(pose):
@@ -100,11 +116,15 @@ def quiet_windows(tl, pose, offset, T, cfg):
     return list(keep), dict(n_candidates=len(W), n_quiet=len(keep), motion_thr=round(float(thr), 3))
 
 
-def analyze(raw, reps, tl, pose, offset, pid, cfg, seed=0):
-    """Mengembalikan (segments, area_map, durasi, qc)."""
+def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
+    """Mengembalikan (segments, area_map, durasi, qc). flat: mask kanal×sampel (flat_mask)."""
     sc, sf = cfg["segments"], raw.info["sfreq"]
     X = raw.get_data(picks=CH) * 1e6
     T = raw.times[-1]
+    if flat is None:
+        flat = np.zeros(X.shape, bool)
+    mx = sc["max_flat_frac"]
+    ffrac = lambda a, b: flat[:, int(a * sf):int(b * sf)].mean(1)          # per kanal
     hemi = {c: ("kiri" if c in LEFT else "kanan") for c in CH}
     area_of = {c: a for a, chs in sc["areas"].items() for c in chs}
 
@@ -112,9 +132,12 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, seed=0):
     starts, qc = quiet_windows(tl, pose, offset, T, cfg)
     wn = int(sc["baseline_win_sec"] * sf)
     B = np.stack([X[:, int(s * sf):int(s * sf) + wn] for s in starts])      # win × ch × t
+    BV = np.stack([ffrac(s, s + sc["baseline_win_sec"]) <= mx for s in starts])   # win × ch valid
     PB = spectra(B, sf)                                                       # win × ch × f
-    base_P = PB.mean(0)
+    base_P = np.stack([PB[BV[:, k], k].mean(0) if BV[:, k].any() else np.full(len(GRID), np.nan)
+                       for k in range(len(CH))])
     base_db = band_db(base_P)
+    qc.update(baseline_valid_frac={c: round(float(BV[:, k].mean()), 2) for k, c in enumerate(CH)})
 
     # --- segmen
     rows, specs = [], []
@@ -125,44 +148,58 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, seed=0):
             if w is None:
                 continue
             a, b = w[0] + offset, w[1] + offset
-            if a < 0 or b > T:
+            if not np.isfinite([a, b]).all() or a < 0 or b > T:
                 continue
             P = spectra(X[:, int(a * sf):int(b * sf)], sf)                   # ch × f
-            specs.append((m.task, ph, P))
+            fr = ffrac(a, b)
+            ok = fr <= mx
+            specs.append((m.task, ph, P, ok))
             db = band_db(P)
             for k, c in enumerate(CH):
                 r = dict(participant_id=pid, task=m.task, rep=m.rep, phase=ph, channel=c,
                          area=area_of[c], hemisphere=hemi[c], t0_video=round(w[0], 3),
                          t1_video=round(w[1], 3), dur_phase_sec=round(w[2], 3),
                          win_sec=round(b - a, 3), compliance=m.compliance,
-                         phase_source=m.get("phase_source", "video"), is_simulated=cfg["is_simulated"])
+                         phase_source=m.get("phase_source", "video"), flat_frac=round(float(fr[k]), 3),
+                         valid=bool(ok[k]), is_simulated=cfg["is_simulated"])
                 for bn in list(BANDS) + ["broad"]:
-                    r[f"{bn}_db"] = db[bn][k] - base_db[bn][k]
+                    r[f"{bn}_db"] = db[bn][k] - base_db[bn][k] if ok[k] else np.nan
                 rows.append(r)
     seg = pd.DataFrame(rows)
 
     # --- specparam: acuan vs gabungan segmen, per kanal / area / belahan
-    fit_base_ch = [fit(base_P[k]) for k in range(len(CH))]
+    fitn = lambda P: fit(P) if np.isfinite(P).all() else None
+    fit_base_ch = [fitn(base_P[k]) for k in range(len(CH))]
     area_idx = {a: [CH.index(c) for c in chs] for a, chs in sc["areas"].items()}
-    fit_base_ar = {a: fit(base_P[i].mean(0)) for a, i in area_idx.items()}
+    fit_base_ar = {a: fitn(np.nanmean(base_P[i], 0)) for a, i in area_idx.items()}
     out = []
     pools = {"SEMUA": None, **{t: t for t in sorted(reps.task.unique())}}
     for pool, task in pools.items():
         for ph in sc["phases"]:
-            S = [P for (t, p, P) in specs if p == ph and (task is None or t == task)]
+            S = [(P, ok) for (t, p, P, ok) in specs if p == ph and (task is None or t == task)]
             if len(S) < 2:
                 continue
-            M = np.mean(S, 0)
+            Ps, OK = np.stack([x[0] for x in S]), np.stack([x[1] for x in S])      # seg × ch × f, seg × ch
             base = dict(participant_id=pid, pool=pool, phase=ph, n_seg=len(S),
-                        few_segments=len(S) < (sc["min_segments_flag"] if task is None else 3),
                         is_simulated=cfg["is_simulated"])
+            minseg = sc["min_segments_flag"] if task is None else 3
             chrows = []
             for k, c in enumerate(CH):
-                f1, f0 = fit(M[k]), fit_base_ch[k]
+                nv = int(OK[:, k].sum())
+                f0 = fit_base_ch[k]
+                if nv < 2 or f0 is None:
+                    chrows.append(dict(base, level="kanal", unit=c, hemisphere=hemi[c], area=area_of[c],
+                                       n_valid=nv, few_segments=True))
+                    continue
+                f1 = fit(Ps[OK[:, k], k].mean(0))
                 chrows.append(dict(base, level="kanal", unit=c, hemisphere=hemi[c], area=area_of[c],
+                                   n_valid=nv, few_segments=nv < minseg,
                                    **{f"{q}_change": f1[q] - f0[q] for q in ("offset", "exponent")},
                                    **{f"{b}_periodic_db": f1[b] - f0[b] for b in BANDS}, r2=f1["r2"]))
             ch = pd.DataFrame(chrows)
+            for col in ["offset_change", "exponent_change"] + [f"{b}_periodic_db" for b in BANDS]:
+                if col not in ch:
+                    ch[col] = np.nan
             for h in ("kiri", "kanan"):                                   # tafsiran relatif per belahan
                 hm = ch.hemisphere == h
                 ch.loc[hm, "global_offset_db"] = ch.loc[hm, "offset_change"].median()
@@ -175,20 +212,40 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, seed=0):
                                 **{f"{b}_periodic_db": ch.loc[hm, f"{b}_periodic_db"].median()
                                    for b in BANDS}))
             out += ch.to_dict("records")
-            for a, i in area_idx.items():
-                f1, f0 = fit(M[i].mean(0)), fit_base_ar[a]
-                out.append(dict(base, level="area", unit=a, area=a,
-                                artifact_prone=a in sc["artifact_prone"],
-                                **{f"{q}_change": f1[q] - f0[q] for q in ("offset", "exponent")},
-                                **{f"{b}_periodic_db": f1[b] - f0[b] for b in BANDS}, r2=f1["r2"]))
+            for ar, i in area_idx.items():
+                # spektrum area per segmen = rata-rata kanal VALID pasangan; segmen tanpa kanal valid dilewati
+                v = OK[:, i]
+                keep = v.any(1)
+                f0 = fit_base_ar[ar]
+                row = dict(base, level="area", unit=ar, area=ar, artifact_prone=ar in sc["artifact_prone"],
+                           n_valid=int(keep.sum()))
+                if keep.sum() >= 2 and f0 is not None:
+                    Pa = np.stack([Ps[j][i][v[j]].mean(0) for j in np.where(keep)[0]]).mean(0)
+                    f1 = fit(Pa)
+                    row.update(few_segments=keep.sum() < minseg,
+                               **{f"{q}_change": f1[q] - f0[q] for q in ("offset", "exponent")},
+                               **{f"{b}_periodic_db": f1[b] - f0[b] for b in BANDS}, r2=f1["r2"])
+                else:
+                    row["few_segments"] = True
+                out.append(row)
     amap = pd.DataFrame(out)
 
     # --- batas ketelitian: noise 1/f global per belahan (+8 dB) pada jendela acuan
     rng = np.random.default_rng(seed)
-    PN = spectra(np.stack([_inject(w, rng, sc["noise_inject_db"]) for w in B]), sf).mean(0)
-    floor = max(abs(fit(PN[k])[b] - fit_base_ch[k][b]) for k in range(len(CH)) for b in ("mu", "beta"))
+    allv = BV.all(1)                                   # jendela acuan tanpa kanal datar
+    if allv.sum() >= 5:
+        B0 = B[allv]
+        P0 = spectra(B0, sf).mean(0)
+        PN = spectra(np.stack([_inject(w, rng, sc["noise_inject_db"]) for w in B0]), sf).mean(0)
+        floor = max(abs(fit(PN[k])[b] - fit(P0[k])[b]) for k in range(len(CH)) for b in ("mu", "beta"))
+    else:
+        floor = np.nan
+    qc["n_baseline_allvalid"] = int(allv.sum())
     amap["noise_floor_db"] = floor
-    qc.update(noise_floor_db=round(float(floor), 2), n_segments=int(len(specs)))
+    fl = seg[seg.channel.isin(["C3", "C4"])].groupby("phase").valid.mean() if len(seg) else pd.Series(dtype=float)
+    qc.update(noise_floor_db=round(float(floor), 2), n_segments=int(len(specs)),
+              valid_frac_C3C4=fl.round(2).to_dict(),
+              flat_pct_total={c: round(100 * float(flat[k].mean()), 1) for k, c in enumerate(CH)})
 
     # --- durasi subfase (perilaku, dari video)
     d = reps.copy()
@@ -201,7 +258,7 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, seed=0):
     return seg, amap, dur, qc
 
 
-def romberg_area(raw, tl, offset, pid, cfg):
+def romberg_area(raw, tl, offset, pid, cfg, flat=None):
     """Romberg EO/EC per area: specparam jendela 2 dtk bersih (≤ romberg_reject_uv per area),
     offset yang sama dengan gerak. Reaktivitas = periodik EC − EO."""
     sc, sf, T = cfg["segments"], raw.info["sfreq"], raw.times[-1]
@@ -216,8 +273,11 @@ def romberg_area(raw, tl, offset, pid, cfg):
         cov = max(0.0, b - a) / (b0 - a0)
         for ar, chs in sc["areas"].items():
             x = raw.get_data(picks=chs) * 1e6
-            W = [x[:, int(s * sf):int(s * sf) + int(2 * sf)] for s in np.arange(a, b - 2 + 1e-9, 1.0)]
-            W = [w for w in W if np.ptp(w, axis=1).max() <= sc["romberg_reject_uv"]]
+            fm = flat[[CH.index(c) for c in chs]] if flat is not None else np.zeros(x.shape, bool)
+            W = [(x[:, int(s * sf):int(s * sf) + int(2 * sf)], fm[:, int(s * sf):int(s * sf) + int(2 * sf)])
+                 for s in np.arange(a, b - 2 + 1e-9, 1.0)]
+            W = [w for w, f in W if np.ptp(w, axis=1).max() <= sc["romberg_reject_uv"]
+                 and f.mean(1).max() <= sc["max_flat_frac"]]
             row = dict(participant_id=pid, kondisi=cond, area=ar, cakupan=round(cov, 3),
                        n_win=len(W), artifact_prone=ar in sc["artifact_prone"],
                        is_simulated=cfg["is_simulated"])

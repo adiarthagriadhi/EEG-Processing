@@ -188,7 +188,10 @@ def section_segmen(P, cfg, qc):
              f"<p>Offset {qc.get('offset_sec'):+.2f} dtk; acuan = {qc.get('n_quiet')} dari "
              f"{qc.get('n_candidates')} jendela 2 dtk paling diam (BERDIRI RILEKS + ISTIRAHAT UTAMA); "
              f"{qc.get('n_segments')} segmen, per fase {qc.get('n_seg_per_phase')}; batas ketelitian "
-             f"{qc.get('noise_floor_db')} dB (efek periodik per partisipan di bawah ini tidak ditafsirkan).</p>"]
+             f"{qc.get('noise_floor_db')} dB (efek periodik per partisipan di bawah ini tidak ditafsirkan).</p>",
+             "<p><b>Sinyal datar (reset amplifier / sinyal hilang)</b> — % kanal×waktu per kanal: "
+             + html.escape(str(qc.get("flat_pct_total"))) + "<br>Fraksi segmen C3/C4 yang valid per fase: "
+             + html.escape(str(qc.get("valid_frac_C3C4"))) + "</p>"]
     a = pd.read_csv(res / f"{P.pid}_area_map.csv")
     a = a[(a.pool == "SEMUA") & (a.level == "area")]
     for col, lab in [("offset_change", "Perubahan garis latar (dB)"),

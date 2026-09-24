@@ -154,3 +154,12 @@ def test_sync_alarm_fixed_offset():
     nocoupling = dict(offset_sec=-28.0, offset_se_sec=0.25, r_coarse=0.01, spread_sec=0.5)  # P35
     al, warn = alarm(nocoupling, cfg, 0.85)
     assert al is None and warn is not None
+
+
+def test_phase_windows_incomplete_rep():
+    import numpy as np
+    import pandas as pd
+    from eegpipe.config import load_config
+    from eegpipe.segments import phase_windows
+    m = pd.Series(dict(act_arm=np.nan, act_turun=np.nan, act_tahan=np.nan, act_naik=np.nan, act_end=np.nan))
+    assert all(v is None for v in phase_windows(m, load_config()).values())

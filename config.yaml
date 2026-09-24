@@ -109,6 +109,14 @@ segments:
     oksipital: [O1, O2]
   artifact_prone: [frontopolar, frontotemporal, temporal]   # tidak ditafsirkan sebagai kortikal
   romberg_reject_uv: 150.0
+  # Periode DATAR (SD < flat_sd_uv dalam jendela flat_win_sec; nilai ≈ 0 µV) = amplifier KT88 me-reset
+  # / sinyal hilang (terverifikasi 2026-09-24: hingga 34% kanal×waktu pada sebagian partisipan).
+  # Ditandai per kanal×waktu dari EDF MENTAH, diperlebar flat_pad_sec; kanal-segmen dengan fraksi datar
+  # > max_flat_frac → tidak dipakai (data hilang, bukan eksklusi perilaku).
+  flat_sd_uv: 0.5
+  flat_win_sec: 0.2
+  flat_pad_sec: 0.1
+  max_flat_frac: 0.1
 
 romberg:
   pad_sec: 1.0              # buang transisi (tutup/buka mata) di awal & akhir segmen

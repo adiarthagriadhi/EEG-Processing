@@ -296,6 +296,29 @@ Salinan hasil turunan (tanpa data mentah) ada di `hasil_analisis/` (lihat README
 (EDF, video) dan fif/npz TIDAK ada di repo — sesi baru perlu mengunggah ulang data mentah bila
 pipeline harus dijalankan ulang.
 
+## ✅ Pendekatan v2 DIIMPLEMENTASIKAN (2026-09-24) — status terkini, menggantikan catatan lama bila bertentangan
+- **Sinkronisasi:** `sync.mode: fixed`, offset 0,85 dtk (dibekukan). Estimasi xcorr hanya ALARM, yang harus
+  dikonfirmasi cek onset-ke-onset. P34: alarm xcorr +33 dtk DIBANTAH (onset pada 0,85 = −0,15 dtk, n 4) →
+  0,85. P01: alarm terkonfirmasi → keputusan MANUAL +3,25 dtk (onset −0,12 dtk, n 8) — **perlu konfirmasi
+  pengguna**. P35: xcorr tanpa kopling (r 0,01) → 0,85 tanpa verifikasi (ditandai). Semua 14 lolos.
+- **Tahap `segmen`** (`eegpipe/segments.py`): fase dari video, pangkas batas, semua segmen, acuan gabungan
+  paling diam, specparam kanal/area/belahan (SEMUA + per gerakan), batas ketelitian, durasi, Romberg/area.
+- **TEMUAN KUALITAS DATA KRITIS: sinyal DATAR (≈0 µV, SD < 0,5 µV/0,2 dtk) = reset amplifier KT88 / sinyal
+  hilang.** Median % kanal×waktu datar: penari P01–P07 0–13%; non-penari P33–P38 6–36% (P36 36%, P33 32%);
+  P10 0%. Lebih sering saat TAHAN/NAIK (terkait gerak/tegangan kabel). Kini ditandai per kanal×waktu dari EDF
+  mentah; kanal-segmen datar > 10% = data hilang. Nilai ekstrem (−30…−300 dB) di analisis sebelumnya berasal
+  dari sini → **hasil uji cepat 2026-09-23 (garis latar d −0,9, mu TURUN d +1,75) TIDAK bertahan**.
+- **Konfound hari rekaman:** penari semua 9 Sep; non-penari 14 Sep (kecuali P10). Kualitas sinyal berbeda per
+  hari → beda grup EEG bisa artefak perangkat/sesi. **Rekomendasi: selang-seling grup per hari rekaman,
+  catat impedansi & kondisi kabel, cek sinyal datar langsung saat perekaman.**
+- **Hasil v2 (7 penari vs 7 non-penari, SEMUA eksploratif; `python -m eegpipe hypotheses-v2`):**
+  perilaku: CV durasi TAHAN 0,25 vs 0,48 (g −1,10, p 0,026), durasi NAIK 1,00 vs 1,39 dtk (g −0,93,
+  p 0,047), TURUN sama (p 0,44); EEG: mu periodik posterior TAHAN 0,33 vs 1,57 dB (g −0,94, p 0,044);
+  garis latar sentral TURUN/TAHAN, mu sentral TURUN, H12 ≈ 0 (g −0,2…0,1); H13 rho 0,34 (p 0,12).
+  Tidak ada yang lolos FDR (p_FDR ≥ 0,14). Model campuran segmen: tidak ada beda grup (p ≥ 0,24).
+  Set konfirmatori (P33–P35) hanya non-penari → belum dapat diuji.
+- Hasil lengkap: `hasil_analisis/v2/` (lihat README); ekspor ulang: `python scripts/ekspor_hasil.py`.
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.

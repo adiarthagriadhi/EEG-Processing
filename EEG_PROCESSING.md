@@ -1370,3 +1370,16 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
   LRP onset latency differences. *Psychophysiology*, 35(1), 99–115.
 - Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate.
   *Journal of the Royal Statistical Society B*, 57(1), 289–300.
+
+
+## Pendekatan v2 (2026-09-24) — alur utama saat ini
+1. `python -m eegpipe run PXX` menjalankan semua tahap: ocr → pose → sync (offset tetap 0,85 dtk; estimasi
+   data = alarm) → phases (video) → cek onset (alarm) → preprocess → [erd, spectral: metode lama] →
+   romberg → baseline → **segmen** (v2) → laporan QC (`reports/PXX_qc.html`, bagian 7).
+2. Alarm sinkronisasi → pipeline berhenti; isi `data/decisions/PXX.yaml`:
+   `sync: {offset_sec: …, method: manual, basis: "…"}`.
+3. `python -m eegpipe hypotheses-v2` → H6–H13, model campuran segmen, dosis-respons
+   (isi `dance_years` & `age` di `data/participants.csv`).
+4. `python scripts/ekspor_hasil.py` → `hasil_analisis/` (hasil turunan untuk di-commit).
+Parameter di `config.yaml` → `sync`, `segments`, `hypotheses_v2`, `exploration_set`, `dose_response`.
+Sinyal datar (reset amplifier) ditandai otomatis (`segments.flat_*`); lihat CLAUDE.md.

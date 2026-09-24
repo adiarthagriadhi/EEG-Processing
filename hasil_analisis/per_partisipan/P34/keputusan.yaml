@@ -1,12 +1,42 @@
 sync:
-  offset_sec: 33.27
-  offset_se_sec: 0.251
-  method: auto
-  accepted: false
-  problems:
-  - offset per-repetisi tidak konsisten (SE 0.25 > 0.25 dtk)
-  - '|offset| 33.3 dtk > prior hitungan-3 (5.0 dtk)'
-  warnings:
-  - puncak kasar tidak tegas (r 0.21 vs 0.19)
-  - korelasi halus rendah (r 0.21)
-  - kombinasi sinyal tidak sepakat (IQR 0.84 dtk)
+  offset_sec: 0.85
+  method: fixed
+  estimate_sec: 33.27
+  estimate_se_sec: 0.251
+  warnings: []
+  accepted: true
+  onset_check:
+    onset_lag_sec: -0.15
+    onset_lag_iqr: 0.89
+    onset_n: 4
+  alarm_dismissed: 'estimasi data +33.27 ± 0.25 dtk menyimpang +32.42 dtk dari offset
+    tetap +0.85 dtk (r kasar 0.21) — DIBANTAH: cek onset -0.15 dtk (IQR 0.89, n 4)
+    pada offset tetap'
+bad_channels: []
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: 1.01
+  Fp2: -0.09
+  F3: 0.97
+  F4: -0.29
+  C3: 0.09
+  C4: -0.31
+  P3: 0.32
+  P4: -0.68
+  O1: 0.75
+  O2: -0.72
+  F7: 1.67
+  F8: -0.66
+  T3: 1.63
+  T4: -0.42
+  T5: 1.43
+  T6: -0.18
+ica_blink_qc:
+  n_blinks: 539
+  blink_channel: Fp1
+  before: 286.8
+  after: 80.4
+ica_exclude:
+- 0
+- 1
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

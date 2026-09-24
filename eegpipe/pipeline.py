@@ -283,7 +283,7 @@ def stage_baseline(P, cfg, force=False):
     return feat
 
 
-def stage_segmen(P, cfg, clean, reps, tl, pose, offset, force=False):
+def stage_segmen(P, cfg, clean, reps, tl, pose, offset, raw, force=False):
     """Pendekatan v2: segmen dari video, acuan gabungan, specparam kanal/area/belahan, durasi,
     Romberg per area (lihat eegpipe/segments.py)."""
     from . import segments
@@ -291,8 +291,10 @@ def stage_segmen(P, cfg, clean, reps, tl, pose, offset, force=False):
     qc_path = P.out("segmen_qc.json")
     if out.exists() and qc_path.exists() and not force:
         return json.loads(qc_path.read_text())
-    seg, amap, dur, qc = segments.analyze(clean, reps, tl, pose, offset, P.pid, cfg)
-    rb = segments.romberg_area(clean, tl, offset, P.pid, cfg)
+    flat = segments.flat_mask(raw, cfg)                  # dari EDF mentah (sebelum filter/ICA)
+    np.savez_compressed(P.out("flat_mask.npz"), mask=np.packbits(flat, axis=1), shape=flat.shape)
+    seg, amap, dur, qc = segments.analyze(clean, reps, tl, pose, offset, P.pid, cfg, flat=flat)
+    rb = segments.romberg_area(clean, tl, offset, P.pid, cfg, flat=flat)
     seg.to_csv(P.results_dir / f"{P.pid}_segments.csv", index=False)
     amap.to_csv(out, index=False)
     dur.to_csv(P.results_dir / f"{P.pid}_durasi.csv", index=False)
@@ -302,6 +304,9 @@ def stage_segmen(P, cfg, clean, reps, tl, pose, offset, force=False):
                              if len(seg) else {})
     qc_path.write_text(json.dumps(qc, indent=2, default=float))
     c = amap[(amap.pool == "SEMUA") & (amap.level == "area") & (amap.unit == "sentral")]
+    _log(P.pid, f"segmen v2: kanal×waktu datar (reset amplifier) median "
+                f"{np.median(list(qc['flat_pct_total'].values())):.1f}%, C3/C4 valid per fase "
+                f"{qc['valid_frac_C3C4']}")
     _log(P.pid, f"segmen v2: {qc['n_segments']} segmen {qc['n_seg_per_phase']}; acuan "
                 f"{qc.get('n_quiet')} jendela diam; batas ketelitian {qc['noise_floor_db']:.1f} dB; "
                 f"sentral garis latar {c.set_index('phase').offset_change.round(1).to_dict()}")
@@ -340,7 +345,7 @@ def run(pid, cfg, stages=None, force=()):
             if "baseline" in stages:
                 ctx["baseline"] = stage_baseline(P, cfg, f("baseline"))
             if "segmen" in stages:
-                ctx["segmen"] = stage_segmen(P, cfg, clean, reps, tl, pose, offset, f("segmen"))
+                ctx["segmen"] = stage_segmen(P, cfg, clean, reps, tl, pose, offset, raw, f("segmen"))
     except QCStop as e:
         ctx["problems"].append(str(e))
         _log(pid, f"BERHENTI: {e}")

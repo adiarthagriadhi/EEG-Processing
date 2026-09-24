@@ -1,0 +1,2 @@
+participant_id,is_simulated,baseline_sec,blink_per_min,rest_theta_occ,rest_alpha_occ,rest_beta_occ,rest_n_win_occ,rest_theta_par,rest_alpha_par,rest_beta_par,rest_n_win_par,rest_theta_sm,rest_alpha_sm,rest_beta_sm,rest_n_win_sm,rest_theta_front,rest_alpha_front,rest_beta_front,rest_n_win_front,rest_theta_alpha_ratio,iaf_occ_rest,iaf_par_rest,rest_exponent_sm,rest_exponent_front
+P10,False,60.0,18.0,,,,0,,,,0,0.23259312123238476,0.06586466537108641,0.04720385697938391,3,0.2008280919119512,0.1306703506729651,0.11966617661968344,1,,,,2.2100973366154153,1.814897249094634

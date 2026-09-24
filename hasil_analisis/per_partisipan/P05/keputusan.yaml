@@ -1,42 +1,40 @@
 sync:
-  offset_sec: 1.08
-  offset_se_sec: 0.065
-  method: auto
+  offset_sec: 0.85
+  method: fixed
+  estimate_sec: 1.08
+  estimate_se_sec: 0.065
+  warnings: []
   accepted: true
-  problems: []
-  warnings:
-  - kombinasi sinyal tidak sepakat (IQR 0.77 dtk)
   onset_check:
-    onset_lag_sec: -0.43
-    onset_lag_iqr: 0.62
-    onset_n: 10
+    onset_lag_sec: -0.19
+    onset_lag_iqr: 0.74
+    onset_n: 12
 bad_channels:
 - F8
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 0.13
-  Fp2: -0.09
-  F3: 0.2
+  Fp1: 0.2
+  Fp2: -0.04
+  F3: 0.04
   F4: 0.09
   C3: 1.9
-  C4: -0.67
-  P3: 1.54
-  P4: -0.52
-  O1: 2.16
-  O2: -0.19
-  F7: -3.48
-  F8: 3.48
-  T3: 1.34
-  T4: -0.91
-  T5: -0.52
-  T6: -0.68
+  C4: -0.61
+  P3: 1.67
+  P4: -0.55
+  O1: 2.23
+  O2: -0.26
+  F7: -3.63
+  F8: 3.67
+  T3: 1.39
+  T4: -0.87
+  T5: -0.62
+  T6: -0.73
 ica_blink_qc:
   n_blinks: 119
   blink_channel: Fp1
   before: 360.5
-  after: 141.7
+  after: 185.4
 ica_exclude:
-- 1
 - 0
-- 4
+- 1
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

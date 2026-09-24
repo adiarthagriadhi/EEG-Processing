@@ -1,16 +1,16 @@
 sync:
   offset_sec: 3.25
-  offset_se_sec: 0.243
-  method: auto+onset
-  accepted: true
-  problems: []
-  warnings:
-  - kombinasi sinyal tidak sepakat (IQR 0.54 dtk)
+  method: manual
+  basis: 'alarm offset tetap: estimasi xcorr +4,52 dtk (r 0,38); cek onset-ke-onset:
+    +2,40 dtk pada offset tetap 0,85 (n 2), -0,12 dtk pada +3,25 (n 8, IQR 0,78),
+    -1,27 dtk pada +4,52 → start EEG ±2,4 dtk lebih awal dari biasa; xcorr terbias
+    ekor artefak. Offset dari onset-ke-onset.'
+  perlu_konfirmasi_pengguna: true
+  tanggal: '2026-09-24'
   onset_check:
-    onset_lag_sec: -1.27
-    onset_lag_iqr: 0.57
+    onset_lag_sec: -0.12
+    onset_lag_iqr: 0.78
     onset_n: 8
-  offset_xcorr_sec: 4.52
 bad_channels:
 - Fp2
 bad_channels_method: 'auto: z log-SD istirahat'

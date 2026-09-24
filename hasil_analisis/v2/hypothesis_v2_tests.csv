@@ -1,0 +1,19 @@
+sampel,hipotesis,endpoint,expect,n_penari,n_nonpenari,mean_penari,mean_nonpenari,statistik,t,p_one_sided,effect,n_total,p_fdr,catatan
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H6,dur_turun_sec,penari > non-penari,7.0,7.0,1.5016428571428517,1.4725714285714306,Welch satu arah,0.16060695681964804,0.4375552996511747,0.08036836802269563,,0.5585132978469018,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H7,cv_tahan,penari < non-penari,7.0,7.0,0.24628954488026936,0.48003227498921086,Welch satu arah,-2.192763469130004,0.025737543459860773,-1.0972676711112666,,0.1415671558785442,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H8,dur_naik_sec,penari < non-penari,7.0,7.0,1.0020714285714285,1.3879285714285832,Welch satu arah,-1.8581994726695321,0.047189051959514734,-0.9298504998558951,,0.1415671558785442,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H9,mu_periodic_central_TURUN,penari > non-penari,7.0,7.0,0.2352259139589315,0.35383963668000107,Welch satu arah,-0.17937539845617836,0.5694952854805726,-0.08976017180583426,,0.5694952854805726,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H10a,offset_central_TURUN,penari < non-penari,7.0,7.0,8.203771262488617,8.592256845900136,Welch satu arah,-0.09060965346553312,0.4648632416272818,-0.045341435516422245,,0.5585132978469018,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H10b,offset_central_TAHAN,penari < non-penari,7.0,7.0,4.124791718680693,4.153981032723926,Welch satu arah,-0.009080678699485163,0.4964562647528016,-0.0045440081928430865,,0.5585132978469018,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H11,mu_periodic_posterior_TAHAN,penari < non-penari,7.0,7.0,0.33204984127921694,1.5661623108243068,Welch satu arah,-1.8829424935314225,0.04372943931115544,-0.9422320071454868,,0.1415671558785442,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H12,demand_minus_naik_offset_central,penari < non-penari,7.0,7.0,1.162486255063445,2.0888362061441534,Welch satu arah,-0.39641331088994697,0.34938570312487344,-0.19836681728845876,,0.5585132978469018,
+semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis),H13,offset_central_TAHAN ~ cv_tahan,rho > 0,,,,,Spearman parsial (TANPA kontrol usia),,0.11989610112862645,0.33626373626373635,14.0,0.26976622753940954,
+konfirmatori (partisipan baru),H6,dur_turun_sec,penari > non-penari,0.0,3.0,,1.7591666666666643,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H7,cv_tahan,penari < non-penari,0.0,3.0,,0.2958670972782178,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H8,dur_naik_sec,penari < non-penari,0.0,3.0,,0.9773333333333483,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H9,mu_periodic_central_TURUN,penari > non-penari,0.0,3.0,,0.058753631937905094,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H10a,offset_central_TURUN,penari < non-penari,0.0,3.0,,4.408905644139729,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H10b,offset_central_TAHAN,penari < non-penari,0.0,3.0,,1.0888370801961476,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H11,mu_periodic_posterior_TAHAN,penari < non-penari,0.0,3.0,,0.8590893098207776,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H12,demand_minus_naik_offset_central,penari < non-penari,0.0,3.0,,-0.652485263973419,Welch satu arah,,,,,,n < 3 per grup
+konfirmatori (partisipan baru),H13,offset_central_TAHAN ~ cv_tahan,rho > 0,,,,,Spearman parsial (TANPA kontrol usia),,,,3.0,,
