@@ -1,0 +1,41 @@
+sync:
+  offset_sec: 0.85
+  method: fixed
+  estimate_sec: 0.78
+  estimate_se_sec: 0.15
+  warnings: []
+  accepted: true
+  onset_check:
+    onset_lag_sec: -0.34
+    onset_lag_iqr: 0.83
+    onset_n: 9
+  onset_lag_calibrated_sec: 0.55
+bad_channels: []
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: 0.94
+  Fp2: 1.3
+  F3: -0.84
+  F4: 0.66
+  C3: -0.52
+  C4: 0.69
+  P3: -0.64
+  P4: -0.01
+  O1: -1.38
+  O2: -0.21
+  F7: 0.01
+  F8: 1.03
+  T3: -1.26
+  T4: 0.56
+  T5: -0.9
+  T6: 0.46
+ica_blink_qc:
+  n_blinks: 179
+  blink_channel: Fp2
+  before: 412.5
+  after: 50.7
+ica_exclude:
+- 0
+- 3
+- 1
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

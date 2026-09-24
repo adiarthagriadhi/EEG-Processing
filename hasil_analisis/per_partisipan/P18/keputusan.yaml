@@ -1,0 +1,42 @@
+sync:
+  offset_sec: 0.85
+  method: fixed
+  estimate_sec: 0.28
+  estimate_se_sec: 0.161
+  warnings: []
+  accepted: true
+  onset_check:
+    onset_lag_sec: -1.36
+    onset_lag_iqr: 1.69
+    onset_n: 9
+  onset_lag_calibrated_sec: -0.47
+  alarm_dismissed: 'estimasi data +0.28 ± 0.16 dtk menyimpang -0.57 dtk dari offset
+    tetap +0.85 dtk (r kasar 0.26) — DIBANTAH: cek onset -1.36 dtk (IQR 1.69, n 9)
+    (terkalibrasi -0.47) pada offset tetap'
+bad_channels: []
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: 0.88
+  Fp2: 1.23
+  F3: -0.26
+  F4: 0.03
+  C3: 0.43
+  C4: -0.51
+  P3: -0.98
+  P4: -0.64
+  O1: 0.04
+  O2: -0.71
+  F7: 1.1
+  F8: 0.58
+  T3: 1.15
+  T4: -0.77
+  T5: -0.03
+  T6: -1.11
+ica_blink_qc:
+  n_blinks: 181
+  blink_channel: Fp2
+  before: 423.3
+  after: 41.5
+ica_exclude:
+- 0
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

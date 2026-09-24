@@ -391,6 +391,29 @@ pipeline harus dijalankan ulang.
 - Model campuran segmen (28): tidak ada beda grup di fase mana pun (p ≥ 0,46).
 - Catatan: H13 sebelumnya melemah dengan gabungan median (uji sensitivitas 20 partisipan) → ulangi sensitivitas pada 28.
 
+## ✅ KOHORT LENGKAP 38 partisipan (23 penari vs 15 non-penari), 2026-09-24 — status terkini
+- Ditambahkan P16–P21 (penari 55–102 th, 11 Sep) & P22–P25 (non-penari, 12 Sep). Video dari Google Drive via
+  `drive.usercontent.google.com` (googleusercontent/OneDrive diblokir proxy). Baseline ganda → dipakai sinyal datar
+  terendah (P17 Baseline, P19 Baseline, P20 Baseline3, P23 Baseline2, P24 Baseline2; sisanya `_tidak_dipakai/`).
+- **P22: penonton berdiri masuk area partisipan** → pose melacak penonton; `participant_box: [300,90,600,640]` di
+  decisions. Setting 11–12 Sep: 2–3 penonton berdiri di belakang kanan partisipan.
+- Sinkronisasi (pindai kohort): P17/P18/P21/P22/P23/P25 0,65–0,80 → 0,85. P16 (alarm xcorr +1,75; pindai lemah r 0,14,
+  blok tidak sepakat) & P25 (alarm drift, tidak dikonfirmasi pindai) → manual 0,85; P16 TANPA VERIFIKASI. P19/P20/P24
+  kopling lemah (r ≤ 0,2) → 0,85 tanpa verifikasi. Penari lansia: artefak gerak EEG kecil → offset sulit diverifikasi.
+- Romberg EC terekam penuh pada P16–P25 (EDF 436–447 dtk).
+- **H1–H13 (38; FDR atas 14):** lolos p_FDR < 0,05: **H7 CV TAHAN 0,30 vs 0,53 (g −1,26, p_FDR 0,004)**, H12 (g −0,87,
+  0,031), H6 durasi TURUN (g +0,85, 0,039), H3 tahan agem 2,85 vs 2,11 dtk (g +0,73, 0,045), H11 mu posterior TAHAN
+  (g −0,70, 0,045). MELEMAH dengan kohort lengkap: H2 (g −0,42), H10a/b (g −0,41/−0,54), H8 NAIK (g −0,54), H13
+  (rho 0,19) → n.s. Nol: H1, H4, H5, H9. Model campuran segmen: n.s. Peta eksploratif 11/208 p<0,05 (≈ kebetulan).
+- **Konfound usia terurai:** penari > non-penari pada CV TAHAN di SETIAP kelompok usia (≤25: 0,27 vs 0,59; 26–45:
+  0,26 vs 0,47; >45: 0,36 vs 0,55); model grup + usia: grup p < 0,001, usia p 0,63, interaksi p 0,50. Juga bertahan
+  dgn usia: H11 (p 0,032), H6 (0,015), H3 (0,027), H12 (0,011; interaksi p 0,049). Garis latar TAHAN BERBALIK pada
+  usia ≤ 25 (penari 6,5 vs non-penari 2,9 dB) → efek garis latar kohort 28 kemungkinan terkait komposisi usia.
+- **Dosis-respons (38):** prediktor terkuat = **frekuensi menari/bulan → CV TAHAN** (seluruh sampel β −0,71,
+  p_FDR < 0,001; di dalam penari n 23 β −0,69, p 0,004, p_FDR 0,027; usia n.s.). Lama menari (tahun) di dalam penari
+  tidak berefek (r usia 0,77, VIF 2,4); onset menari tidak berefek. Proporsi hidup menari → CV TAHAN (seluruh sampel
+  p_FDR 0,014). → Kestabilan menahan agem terkait PRAKTIK AKTIF saat ini, bukan akumulasi tahun.
+
 ## ✅ Demografi PARTISIPAN.xlsx + koreksi grup (2026-09-24) — MENGGANTIKAN pembagian grup sebelumnya
 - `data/participants.csv` kini dari PARTISIPAN.xlsx (38 partisipan): `age`, `dance_years` (PENGALAMAN),
   `onset_age` (ONSET), `vakum_years` (PERNAH VAKUM), `activity_per_month` (AKTIFITAS/BULAN),

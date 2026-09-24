@@ -1,0 +1,47 @@
+sync:
+  offset_sec: 0.85
+  method: fixed
+  estimate_sec: 0.75
+  estimate_se_sec: 0.036
+  warnings: []
+  accepted: true
+  onset_check:
+    onset_lag_sec: -0.98
+    onset_lag_iqr: 0.83
+    onset_n: 9
+  onset_lag_calibrated_sec: -0.09
+bad_channels: []
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: -1.06
+  Fp2: -0.58
+  F3: 1.24
+  F4: -1.56
+  C3: 0.32
+  C4: 0.28
+  P3: -0.03
+  P4: 1.59
+  O1: 0.03
+  O2: -0.24
+  F7: -1.26
+  F8: 2.49
+  T3: 0.77
+  T4: 1.75
+  T5: -0.25
+  T6: -0.4
+ica_blink_qc:
+  n_blinks: 157
+  blink_channel: Fp1
+  before: 331.3
+  after: 47.1
+ica_exclude:
+- 4
+- 5
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+participant_box:
+- 300
+- 90
+- 600
+- 640
+participant_box_basis: penonton berdiri di x≈600–690 masuk area baku (340–740) → pose
+  melacak penonton (trunk_y tetap). Area dipersempit 2026-09-24.
