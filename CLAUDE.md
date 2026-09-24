@@ -354,6 +354,14 @@ pipeline harus dijalankan ulang.
   p 0,071), H4 g −0,04, H5 g −0,02. Konfirmatori H1–H5 (18 partisipan tanpa P02/P10 pembentuknya): semua
   n.s. (H3 g +0,53, p 0,13). → **H1, H2, H4, H5 tidak didukung**; H3 searah tetapi lemah. Hasil awal P02 vs
   P10 tidak bereplikasi. File: `hypothesis_v2_H1-H5_konfirmatori.csv`.
+- **Mode eksploratif (keputusan pengguna 2026-09-24):** semua uji pada seluruh sampel sekaligus
+  (`analysis_mode: eksploratif`). H1–H13 (20 partisipan, FDR atas 14 uji): H7 g −0,98 (p 0,017), H11 g −0,90
+  (p 0,025), H13 rho 0,45 (p 0,023), H8 g −0,82 (p 0,042), H3 g +0,66 (p 0,071); p_FDR ≥ 0,12; lainnya ≈ 0.
+  **Peta eksploratif lengkap** (`exploratory_map_v2.csv`; 8 area × 5 fase × 5 ukuran + durasi = 208 uji):
+  14 dengan p < 0,05 (≈ 10 diharapkan kebetulan), tidak ada yang lolos FDR. Terkuat: frontotemporal (theta/mu
+  periodik lebih tinggi pada non-penari saat PRA/TURUN/TAHAN, g −1,2…−1,4 — area rawan artefak otot);
+  **POST (beta rebound) lebih besar pada penari: temporo-posterior g +1,36 (p 0,006), oksipital g +1,08
+  (p 0,021)**; beta frontal PRA g +0,98; durasi TAHAN median g +1,11; CV TURUN g −1,03.
 - Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)

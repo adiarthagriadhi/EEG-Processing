@@ -175,6 +175,9 @@ hypotheses_v2:
   H13: {label: "Hubungan otak–perilaku: garis latar TAHAN berkorelasi dengan CV durasi tahan (seluruh sampel, kontrol usia bila ada)",
         endpoint: [offset_central_TAHAN, cv_tahan], expect: "rho > 0"}
 
+# Mode analisis (keputusan pengguna 2026-09-24): studi masih EKSPLORATIF → semua uji pada seluruh sampel
+# sekaligus; pemisahan eksplorasi/konfirmatori dinonaktifkan (exploration_set disimpan sebagai catatan).
+analysis_mode: eksploratif
 # Partisipan yang dipakai MEMBENTUK H6–H13 (eksplorasi 2026-09-23). Uji konfirmatori = partisipan lain.
 exploration_set: [P01, P02, P03, P04, P05, P06, P07, P10, P36, P37, P38]
 

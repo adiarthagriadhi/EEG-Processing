@@ -98,6 +98,44 @@ def test(df, hyp, label):
     return out
 
 
+def explore_map(res, parts, pids):
+    """Peta eksploratif lengkap: penari vs non-penari (Welch dua arah, Hedges g) untuk setiap
+    fase × area × ukuran specparam (gabungan 12 segmen) + durasi subfase; FDR atas seluruh peta."""
+    am = pd.concat([pd.read_csv(res / f"{p}_area_map.csv") for p in pids])
+    am = am[(am.pool == "SEMUA") & (am.level == "area")].merge(parts[["participant_id", "group"]])
+    rows = []
+    for (ph, ar), q in am.groupby(["phase", "unit"]):
+        for col in ["offset_change", "exponent_change", "theta_periodic_db", "mu_periodic_db", "beta_periodic_db"]:
+            a = q.loc[q.group == "penari", col].dropna()
+            b = q.loc[q.group == "non-penari", col].dropna()
+            if len(a) < 3 or len(b) < 3:
+                continue
+            t, p = stats.ttest_ind(a, b, equal_var=False)
+            sp = np.sqrt((a.var(ddof=1) + b.var(ddof=1)) / 2)
+            rows.append(dict(jenis="EEG", fase=ph, area=ar, ukuran=col, n_penari=len(a), n_nonpenari=len(b),
+                             mean_penari=a.mean(), mean_nonpenari=b.mean(),
+                             hedges_g=(1 - 3 / (4 * (len(a) + len(b)) - 9)) * (a.mean() - b.mean()) / sp, p=p,
+                             artefak_rawan=ar in ("frontopolar", "frontotemporal", "temporal")))
+    du = pd.concat([pd.read_csv(res / f"{p}_durasi.csv") for p in pids])
+    du = VIDEO(du).merge(parts[["participant_id", "group"]])
+    for col in ["dur_turun", "dur_tahan", "dur_naik", "latency_hud"]:
+        agg = du.groupby(["participant_id", "group"])[col].agg(["median", lambda x: x.std(ddof=1) / x.mean()])
+        agg.columns = ["median", "cv"]
+        agg = agg.reset_index()
+        for stat in ["median", "cv"]:
+            a = agg.loc[agg.group == "penari", stat].dropna()
+            b = agg.loc[agg.group == "non-penari", stat].dropna()
+            t, p = stats.ttest_ind(a, b, equal_var=False)
+            sp = np.sqrt((a.var(ddof=1) + b.var(ddof=1)) / 2)
+            rows.append(dict(jenis="perilaku", fase=col, area="-", ukuran=stat, n_penari=len(a), n_nonpenari=len(b),
+                             mean_penari=a.mean(), mean_nonpenari=b.mean(),
+                             hedges_g=(1 - 3 / (4 * (len(a) + len(b)) - 9)) * (a.mean() - b.mean()) / sp, p=p,
+                             artefak_rawan=False))
+    out = pd.DataFrame(rows)
+    out["p_fdr"] = multipletests(out.p, method="fdr_bh")[1]
+    return out.sort_values("p")
+
+
 def mixed_segments(res, parts, pids):
     """Model campuran tingkat segmen (semua segmen, C3/C4 dirata-rata per segmen):
     nilai ~ grup + gerakan, intersep acak partisipan; per fase × ukuran (dB rel. acuan gabungan)."""
@@ -159,9 +197,13 @@ def run(cfg):
     df = df.merge(parts, on="participant_id", how="left")
     df["set"] = np.where(df.participant_id.isin(cfg["exploration_set"]), "eksplorasi", "konfirmatori")
     df.to_csv(res / "hypothesis_v2_endpoints.csv", index=False)
-    t = pd.concat([test(df, cfg["hypotheses_v2"], "semua (EKSPLORATIF: termasuk sampel pembentuk hipotesis)"),
-                   test(df[df.set == "konfirmatori"], cfg["hypotheses_v2"], "konfirmatori (partisipan baru)")])
+    if cfg.get("analysis_mode", "eksploratif") == "eksploratif":
+        t = test(df, cfg["hypotheses_v2"], f"semua (n={len(df)}; eksploratif)")
+    else:
+        t = pd.concat([test(df, cfg["hypotheses_v2"], "semua (termasuk sampel pembentuk hipotesis)"),
+                       test(df[df.set == "konfirmatori"], cfg["hypotheses_v2"], "konfirmatori (partisipan baru)")])
     t.to_csv(res / "hypothesis_v2_tests.csv", index=False)
+    explore_map(res, parts, pids).to_csv(res / "exploratory_map_v2.csv", index=False)
     mx = mixed_segments(res, parts, pids)
     mx.to_csv(res / "mixed_segments_v2.csv", index=False)
     dr = dose_response(df, cfg)
