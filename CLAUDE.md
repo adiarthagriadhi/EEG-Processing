@@ -413,6 +413,10 @@ pipeline harus dijalankan ulang.
   p 0,012, p_FDR 0,08) dan onset_age → CV TAHAN (p 0,013, p_FDR 0,09). Dosis-respons sesungguhnya butuh
   penari dengan tahun menari berbeda pada usia sama (P16–P21 akan membantu) → gunakan juga
   proporsi_hidup_menari / onset_age / aktivitas.
+- **Sensitivitas pembersihan (28, grup terkoreksi; varian A baku / B tepi datar 1,6 dtk / C median / D B+C):**
+  perilaku tidak berubah; H11 tahan di semua varian (g −1,17/−1,12/−0,68/−0,76; p ≤ 0,04); H10a & H12
+  justru MENGUAT dengan median (g −0,82…−0,98; p 0,006–0,018); H13 melemah dengan median (rho 0,43 → 0,27–0,28,
+  p ≈ 0,08); H2 melemah dengan tepi datar diperlebar (p 0,11–0,13); H1/H4/H5/H9 tetap nol/berganti tanda.
 - Konfound hari rekaman tetap ada; P29/P30/P34 (penari, hari rekaman non-penari) sedikit mengurainya.
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
