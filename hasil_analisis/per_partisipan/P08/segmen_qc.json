@@ -4,7 +4,7 @@
   "motion_thr": 1.879,
   "baseline_valid_frac": {
     "Fp1": 0.66,
-    "F3": 0.5,
+    "F3": 0.51,
     "C3": 0.59,
     "P3": 0.47,
     "O1": 0.71,
@@ -27,8 +27,8 @@
     "NAIK": 0.82,
     "POST": 0.79,
     "PRA": 0.62,
-    "TAHAN": 0.38,
-    "TURUN": 0.67
+    "TAHAN": 0.33,
+    "TURUN": 0.71
   },
   "flat_pct_total": {
     "Fp1": 20.4,
@@ -48,16 +48,7 @@
     "T4": 0.0,
     "T6": 24.5
   },
-  "offset_sec": [
-    [
-      0.0,
-      1.2
-    ],
-    [
-      93.2,
-      0.95
-    ]
-  ],
+  "offset_sec": 0.95,
   "n_seg_per_phase": {
     "NAIK": 11,
     "POST": 12,

@@ -428,7 +428,18 @@ pipeline harus dijalankan ulang.
 - P08 hasil pindai konstan ≈ 0,95–1,0 di kedua blok (bertentangan dgn keputusan per blok 1,20→0,95); P11 blok 1
   0,85 (keputusan 1,28). Ambang alarm 1,0 dtk terlalu longgar untuk deviasi ≈ 0,8 dtk (≈ separuh fase NAIK/TURUN).
 - Selisih durasi EDF−video: 9–10 Sep EDF lebih pendek (−3…−31 dtk; EEG distop lebih awal) vs 12–14 Sep hampir sama
-  (−0,6…+5,5) → prosedur STOP berubah, prosedur START konsisten. Menunggu keputusan pengguna untuk koreksi.
+  (−0,6…+5,5) → prosedur STOP berubah, prosedur START konsisten.
+- **DITERAPKAN (keputusan pengguna 2026-09-24):** offset MANUAL konstan dari pindai: P01 4,15; P04 1,65; P08 0,95;
+  P09 1,70; P11 0,70; P13 0,05; P26 0,35 (offset per blok P08/P11 DIHAPUS; nilai lama di `riwayat` pada decisions).
+  `sync.alarm_dev_sec` 1,0 → 0,5. Validasi independen: cek onset pada offset baru −0,5…−1,4 dtk (≈ acuan −0,89),
+  P11 +0,03. P14 tetap 0,85 (kopling lemah).
+- **Hasil H1–H13 setelah koreksi offset (28; FDR atas 14):** lolos p_FDR < 0,05: H7 CV TAHAN g −1,44 (0,009);
+  H2 garis latar global TAHAN g −0,91; H10b garis latar sentral TAHAN g −0,98; H12 g −0,91 (ketiganya p_FDR 0,035);
+  H3, H6, H8, H10a (g −0,76), H11 (g −0,76; turun dari −1,17), H13 (rho 0,38) p_FDR 0,039. Nol: H1 (g −0,01),
+  H4, H5, H9. → ukuran garis latar (broadband/aperiodik) EEG MENGUAT dengan offset terkoreksi; mu posterior melemah.
+  Model campuran segmen: TAHAN broadband +3,5 dB non-penari (p 0,017, p_FDR 0,25). Peta eksploratif 20/208 p<0,05,
+  0 lolos FDR. Dosis-respons: pola sama (efek seluruh sampel = efek grup; di dalam penari hanya aktivitas/bulan &
+  onset → CV TAHAN).
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**

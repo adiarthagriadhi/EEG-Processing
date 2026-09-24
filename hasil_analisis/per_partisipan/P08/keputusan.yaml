@@ -1,20 +1,26 @@
 sync:
   method: manual
-  offset_sec: 1.2
-  offset_blocks:
-  - - 0.0
-    - 1.2
-  - - 93.2
-    - 0.95
-  basis: 'alarm drift −0,36 dtk (p 0,005). Offset per blok = median offset per repetisi
-    (xcorr kuat r 0,65, SE 0,07); batas = awal ISTIRAHAT UTAMA (93,2 dtk video). Sesuai
-    keputusan pengguna (sesi funny-johnson). KONFLIK: cek onset −1,38/−1,44 dtk per
-    blok (artefak EEG ±1 dtk lebih awal dari onset lengan video) → tinjau video.'
-  perlu_tinjauan: true
+  offset_sec: 0.95
   tanggal: '2026-09-24'
+  basis: 'pindai kohort (scripts/pola_offset.py): korelasi gerak tubuh video × selubung
+    EMG 20–34 Hz, puncak 0.95 dtk (r 0.43; pada 0,85 r 0.43); blok 1 0.95, blok 2
+    1.0 → offset konstan. Keputusan pengguna 2026-09-24.'
+  riwayat:
+  - offset_sec: 1.2
+    offset_blocks:
+    - - 0.0
+      - 1.2
+    - - 93.2
+      - 0.95
+    method: manual
+    basis: 'alarm drift −0,36 dtk (p 0,005). Offset per blok = median offset per repetisi
+      (xcorr kuat r 0,65, SE 0,07); batas = awal ISTIRAHAT UTAMA (93,2 dtk video).
+      Sesuai keputusan pengguna (sesi funny-johnson). KONFLIK: cek onset −1,38/−1,44
+      dtk per blok (artefak EEG ±1 dtk lebih awal dari onset lengan video) → tinjau
+      video.'
   onset_check:
-    onset_lag_sec: -1.44
-    onset_lag_iqr: 0.52
+    onset_lag_sec: -1.07
+    onset_lag_iqr: 0.49
     onset_n: 9
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'

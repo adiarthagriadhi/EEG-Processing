@@ -1,15 +1,20 @@
 sync:
-  offset_sec: 4.1
   method: manual
-  perlu_konfirmasi_pengguna: true
+  offset_sec: 4.15
   tanggal: '2026-09-24'
-  basis: 'alarm terkonfirmasi dua metode: xcorr +4,52 dtk (r 0,38) dan cek onset terkalibrasi
-    (lag diharapkan −0,89 dtk, kalibrasi 23 partisipan): pada +4,52 lag −1,27 → +4,14;
-    pada +3,25 lag −0,12 → +4,02 → dipakai +4,10. (Keputusan lama +3,25 memakai acuan
-    lag 0 yang ternyata bias.)'
+  basis: 'pindai kohort (scripts/pola_offset.py): korelasi gerak tubuh video × selubung
+    EMG 20–34 Hz, puncak 4.15 dtk (r 0.63; pada 0,85 r 0.07); blok 1 4.2, blok 2 4.2
+    → offset konstan. Keputusan pengguna 2026-09-24.'
+  riwayat:
+  - offset_sec: 4.1
+    method: manual
+    basis: 'alarm terkonfirmasi dua metode: xcorr +4,52 dtk (r 0,38) dan cek onset
+      terkalibrasi (lag diharapkan −0,89 dtk, kalibrasi 23 partisipan): pada +4,52
+      lag −1,27 → +4,14; pada +3,25 lag −0,12 → +4,02 → dipakai +4,10. (Keputusan
+      lama +3,25 memakai acuan lag 0 yang ternyata bias.)'
   onset_check:
-    onset_lag_sec: -0.94
-    onset_lag_iqr: 0.61
+    onset_lag_sec: -0.99
+    onset_lag_iqr: 0.5
     onset_n: 7
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'

@@ -21,11 +21,11 @@
     "T6": 1.0
   },
   "n_baseline_allvalid": 68,
-  "noise_floor_db": 3.06,
+  "noise_floor_db": 2.72,
   "n_segments": 60,
   "valid_frac_C3C4": {
     "NAIK": 0.83,
-    "POST": 0.92,
+    "POST": 0.88,
     "PRA": 0.83,
     "TAHAN": 0.75,
     "TURUN": 0.92
@@ -48,7 +48,7 @@
     "T4": 24.5,
     "T6": 0.0
   },
-  "offset_sec": 4.1,
+  "offset_sec": 4.15,
   "n_seg_per_phase": {
     "NAIK": 12,
     "POST": 12,
