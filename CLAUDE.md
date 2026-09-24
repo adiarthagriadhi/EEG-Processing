@@ -333,6 +333,24 @@ pipeline harus dijalankan ulang.
   prosedur LAMA (skrip audit, tanpa deteksi datar) → HARUS dihitung ulang** dengan prosedur ini. Data mentah
   keenamnya belum ada di mesin sesi ini (perlu diunggah ulang).
 
+## ✅ Kohort 20 partisipan dengan prosedur v2 seragam (2026-09-24)
+- Ditambahkan P08, P09, P11 (penari, direkam 10 Sep) & P30–P32 (non-penari, 14 Sep). Total 10 vs 10.
+- Sinkronisasi: P09/P30/P31/P32 offset tetap 0,85. **P11**: alarm drift → offset per blok MANUAL [0 dtk: +1,28;
+  93,8 dtk: +0,65] (cek onset per blok −0,18/−0,07). **P08**: alarm drift → per blok MANUAL [+1,20; 93,2 dtk:
+  +0,95] (keputusan pengguna) tetapi **KONFLIK dengan cek onset (−1,4 dtk per blok) → tinjau video**.
+  Aturan baru: alarm drift TIDAK dapat dibantah median onset keseluruhan.
+- Sinyal datar: P08 21,5%, P09 12,4%, P11 12,9% (penari 10 Sep, lebih tinggi dari penari 9 Sep); P30 37,8%,
+  P31 15,8%, P32 11,4%. Batas ketelitian NaN pada P30/P38 (< 5 jendela acuan tanpa kanal datar).
+- **Hasil H6–H13 (10 vs 10; `hasil_analisis/v2/hypothesis_v2_tests.csv`):**
+  - Seluruh sampel (eksploratif): CV TAHAN 0,27 vs 0,46 (g −0,98, p 0,017, p_FDR 0,075); durasi NAIK 0,98 vs
+    1,61 dtk (g −0,82, p 0,042, p_FDR 0,095); mu periodik posterior TAHAN 0,39 vs 1,50 dB (g −0,90, p 0,025,
+    p_FDR 0,075); H13 garis latar TAHAN ~ CV TAHAN rho 0,45 (p 0,023, p_FDR 0,075). H6, H9, H10, H12 ≈ 0.
+  - **Konfirmatori (3 penari vs 6 non-penari, partisipan baru): tidak ada yang signifikan.** Arah sesuai
+    untuk H7 (g −0,21), H8 (g −0,57), H11 (g −0,47); H9 mu sentral TURUN g +1,21 (p 0,056); H13 rho 0,63
+    (p 0,034, p_FDR 0,25). Daya uji sangat rendah (n = 3 penari).
+  - Model campuran tingkat segmen (20 partisipan): tidak ada beda grup di fase mana pun (p ≥ 0,33).
+- Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.

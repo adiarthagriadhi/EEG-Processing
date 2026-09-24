@@ -1,0 +1,45 @@
+sync:
+  method: manual
+  offset_sec: 1.28
+  offset_blocks:
+  - - 0.0
+    - 1.28
+  - - 93.8
+    - 0.65
+  basis: 'alarm drift −0,86 dtk (p 0,004). Offset per blok = median offset per repetisi
+    (blok 1: 1,10–1,80; blok 2: 0,15–0,75); batas = awal ISTIRAHAT UTAMA (93,8 dtk
+    video). Cek onset per blok −0,18/−0,07 dtk (vs +0,27/−0,27 dengan 0,85). Sesuai
+    keputusan pengguna (sesi funny-johnson).'
+  perlu_tinjauan: false
+  tanggal: '2026-09-24'
+  onset_check:
+    onset_lag_sec: -0.07
+    onset_lag_iqr: 0.89
+    onset_n: 9
+bad_channels: []
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: -0.49
+  Fp2: 0.27
+  F3: -1.89
+  F4: 0.7
+  C3: -1.9
+  C4: 0.54
+  P3: -2.65
+  P4: 0.49
+  O1: -1.73
+  O2: 0.52
+  F7: -0.84
+  F8: 0.7
+  T3: -1.02
+  T4: 0.51
+  T5: -0.27
+  T6: 0.65
+ica_blink_qc:
+  n_blinks: 201
+  blink_channel: Fp2
+  before: 254.1
+  after: 38.9
+ica_exclude:
+- 0
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

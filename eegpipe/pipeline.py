@@ -110,8 +110,10 @@ def stage_onset_check(P, cfg, raw, reps, offset, force=False):
         P.save_decisions(dec)
         pend = s.pop("alarm_pending", None)
         if pend:
+            # alarm DRIFT tidak dapat dibantah median onset keseluruhan (blok 1 & 2 bisa meleset
+            # berlawanan arah namun mediannya ≈ 0; P11) → selalu perlu keputusan offset per blok
             fits = (chk["onset_n"] >= oc["dismiss_min_n"] and np.isfinite(lag)
-                    and abs(lag) <= oc["dismiss_max_lag_sec"])
+                    and abs(lag) <= oc["dismiss_max_lag_sec"] and "bergeser" not in pend)
             if fits:
                 s["alarm_dismissed"] = f"{pend} — DIBANTAH: {msg} pada offset tetap"
                 s["accepted"] = True
