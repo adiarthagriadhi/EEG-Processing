@@ -291,6 +291,11 @@ cukup dirujuk singkat ke Paper D untuk detail, supaya tidak ada klaim substantif
 yang dilaporkan dua kali. Prinsipnya: A = eksekusi motorik dinamis, D = kontrol
 postural statis — dua pertanyaan riset yang berbeda dari dataset yang sama.
 
+## Hasil Tersimpan untuk Sesi Berikutnya
+Salinan hasil turunan (tanpa data mentah) ada di `hasil_analisis/` (lihat README di dalamnya). Data mentah
+(EDF, video) dan fif/npz TIDAK ada di repo — sesi baru perlu mengunggah ulang data mentah bila
+pipeline harus dijalankan ulang.
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.
