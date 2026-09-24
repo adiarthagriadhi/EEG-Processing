@@ -1,42 +1,41 @@
 sync:
-  offset_sec: 3.25
+  offset_sec: 4.1
   method: manual
-  basis: 'alarm offset tetap: estimasi xcorr +4,52 dtk (r 0,38); cek onset-ke-onset:
-    +2,40 dtk pada offset tetap 0,85 (n 2), -0,12 dtk pada +3,25 (n 8, IQR 0,78),
-    -1,27 dtk pada +4,52 → start EEG ±2,4 dtk lebih awal dari biasa; xcorr terbias
-    ekor artefak. Offset dari onset-ke-onset.'
   perlu_konfirmasi_pengguna: true
   tanggal: '2026-09-24'
+  basis: 'alarm terkonfirmasi dua metode: xcorr +4,52 dtk (r 0,38) dan cek onset terkalibrasi
+    (lag diharapkan −0,89 dtk, kalibrasi 23 partisipan): pada +4,52 lag −1,27 → +4,14;
+    pada +3,25 lag −0,12 → +4,02 → dipakai +4,10. (Keputusan lama +3,25 memakai acuan
+    lag 0 yang ternyata bias.)'
   onset_check:
-    onset_lag_sec: -0.12
-    onset_lag_iqr: 0.78
-    onset_n: 8
-bad_channels:
-- Fp2
+    onset_lag_sec: -0.94
+    onset_lag_iqr: 0.61
+    onset_n: 7
+bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 1.52
-  Fp2: 3.11
-  F3: -0.48
-  F4: -0.71
-  C3: -1.79
-  C4: -2.48
-  P3: -0.06
-  P4: 0.12
-  O1: 2.73
-  O2: 0.06
-  F7: 0.64
-  F8: 0.4
-  T3: -0.63
-  T4: -3.82
-  T5: 1.68
-  T6: -0.34
+  Fp1: 0.83
+  Fp2: 1.79
+  F3: -0.21
+  F4: -0.86
+  C3: -1.32
+  C4: -1.08
+  P3: -0.25
+  P4: 0.03
+  O1: 1.61
+  O2: 0.13
+  F7: 0.41
+  F8: 0.14
+  T3: -0.52
+  T4: -1.98
+  T5: 0.92
+  T6: -0.03
 ica_blink_qc:
   n_blinks: 92
   blink_channel: Fp1
   before: 265.0
-  after: 81.9
+  after: 173.3
 ica_exclude:
-- 2
+- 10
 - 0
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

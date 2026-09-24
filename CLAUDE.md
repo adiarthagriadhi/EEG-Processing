@@ -371,6 +371,26 @@ pipeline harus dijalankan ulang.
   antar varian = derau. Ringkasan: `hasil_analisis/sensitivitas/ringkasan_H1-H13.csv`.
 - Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
 
+## ✅ Kohort 28 partisipan (14 vs 14), 2026-09-24
+- Ditambahkan P12–P15 (penari, 10 Sep) & P26–P28 (non-penari, 12 Sep), P29 (non-penari, 14 Sep). P15 punya 2 file
+  baseline → dipakai `P15_Baseline.EDF` (19% datar vs 32%); `Baseline2` dipindah ke `data/raw/P15/_tidak_dipakai/`.
+- **KALIBRASI cek onset:** pada offset tetap, artefak EEG mendahului onset lengan video median −0,89 dtk (IQR −1,50…
+  −0,24; 23 partisipan) → acuan `expected_lag_sec: -0.89` (bukan 0). Alarm onset: |lag − acuan| > 1,5 dtk; alarm xcorr
+  dibantah bila onset terkalibrasi cocok (≤ 0,5) atau berlawanan arah. Akibatnya: **P01 manual direvisi +3,25 → +4,10 dtk**
+  (xcorr +4,52 & onset terkalibrasi +4,0–4,1 sepakat; cek onset pada 4,10 = −0,94) — perlu konfirmasi pengguna;
+  P14 (xcorr +2,70 vs onset berlawanan arah) & P26 (xcorr +0,45) → offset tetap; P29 xcorr +60 dtk tanpa kopling (r 0,10)
+  → offset tetap tanpa verifikasi.
+- **Hasil H1–H13 (28; FDR atas 14):** **H7 CV TAHAN 0,26 vs 0,45 (g −1,01, p 0,005, p_FDR 0,037)**; **H13 garis latar TAHAN ~
+  CV TAHAN rho 0,48 (p 0,005, p_FDR 0,037)**; H8 NAIK 0,99 vs 1,62 dtk (g −0,91, p_FDR 0,058); H3 tahan agem 3,14 vs 2,46 dtk
+  (g +0,72, p_FDR 0,092); H11 mu posterior TAHAN (g −0,71, p_FDR 0,092); H10b garis latar sentral TAHAN 3,0 vs 6,3 dB
+  (g −0,53, p 0,08); H9 g +0,50 (p 0,09); H1, H4, H5, H6, H12 ≈ 0.
+- Peta eksploratif (208 uji): **29 dengan p < 0,05 (≈ 10 diharapkan kebetulan)**; 1 lolos p_FDR < 0,10: theta periodik
+  frontotemporal PRA lebih tinggi pada non-penari (g −1,57; area rawan artefak otot). Frontotemporal konsisten lebih
+  tinggi pada non-penari (theta/mu/eksponen, PRA/TURUN/TAHAN) — kemungkinan tegangan otot rahang/temporal.
+  Beta periodik lebih tinggi pada penari: parietal PRA (g +0,99), temporo-posterior POST (g +0,96).
+- Model campuran segmen (28): tidak ada beda grup di fase mana pun (p ≥ 0,46).
+- Catatan: H13 sebelumnya melemah dengan gabungan median (uji sensitivitas 20 partisipan) → ulangi sensitivitas pada 28.
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.

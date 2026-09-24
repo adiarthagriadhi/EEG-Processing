@@ -3,32 +3,32 @@
   "n_quiet": 115,
   "motion_thr": 1.71,
   "baseline_valid_frac": {
-    "Fp1": 0.91,
+    "Fp1": 0.93,
     "F3": 0.94,
     "C3": 0.9,
     "P3": 0.77,
-    "O1": 0.93,
+    "O1": 0.92,
     "F7": 0.94,
-    "T3": 0.91,
+    "T3": 0.92,
     "T5": 1.0,
     "Fp2": 1.0,
-    "F4": 0.64,
+    "F4": 0.65,
     "C4": 0.9,
     "P4": 0.86,
     "O2": 0.95,
     "F8": 1.0,
-    "T4": 0.72,
+    "T4": 0.73,
     "T6": 1.0
   },
   "n_baseline_allvalid": 68,
-  "noise_floor_db": 4.29,
+  "noise_floor_db": 3.06,
   "n_segments": 60,
   "valid_frac_C3C4": {
-    "NAIK": 0.79,
-    "POST": 0.88,
+    "NAIK": 0.83,
+    "POST": 0.92,
     "PRA": 0.83,
-    "TAHAN": 0.79,
-    "TURUN": 0.88
+    "TAHAN": 0.75,
+    "TURUN": 0.92
   },
   "flat_pct_total": {
     "Fp1": 4.0,
@@ -48,7 +48,7 @@
     "T4": 24.5,
     "T6": 0.0
   },
-  "offset_sec": 3.25,
+  "offset_sec": 4.1,
   "n_seg_per_phase": {
     "NAIK": 12,
     "POST": 12,

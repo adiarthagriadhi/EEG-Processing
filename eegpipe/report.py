@@ -172,7 +172,10 @@ def participant_results(P, cfg):
     # (d) Indeks Lateralisasi (AGEM, fase TAHAN)
     li_f = P.results_dir / f"{P.pid}_li.csv"
     if li_f.exists():
-        li = pd.read_csv(li_f)
+        try:
+            li = pd.read_csv(li_f)
+        except pd.errors.EmptyDataError:
+            li = pd.DataFrame(columns=["phase"])
         li = li[li.phase == "TAHAN"]
         if len(li):
             g = li.groupby(["task", "band"]).agg(contra=("contra", "median"),

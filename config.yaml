@@ -53,9 +53,12 @@ sync:
     min_n: 5                  # repetisi dengan onset EEG terdeteksi
     max_iqr_sec: 0.6          # konsistensi antar repetisi
     max_abs_lag_sec: 0.5      # mode auto: |lag| lebih besar → offset dikoreksi (offset += lag)
-    alarm_lag_sec: 1.0        # mode fixed: |lag| lebih besar (n, IQR memenuhi) → alarm
-    dismiss_min_n: 3          # alarm xcorr DIBANTAH bila onset pada offset tetap cocok (|lag| ≤
-    dismiss_max_lag_sec: 0.5  #   0,5 dtk, n ≥ 3). P34: xcorr +33 dtk, onset pada 0,85 = −0,15 dtk (n 4)
+    alarm_lag_sec: 1.5        # mode fixed: |lag − expected_lag| lebih besar (n, IQR memenuhi) → alarm
+    expected_lag_sec: -0.89   # KALIBRASI (2026-09-24): median lag onset pada offset tetap, 23 partisipan
+                              #   (IQR −1,50…−0,24): artefak EEG mendahului onset lengan video ±0,9 dtk
+                              #   (gerak pendahulu tubuh/bahu yang tidak tertangkap detektor lengan)
+    dismiss_min_n: 3          # alarm xcorr DIBANTAH bila onset (terkalibrasi) pada offset tetap cocok (|lag −
+    dismiss_max_lag_sec: 0.5  #   expected| ≤ 0,5) ATAU berlawanan arah dengan penyimpangan xcorr (n ≥ 3)
   max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)
 
 phases:

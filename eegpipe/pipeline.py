@@ -109,24 +109,27 @@ def stage_onset_check(P, cfg, raw, reps, offset, force=False):
         dec["sync"] = s
         P.save_decisions(dec)
         pend = s.pop("alarm_pending", None)
+        lag_c = lag - oc.get("expected_lag_sec", 0.0) if np.isfinite(lag) else np.nan   # lag terkalibrasi
+        s["onset_lag_calibrated_sec"] = None if not np.isfinite(lag_c) else round(float(lag_c), 2)
         if pend:
+            dev = (s.get("estimate_sec") or 0.0) - s["offset_sec"]
             # alarm DRIFT tidak dapat dibantah median onset keseluruhan (blok 1 & 2 bisa meleset
             # berlawanan arah namun mediannya ≈ 0; P11) → selalu perlu keputusan offset per blok
-            fits = (chk["onset_n"] >= oc["dismiss_min_n"] and np.isfinite(lag)
-                    and abs(lag) <= oc["dismiss_max_lag_sec"] and "bergeser" not in pend)
+            fits = (chk["onset_n"] >= oc["dismiss_min_n"] and np.isfinite(lag_c) and "bergeser" not in pend
+                    and (abs(lag_c) <= oc["dismiss_max_lag_sec"] or np.sign(lag_c) != np.sign(dev)))
             if fits:
-                s["alarm_dismissed"] = f"{pend} — DIBANTAH: {msg} pada offset tetap"
+                s["alarm_dismissed"] = f"{pend} — DIBANTAH: {msg} (terkalibrasi {lag_c:+.2f}) pada offset tetap"
                 s["accepted"] = True
-                _log(P.pid, f"sync: alarm xcorr dibantah ({msg} pada offset tetap)")
+                _log(P.pid, f"sync: alarm xcorr dibantah ({msg}; terkalibrasi {lag_c:+.2f} dtk)")
             else:
-                s["alarm"], s["accepted"] = f"{pend}; {msg} pada offset tetap tidak membantah", False
+                s["alarm"], s["accepted"] = f"{pend}; {msg} (terkalibrasi {lag_c:+.2f}) tidak membantah", False
                 dec["sync"] = s
                 P.save_decisions(dec)
                 raise QCStop(f"ALARM sinkronisasi: {s['alarm']}. Tinjau reports/{P.pid}_qc.html; bila "
                              f"penyimpangan nyata, isi sync.offset_sec + method: manual + basis di "
                              f"{P.decisions_path}")
-        if strong and abs(lag) > oc["alarm_lag_sec"]:
-            s["alarm"], s["accepted"] = f"onset EEG menyimpang {lag:+.2f} dtk dari onset video", False
+        if strong and np.isfinite(lag_c) and abs(lag_c) > oc["alarm_lag_sec"]:
+            s["alarm"], s["accepted"] = f"onset EEG menyimpang {lag_c:+.2f} dtk (terkalibrasi) dari onset video", False
             dec["sync"] = s
             P.save_decisions(dec)
             raise QCStop(f"ALARM sinkronisasi: {s['alarm']} (IQR {chk['onset_lag_iqr']}, n "
