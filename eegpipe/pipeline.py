@@ -11,7 +11,7 @@ from . import erd, ocr, phases, preprocess, romberg, sync
 from .config import Participant
 from .eeg_io import load_edf
 
-STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "baseline", "report"]
+STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "area_map", "romberg", "baseline", "report"]
 
 
 class QCStop(Exception):
@@ -196,6 +196,23 @@ def stage_spectral(P, cfg, force=False):
     return df
 
 
+def stage_area_map(P, cfg, clean, reps, tl, force=False):
+    """Area-map: specparam per area anatomis (frontal, sentral, parietal, dll).
+    Acuan gabungan per partisipan, offset tetap 0.85 dtk, 12 segmen gabungan per fase."""
+    out = P.results_dir / f"{P.pid}_area_map.csv"
+    if out.exists() and not force:
+        return pd.read_csv(out)
+    from . import area_map
+    # Fixed offset per audit findings (median dari 11 partisipan)
+    fixed_offset_sec = 0.85
+    df = area_map.analyze(clean, reps, tl, P.pid, cfg, offset_sec=fixed_offset_sec)
+    df.to_csv(out, index=False)
+    n_per_area = df.groupby("area").n_windows.iloc[:, 0].nunique() if len(df) else 0
+    _log(P.pid, f"area_map: {len(df)} baris ({n_per_area} area), "
+                f"offset tetap {fixed_offset_sec} dtk")
+    return df
+
+
 def stage_romberg(P, cfg, clean, tl, offset, force=False):
     out = P.results_dir / f"{P.pid}_romberg_features.csv"
     if out.exists() and not force:
@@ -272,6 +289,8 @@ def run(pid, cfg, stages=None, force=()):
                 ctx["erd"] = stage_erd(P, cfg, clean, reps, offset, f("erd"))
             if "spectral" in stages and P.out("move-epo.fif").exists():
                 ctx["spectral"] = stage_spectral(P, cfg, f("spectral"))
+            if "area_map" in stages and P.out("move-epo.fif").exists():
+                ctx["area_map"] = stage_area_map(P, cfg, clean, reps, tl, f("area_map"))
             if "romberg" in stages:
                 ctx["romberg"] = stage_romberg(P, cfg, clean, tl, offset, f("romberg"))
             if "baseline" in stages:
