@@ -33,3 +33,8 @@ Baseline.EDF lama, hipotesis H1–H5, `SIMULATED_*` (DATA SIMULASI, bukan data r
 - **Grup tercampur dengan hari rekaman** (penari 9 Sep; non-penari 14 Sep kecuali P10) dan kualitas sinyal
   berbeda per hari (% datar 0–13% vs 6–36%). Beda grup EEG dapat berasal dari kondisi perangkat.
 - n = 7 vs 7; seluruh uji bersifat eksploratif.
+
+## Perbaikan 2026-09-24 (pelacak pose + penyelamatan sinyal datar)
+- `v2/` = hasil SESUDAH perbaikan (baku saat ini); `v2_sebelum_perbaikan/` = hasil sebelumnya (disimpan untuk
+  perbandingan). Ringkasan perubahan: `v2/perbandingan_perbaikan_v2.csv` (per partisipan) dan
+  `v2/perbandingan_perbaikan_H_v2.csv` (H1–H13). Metode: EEG_PROCESSING.md, bagian "Perbaikan metode 2026-09-24".

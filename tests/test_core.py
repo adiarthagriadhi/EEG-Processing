@@ -178,3 +178,23 @@ def test_sync_alarm_drift():
     from eegpipe.sync import alarm
     drift = dict(offset_sec=0.95, offset_se_sec=0.1, r_coarse=0.5, spread_sec=0.1, drift_sec=-0.86, drift_p=0.005)
     assert "per blok" in alarm(drift, load_config(), 0.85)[0]                       # P11
+
+
+def test_longest_clean_and_salvage():
+    import numpy as np
+    from eegpipe.config import load_config
+    from eegpipe.segments import longest_clean, salvage, spectra
+    fm = np.zeros(200, bool)
+    fm[20:60] = True
+    assert longest_clean(fm) == (60, 200)
+    assert longest_clean(np.ones(10, bool)) == (0, 0)
+    sc = load_config()["segments"]
+    rng = np.random.default_rng(0)
+    x = rng.normal(size=(2, 200))
+    flat = np.zeros((2, 200), bool)
+    flat[0, 20:60] = True            # 20% datar, sisa bersih 140 sampel → diselamatkan
+    flat[1, 10:190] = True           # 90% datar → tetap tidak valid
+    P = spectra(x, 100.0)
+    ok = flat.mean(1) <= sc["max_flat_frac"]
+    res = salvage(x, flat, P, ok, 100.0, dict(sc, flat_salvage=True))
+    assert res.tolist() == [True, False] and ok.tolist() == [True, False]

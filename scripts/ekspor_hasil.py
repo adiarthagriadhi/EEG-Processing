@@ -33,6 +33,12 @@ def main():
     if sens.exists():
         (OUT / "sensitivitas").mkdir()
         shutil.copy(sens, OUT / "sensitivitas/ringkasan_H1-H13.csv")
+    old = ROOT / "results_sebelum_perbaikan"
+    if old.exists():                       # hasil sebelum perbaikan pelacak pose + penyelamatan sinyal datar
+        (OUT / "v2_sebelum_perbaikan").mkdir()
+        for f in sorted(old.glob("*.csv")):
+            if f.name.endswith(V2) or "_v2" in f.name or f.name.startswith(("pola_", "sensitivitas")):
+                shutil.copy(f, OUT / "v2_sebelum_perbaikan" / f.name)
     shutil.copy(ROOT / "scripts/README_hasil.md", OUT / "README.md")
     n = sum(1 for _ in OUT.rglob("*") if _.is_file())
     print(f"{n} file → {OUT}")

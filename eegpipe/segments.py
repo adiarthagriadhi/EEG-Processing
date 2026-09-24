@@ -93,6 +93,34 @@ def flat_mask(raw_unfiltered, cfg):
     return m
 
 
+def longest_clean(fm):
+    """(awal, akhir) sampel bagian tidak-datar terpanjang pada mask 1-D (True = datar)."""
+    f = np.r_[1, fm.astype(int), 1]
+    d = np.diff(f)
+    st, en = np.where(d == -1)[0], np.where(d == 1)[0]
+    if not len(st):
+        return 0, 0
+    i = int(np.argmax(en - st))
+    return int(st[i]), int(en[i])
+
+
+def salvage(x, fm, P, ok, sf, sc):
+    """Kanal dengan datar > batas: spektrum dari bagian bersih terpanjang bila cukup panjang
+    (≥ flat_min_clean_sec dan ≥ flat_min_clean_frac × jendela). Mengubah P/ok di tempat;
+    mengembalikan array bool kanal yang diselamatkan."""
+    rescued = np.zeros(len(ok), bool)
+    if not sc.get("flat_salvage", False):
+        return rescued
+    n = x.shape[1]
+    need = max(sc["flat_min_clean_sec"] * sf, sc["flat_min_clean_frac"] * n)
+    for k in np.where(~ok)[0]:
+        a, b = longest_clean(fm[k])
+        if b - a >= need:
+            P[k] = spectra(x[k:k + 1, a:b], sf)[0]
+            ok[k] = rescued[k] = True
+    return rescued
+
+
 def body_motion(pose):
     """Indeks gerak tubuh video: kecepatan batang tubuh + pergelangan (masing-masing / median)."""
     s1 = sync.pose_speed(pose)[1]
@@ -140,10 +168,15 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
     B = np.stack([X[:, int(s * sf):int(s * sf) + wn] for s in starts])      # win × ch × t
     BV = np.stack([ffrac(s, s + sc["baseline_win_sec"]) <= mx for s in starts])   # win × ch valid
     PB = spectra(B, sf)                                                       # win × ch × f
+    nres_base = 0
+    for i, s in enumerate(starts):
+        a0 = int(s * sf)
+        nres_base += int(salvage(B[i], flat[:, a0:a0 + wn], PB[i], BV[i], sf, sc).sum())
     base_P = np.stack([PB[BV[:, k], k].mean(0) if BV[:, k].any() else np.full(len(GRID), np.nan)
                        for k in range(len(CH))])
     base_db = band_db(base_P)
-    qc.update(baseline_valid_frac={c: round(float(BV[:, k].mean()), 2) for k, c in enumerate(CH)})
+    qc.update(baseline_valid_frac={c: round(float(BV[:, k].mean()), 2) for k, c in enumerate(CH)},
+              baseline_salvaged=nres_base)
 
     # --- segmen
     rows, specs = [], []
@@ -156,9 +189,11 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
             a, b = float(sync.to_eeg(w[0], offset)), float(sync.to_eeg(w[1], offset))
             if not np.isfinite([a, b]).all() or a < 0 or b > T:
                 continue
-            P = spectra(X[:, int(a * sf):int(b * sf)], sf)                   # ch × f
+            ia, ib = int(a * sf), int(b * sf)
+            P = spectra(X[:, ia:ib], sf)                                     # ch × f
             fr = ffrac(a, b)
             ok = fr <= mx
+            res = salvage(X[:, ia:ib], flat[:, ia:ib], P, ok, sf, sc)
             specs.append((m.task, ph, P, ok))
             db = band_db(P)
             for k, c in enumerate(CH):
@@ -167,7 +202,7 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
                          t1_video=round(w[1], 3), dur_phase_sec=round(w[2], 3),
                          win_sec=round(b - a, 3), compliance=m.compliance,
                          phase_source=m.get("phase_source", "video"), flat_frac=round(float(fr[k]), 3),
-                         valid=bool(ok[k]), is_simulated=cfg["is_simulated"])
+                         valid=bool(ok[k]), salvaged=bool(res[k]), is_simulated=cfg["is_simulated"])
                 for bn in list(BANDS) + ["broad"]:
                     r[f"{bn}_db"] = db[bn][k] - base_db[bn][k] if ok[k] else np.nan
                 rows.append(r)

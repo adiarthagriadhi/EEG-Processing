@@ -1383,3 +1383,34 @@ Dari `CLAUDE.md` (jawaban pengguna 2026-09-23):
 4. `python scripts/ekspor_hasil.py` → `hasil_analisis/` (hasil turunan untuk di-commit).
 Parameter di `config.yaml` → `sync`, `segments`, `hypotheses_v2`, `exploration_set`, `dose_response`.
 Sinyal datar (reset amplifier) ditandai otomatis (`segments.flat_*`); lihat CLAUDE.md.
+
+## Perbaikan metode 2026-09-24: pelacak pose & penyelamatan sinyal datar (keputusan pengguna)
+
+Hasil sebelum perbaikan disimpan di `results_sebelum_perbaikan/` (lokal) dan
+`hasil_analisis/v2_sebelum_perbaikan/` (repo); perbandingan di `hasil_analisis/perbandingan_perbaikan_v2.csv`.
+
+### A. Pelacak pose — pilih partisipan paling depan (`video.pose_select: front`)
+- **Masalah:** penonton berdiri/duduk di belakang partisipan (sesi 11–14 Sep) masuk area partisipan. Pelacak lama
+  (MediaPipe mode VIDEO, 2 pose, kontinuitas kerangka; inisialisasi = orang tertinggi) berpindah ke penonton
+  17–38% waktu gerak (P06, P16, P28, P35; P22 sebelumnya diatasi dengan `participant_box`). Akibat: kedalaman
+  gerak ≈ 0 px → repetisi `incomplete`/`hud_fallback`, segmen EEG hilang.
+- **Metode baru:** deteksi independen per frame (`RunningMode.IMAGE`, `pose_num_poses: 3`; mode VIDEO terus
+  mengikuti orang yang sudah dilacak sehingga partisipan tak terdeteksi ±28% frame). Partisipan = orang dengan
+  **kaki paling bawah di gambar** (maks. y titik 27–32: pergelangan kaki, tumit, ujung kaki) — partisipan berdiri
+  di penanda lantai, paling dekat kamera; penonton di belakangnya kakinya lebih tinggi. Kontinuitas dipertahankan
+  bila kandidat lain tidak lebih depan > 25 px. Kandidat ditolak bila kakinya > 40 px di atas posisi kaki
+  partisipan berjalan (EMA 0,05) → frame hilang, bukan pindah ke penonton.
+- Uji P35: pelacakan salah orang 40% → 2%; tanpa deteksi 5,5% → 4,2%; fase ok 6 → 11 dari 12; segmen 39 → 55.
+- Keterbatasan: partisipan yang memang tidak turun (mis. P17 NGEED) tetap `incomplete` (perilaku, bukan galat).
+
+### B. Sinyal datar — penyelamatan bagian bersih (`segments.flat_salvage: true`)
+- **Verifikasi di EDF mentah:** nilai ±0,1 µV (= nol pada resolusi alat) selama 3–7 dtk (maks. ±60 dtk), mengenai
+  6–9 dari 16 kanal sekaligus, tanpa lonjakan besar sebelumnya → reset/pemutusan kanal oleh amplifier KT88
+  (kemungkinan kontak/kabel bergerak), BUKAN akibat pembersihan. Ambang deteksi tidak sensitif (persentase datar
+  hampir sama pada 0,2/0,5/1 µV). Data yang datar tidak dapat dipulihkan.
+- **Metode lama:** kanal-segmen dengan > 10% datar dibuang seluruhnya (19,8% kanal-segmen gerak hilang).
+- **Metode baru:** kanal-segmen tersebut memakai **bagian tidak-datar terpanjang** bila ≥ 0,5 dtk dan ≥ 50% jendela
+  (`flat_min_clean_sec`, `flat_min_clean_frac`); spektrum multitaper dari bagian itu (lebar pita ≥ 2/T). Berlaku
+  untuk segmen fase dan jendela acuan diam; ditandai `salvaged=True` di `PXX_segments.csv`
+  (`baseline_salvaged` di segmen_qc.json). Perkiraan: ±separuh kanal-segmen yang hilang terselamatkan.
+- Tepi sinyal datar tetap diperlebar 0,1 dtk; uji sensitivitas varian B (1,6 dtk, ekor filter HP) tetap dijalankan.

@@ -43,7 +43,9 @@ def stage_pose(P, cfg, force=False):
     from .pose import track
     box = P.decisions().get("participant_box", cfg["video"]["participant_box"])  # override per partisipan
     res = track(P.video, box,
-                cfg["_root"] / cfg["paths"]["pose_model"], cfg["video"]["pose_frame_step"])
+                cfg["_root"] / cfg["paths"]["pose_model"], cfg["video"]["pose_frame_step"],
+                select=cfg["video"].get("pose_select", "continuity"),
+                num_poses=cfg["video"].get("pose_num_poses", 2))
     np.savez(out, **res)
     _log(P.pid, f"pose: {len(res['t'])} frame, tanpa deteksi "
                 f"{np.isnan(res['trunk_y']).mean() * 100:.1f}%")

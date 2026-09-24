@@ -24,6 +24,8 @@ video:
   participant_box: [340, 90, 740, 640]    # area partisipan tanpa operator (P02)
   ocr_coarse_step_sec: 0.5   # OCR kasar + pencarian biner di sekitar perubahan label
   trajectory: trunk_y         # bahu+pinggul; derau pelacakan lebih kecil dari pinggul saja (P10)
+  pose_select: front        # 2026-09-24: kaki paling bawah (partisipan di penanda lantai); lama: continuity
+  pose_num_poses: 3
   pose_frame_step: 2         # 15 fps: ~5 mnt/partisipan; presisi waktu ~66 ms
 
 sync:
@@ -120,6 +122,11 @@ segments:
   flat_win_sec: 0.2
   flat_pad_sec: 0.1
   max_flat_frac: 0.1
+  # Perbaikan 2026-09-24 (keputusan pengguna): kanal-segmen dengan datar > max_flat_frac TIDAK langsung
+  # dibuang; dipakai bagian bersih terpanjang bila ≥ flat_min_clean_sec dan ≥ flat_min_clean_frac × jendela.
+  flat_salvage: true
+  flat_min_clean_sec: 0.5
+  flat_min_clean_frac: 0.5
   pool: mean                  # gabungan spektrum antar-segmen: mean | median (uji sensitivitas)
 
 romberg:
