@@ -211,6 +211,26 @@ def qc(res, cfg):
     return problems, warnings
 
 
+def alarm(res, cfg, fixed):
+    """Mode offset tetap: apakah estimasi berbasis data MENYANGKAL offset tetap?
+    Bukti = kopling gerak–EEG cukup (r kasar ≥ alarm_min_r) DAN estimasi konsisten (SE per-repetisi
+    ≤ alarm_max_se atau IQR kombinasi ≤ max_spread_sec). Mengembalikan (alarm | None, peringatan | None).
+    P01 (+4,5 dtk, r 0,29), P34 (+33 dtk, r 0,21) → alarm; P35 (r 0,01) → peringatan saja."""
+    sc = cfg["sync"]
+    est, se = res.get("offset_sec", np.nan), res.get("offset_se_sec", np.nan)
+    r = res.get("r_coarse", 0.0)
+    consistent = (np.isfinite(se) and se <= sc["alarm_max_se"]) or \
+        res.get("spread_sec", np.inf) <= sc["max_spread_sec"]
+    if not (r >= sc["alarm_min_r"] and consistent):
+        return None, (f"estimasi data tidak dapat memverifikasi offset tetap (r kasar {r:.2f}, "
+                      f"SE {se:.2f} dtk) → offset tetap dipakai tanpa verifikasi")
+    dev = est - fixed
+    if abs(dev) > sc["alarm_dev_sec"]:
+        return (f"estimasi data {est:+.2f} ± {se:.2f} dtk menyimpang {dev:+.2f} dtk dari offset "
+                f"tetap {fixed:+.2f} dtk (r kasar {r:.2f})"), None
+    return None, None
+
+
 def onset_check(raw, reps, offset, cfg):
     """Validasi onset-ke-onset: onset artefak broadband EEG (1–30 Hz, median |x| antar kanal,
     dihaluskan 0,2 dtk; ambang median + k·MAD jendela −6…−3 dtk, bertahan ≥ 0,3 dtk) relatif

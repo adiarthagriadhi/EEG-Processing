@@ -126,3 +126,31 @@ def test_hypothesis_direction():
     r = htest(df, hyp).set_index("hipotesis")
     assert r.loc["A", "p_one_sided"] < 0.01 and r.loc["B", "p_one_sided"] > 0.9
     assert r.loc["C", "p_one_sided"] > 0.9
+
+
+def test_phase_windows_trim_and_short_hold_kept():
+    import pandas as pd
+    from eegpipe.config import load_config
+    from eegpipe.segments import phase_windows
+    cfg = load_config()
+    m = pd.Series(dict(act_arm=9.5, act_turun=10.0, act_tahan=11.5, act_naik=12.1, act_end=13.6))
+    w = phase_windows(m, cfg)
+    assert w["TURUN"][:2] == pytest.approx((10.225, 11.275))       # pangkas 15% (0,225 < 0,25)
+    assert w["TAHAN"] is not None                                    # tahan 0,6 dtk tetap dipakai
+    assert w["TAHAN"][1] - w["TAHAN"][0] == pytest.approx(0.6 * 0.7)
+    assert w["PRA"][:2] == pytest.approx((7.5, 9.5))                 # dikunci gerak pertama (lengan)
+    m2 = m.copy(); m2["act_naik"] = 11.7                             # tahan 0,2 dtk → tanpa nilai EEG
+    assert phase_windows(m2, cfg)["TAHAN"] is None
+
+
+def test_sync_alarm_fixed_offset():
+    from eegpipe.config import load_config
+    from eegpipe.sync import alarm
+    cfg = load_config()
+    ok = dict(offset_sec=0.75, offset_se_sec=0.04, r_coarse=0.69, spread_sec=0.06)
+    assert alarm(ok, cfg, 0.85) == (None, None)
+    far = dict(offset_sec=33.3, offset_se_sec=0.25, r_coarse=0.21, spread_sec=0.8)   # P34
+    assert alarm(far, cfg, 0.85)[0] is not None
+    nocoupling = dict(offset_sec=-28.0, offset_se_sec=0.25, r_coarse=0.01, spread_sec=0.5)  # P35
+    al, warn = alarm(nocoupling, cfg, 0.85)
+    assert al is None and warn is not None

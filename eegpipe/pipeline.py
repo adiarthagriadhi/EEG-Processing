@@ -11,7 +11,7 @@ from . import erd, ocr, phases, preprocess, romberg, sync
 from .config import Participant
 from .eeg_io import load_edf
 
-STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "baseline", "report"]
+STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "baseline", "segmen", "report"]
 
 
 class QCStop(Exception):
@@ -51,9 +51,9 @@ def stage_pose(P, cfg, force=False):
 
 
 def stage_sync(P, cfg, tl, pose, raw, force=False):
+    """Estimasi berbasis data selalu dihitung (sync.json, cache). Mode `fixed` (v2): offset = offset
+    tetap; estimasi hanya alarm. Keputusan manual (method: manual) tidak pernah ditimpa."""
     dec = P.decisions()
-    if "sync" in dec and dec["sync"].get("method") == "manual" and not force:
-        return dec["sync"]
     out = P.out("sync.json")
     if out.exists() and not force:
         res = json.loads(out.read_text())
@@ -61,16 +61,30 @@ def stage_sync(P, cfg, tl, pose, raw, force=False):
         res = sync.two_stage(tl, pose, raw, cfg)
         np.savez(P.out("sync_curves.npz"), **res.pop("curves"))
         res = json.loads(json.dumps(res, default=float))
-        res["problems"], res["warnings"] = sync.qc(res, cfg)
-        out.write_text(json.dumps(res, indent=2))
+    res["problems"], res["warnings"] = sync.qc(res, cfg)
+    out.write_text(json.dumps(res, indent=2))
+    _log(P.pid, f"sync (estimasi data): {res['offset_sec']:+.2f} ± "
+                f"{res.get('offset_se_sec', float('nan')):.2f} dtk (n_rep {res.get('n_rep')}, "
+                f"r kasar {res['r_coarse']:.2f}, IQR kombinasi {res['spread_sec']:.2f})")
+    old = dec.get("sync", {})
+    if old.get("method") == "manual":
+        _log(P.pid, f"sync: keputusan MANUAL {old['offset_sec']:+.2f} dtk ({old.get('basis', '')})")
+        return old
+    if cfg["sync"].get("mode", "auto") == "fixed":
+        fixed = float(cfg["sync"]["fixed_offset_sec"])
+        al, warn = sync.alarm(res, cfg, fixed)
+        dec["sync"] = dict(offset_sec=fixed, method="fixed", estimate_sec=res["offset_sec"],
+                           estimate_se_sec=res.get("offset_se_sec"), alarm_pending=al,
+                           warnings=[w for w in [warn] if w], accepted=al is None)
+        P.save_decisions(dec)
+        # alarm xcorr belum final: dikonfirmasi/dibantah cek onset-ke-onset setelah fase gerak
+        _log(P.pid, f"sync: offset TETAP {fixed:+.2f} dtk" + (f" — {warn}" if warn else "")
+             + (f" — ALARM TERTUNDA: {al}" if al else ""))
+        return dec["sync"]
     dec["sync"] = dict(offset_sec=res["offset_sec"], offset_se_sec=res.get("offset_se_sec"),
                        method="auto", accepted=not res["problems"], problems=res["problems"],
                        warnings=res.get("warnings", []))
     P.save_decisions(dec)
-    _log(P.pid, f"sync: offset {res['offset_sec']:+.2f} ± {res.get('offset_se_sec', float('nan')):.2f} dtk "
-                f"(n_rep {res.get('n_rep')}, kasar {res['coarse_sec']:+.1f}, "
-                f"r_halus {res['r_fine']:.2f}, sebaran {res['spread_sec']:.2f}, "
-                f"drift {res['drift_sec']:+.2f})")
     if res["problems"]:
         raise QCStop(f"sync QC gagal: {res['problems']}. Periksa reports/{P.pid}_qc.html; "
                      f"isi sync.offset_sec dan method: manual di {P.decisions_path}")
@@ -78,29 +92,53 @@ def stage_sync(P, cfg, tl, pose, raw, force=False):
 
 
 def stage_onset_check(P, cfg, raw, reps, offset, force=False):
-    """Koreksi offset bila onset EEG konsisten menyimpang dari onset lengan video."""
+    """Cek onset-ke-onset (onset artefak EEG vs onset lengan video). Mode auto: koreksi offset.
+    Mode fixed: hanya ALARM (tidak mengubah offset). Keputusan manual: dicatat saja."""
     dec = P.decisions()
     s = dec.get("sync", {})
-    if s.get("method") == "manual" or ("onset_check" in s and not force):
-        return s["offset_sec"]
     oc = cfg["sync"]["onset_check"]
     chk = sync.onset_check(raw, reps, offset, cfg)
     s["onset_check"] = chk
     lag = chk["onset_lag_sec"]
-    if (chk["onset_n"] >= oc["min_n"] and chk["onset_lag_iqr"] <= oc["max_iqr_sec"]
-            and abs(lag) > oc["max_abs_lag_sec"]):
+    strong = chk["onset_n"] >= oc["min_n"] and chk["onset_lag_iqr"] <= oc["max_iqr_sec"]
+    msg = (f"cek onset {lag:+.2f} dtk (IQR {chk['onset_lag_iqr']}, n {chk['onset_n']})")
+    if s.get("method") == "manual":
+        _log(P.pid, f"sync: {msg} pada offset manual")
+    elif s.get("method") == "fixed":
+        dec["sync"] = s
+        P.save_decisions(dec)
+        pend = s.pop("alarm_pending", None)
+        if pend:
+            fits = (chk["onset_n"] >= oc["dismiss_min_n"] and np.isfinite(lag)
+                    and abs(lag) <= oc["dismiss_max_lag_sec"])
+            if fits:
+                s["alarm_dismissed"] = f"{pend} — DIBANTAH: {msg} pada offset tetap"
+                s["accepted"] = True
+                _log(P.pid, f"sync: alarm xcorr dibantah ({msg} pada offset tetap)")
+            else:
+                s["alarm"], s["accepted"] = f"{pend}; {msg} pada offset tetap tidak membantah", False
+                dec["sync"] = s
+                P.save_decisions(dec)
+                raise QCStop(f"ALARM sinkronisasi: {s['alarm']}. Tinjau reports/{P.pid}_qc.html; bila "
+                             f"penyimpangan nyata, isi sync.offset_sec + method: manual + basis di "
+                             f"{P.decisions_path}")
+        if strong and abs(lag) > oc["alarm_lag_sec"]:
+            s["alarm"], s["accepted"] = f"onset EEG menyimpang {lag:+.2f} dtk dari onset video", False
+            dec["sync"] = s
+            P.save_decisions(dec)
+            raise QCStop(f"ALARM sinkronisasi: {s['alarm']} (IQR {chk['onset_lag_iqr']}, n "
+                         f"{chk['onset_n']}). Isi keputusan manual di {P.decisions_path}")
+        _log(P.pid, f"sync: {msg} → offset tetap dipertahankan")
+    elif strong and abs(lag) > oc["max_abs_lag_sec"]:
         s["offset_xcorr_sec"] = offset
         s["offset_sec"] = offset = round(offset + lag, 2)
         s["method"] = "auto+onset"
-        _log(P.pid, f"sync: onset EEG {lag:+.2f} dtk dari onset video (IQR "
-                    f"{chk['onset_lag_iqr']:.2f}, n {chk['onset_n']}) → offset dikoreksi ke "
-                    f"{offset:+.2f} dtk")
+        _log(P.pid, f"sync: {msg} → offset dikoreksi ke {offset:+.2f} dtk")
     else:
-        _log(P.pid, f"sync: cek onset {lag:+.2f} dtk (IQR {chk['onset_lag_iqr']}, n "
-                    f"{chk['onset_n']}) → offset dipertahankan")
+        _log(P.pid, f"sync: {msg} → offset dipertahankan")
     dec["sync"] = s
     P.save_decisions(dec)
-    return offset
+    return s["offset_sec"]
 
 
 def stage_phases(P, cfg, tl, pose, force=False):
@@ -245,6 +283,31 @@ def stage_baseline(P, cfg, force=False):
     return feat
 
 
+def stage_segmen(P, cfg, clean, reps, tl, pose, offset, force=False):
+    """Pendekatan v2: segmen dari video, acuan gabungan, specparam kanal/area/belahan, durasi,
+    Romberg per area (lihat eegpipe/segments.py)."""
+    from . import segments
+    out = P.results_dir / f"{P.pid}_area_map.csv"
+    qc_path = P.out("segmen_qc.json")
+    if out.exists() and qc_path.exists() and not force:
+        return json.loads(qc_path.read_text())
+    seg, amap, dur, qc = segments.analyze(clean, reps, tl, pose, offset, P.pid, cfg)
+    rb = segments.romberg_area(clean, tl, offset, P.pid, cfg)
+    seg.to_csv(P.results_dir / f"{P.pid}_segments.csv", index=False)
+    amap.to_csv(out, index=False)
+    dur.to_csv(P.results_dir / f"{P.pid}_durasi.csv", index=False)
+    rb.to_csv(P.results_dir / f"{P.pid}_romberg_area.csv", index=False)
+    qc["offset_sec"] = offset
+    qc["n_seg_per_phase"] = (seg[seg.channel == "C3"].groupby("phase").size().to_dict()
+                             if len(seg) else {})
+    qc_path.write_text(json.dumps(qc, indent=2, default=float))
+    c = amap[(amap.pool == "SEMUA") & (amap.level == "area") & (amap.unit == "sentral")]
+    _log(P.pid, f"segmen v2: {qc['n_segments']} segmen {qc['n_seg_per_phase']}; acuan "
+                f"{qc.get('n_quiet')} jendela diam; batas ketelitian {qc['noise_floor_db']:.1f} dB; "
+                f"sentral garis latar {c.set_index('phase').offset_change.round(1).to_dict()}")
+    return qc
+
+
 def run(pid, cfg, stages=None, force=()):
     from . import report
     P = Participant(pid, cfg)
@@ -276,6 +339,8 @@ def run(pid, cfg, stages=None, force=()):
                 ctx["romberg"] = stage_romberg(P, cfg, clean, tl, offset, f("romberg"))
             if "baseline" in stages:
                 ctx["baseline"] = stage_baseline(P, cfg, f("baseline"))
+            if "segmen" in stages:
+                ctx["segmen"] = stage_segmen(P, cfg, clean, reps, tl, pose, offset, f("segmen"))
     except QCStop as e:
         ctx["problems"].append(str(e))
         _log(pid, f"BERHENTI: {e}")

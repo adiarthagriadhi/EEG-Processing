@@ -42,6 +42,8 @@ def main():
     a.add_argument("--config")
     h = sub.add_parser("hypotheses", help="endpoint & uji H1–H5 dari results/")
     h.add_argument("--config")
+    h2 = sub.add_parser("hypotheses-v2", help="H6–H13, model campuran segmen, dosis-respons (v2)")
+    h2.add_argument("--config")
     g = sub.add_parser("group", help="statistik grup + laporan (Paper A/B/D)")
     g.add_argument("--simulated", action="store_true",
                    help="demo dengan kohort simulasi 38 partisipan ([SIMULATED RESULTS])")
@@ -66,6 +68,21 @@ def main():
         pd.set_option("display.width", 220)
         print(df.round(2).to_string(index=False))
         print(t.drop(columns=["label"]).round(3).to_string(index=False))
+    elif args.cmd == "hypotheses-v2":
+        import pandas as pd
+        from .hypotheses_v2 import run as run_v2
+        df, t, mx, dr = run_v2(cfg)
+        pd.set_option("display.width", 250)
+        cols = [c for c in ["participant_id", "group", "set", "n_rep_video", "dur_turun_sec", "dur_tahan_sec",
+                            "cv_tahan", "dur_naik_sec", "offset_central_TURUN", "offset_central_TAHAN",
+                            "offset_central_NAIK", "mu_periodic_central_TURUN",
+                            "mu_periodic_posterior_TAHAN", "noise_floor_db"] if c in df]
+        print(df[cols].round(2).to_string(index=False))
+        tc = [c for c in ["sampel", "hipotesis", "endpoint", "n_penari", "n_nonpenari", "n_total",
+                          "mean_penari", "mean_nonpenari", "effect", "p_one_sided", "p_fdr", "catatan"] if c in t]
+        print(t[tc].round(3).to_string(index=False))
+        print(mx.round(3).to_string(index=False))
+        print(dr.round(3).to_string(index=False))
     elif args.cmd == "group":
         group(cfg, args.simulated)
     else:

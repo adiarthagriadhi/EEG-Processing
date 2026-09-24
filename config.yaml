@@ -27,6 +27,15 @@ video:
   pose_frame_step: 2         # 15 fps: ~5 mnt/partisipan; presisi waktu ~66 ms
 
 sync:
+  # PENDEKATAN v2 (keputusan pengguna 2026-09-23): waktu fase SEPENUHNYA dari video; EEG dipetakan
+  # dengan offset TETAP (keterlambatan sistem, median 11 partisipan 0,48–1,23 dtk, SD 0,2; DIBEKUKAN).
+  # Estimasi berbasis data (xcorr + cek onset) hanya ALARM: penyimpangan besar yang didukung bukti
+  # → berhenti untuk keputusan manual (data/decisions/PXX.yaml, method: manual). mode: auto = cara lama.
+  mode: fixed
+  fixed_offset_sec: 0.85
+  alarm_dev_sec: 1.0          # |estimasi − offset tetap| > ini (dtk) DAN ada bukti → alarm
+  alarm_min_r: 0.10           # bukti: r puncak kasar minimal (P35: r 0,01 → tanpa bukti)
+  alarm_max_se: 0.30          # bukti: SE offset per-repetisi maksimal
   fs: 20.0
   coarse_lag_sec: 60.0        # boxcar HUD vs EEG (lihat EEG_PROCESSING.md 7)
   fine_lag_sec: 2.0           # gerak video vs EEG di sekitar hasil kasar
@@ -43,7 +52,10 @@ sync:
     k_mad: 6.0
     min_n: 5                  # repetisi dengan onset EEG terdeteksi
     max_iqr_sec: 0.6          # konsistensi antar repetisi
-    max_abs_lag_sec: 0.5      # |lag| lebih besar → offset dikoreksi (offset += lag)
+    max_abs_lag_sec: 0.5      # mode auto: |lag| lebih besar → offset dikoreksi (offset += lag)
+    alarm_lag_sec: 1.0        # mode fixed: |lag| lebih besar (n, IQR memenuhi) → alarm
+    dismiss_min_n: 3          # alarm xcorr DIBANTAH bila onset pada offset tetap cocok (|lag| ≤
+    dismiss_max_lag_sec: 0.5  #   0,5 dtk, n ≥ 3). P34: xcorr +33 dtk, onset pada 0,85 = −0,15 dtk (n 4)
   max_drift_sec: 0.3         # resolusi ~0,05 dtk; puncak xcorr lebar (gerak 2–3 dtk)
 
 phases:
@@ -71,6 +83,32 @@ erd:
   freqs: [4, 30]
   bands: {theta: [4, 8], mu: [8, 13], beta: [13, 30]}
   roi: [C3, C4, P3, P4, O1, O2, F3, F4]
+
+segments:
+  # Tahap `segmen` (pendekatan v2): semua segmen dari video dipakai (TAHAN singkat TETAP dipakai),
+  # batas fase dipangkas, acuan GABUNGAN per partisipan (jendela paling diam dari video).
+  phases: [PRA, TURUN, TAHAN, NAIK, POST]   # PRA = −2…0 dtk sebelum gerak pertama; POST = akhir+0,5…+2
+  trim_sec: 0.25              # pangkas tiap batas fase gerak …
+  trim_max_frac: 0.15         # … paling banyak 15% durasi fase
+  min_win_sec: 0.3            # jendela terpangkas < ini → tanpa nilai EEG (durasi tetap dicatat)
+  include_hud_fallback: true  # repetisi fallback protokol (pose tidak andal) dipakai, ditandai
+  baseline_tasks: [BERDIRI RILEKS, ISTIRAHAT UTAMA]
+  baseline_win_sec: 2.0
+  baseline_step_sec: 1.0
+  baseline_quiet_frac: 0.5    # 50% jendela dengan gerak tubuh (video) terendah
+  min_segments_flag: 6        # < ini per subfase → ditandai (tidak dibuang)
+  noise_inject_db: 8.0
+  areas:
+    frontopolar: [Fp1, Fp2]
+    frontal: [F3, F4]
+    frontotemporal: [F7, F8]
+    sentral: [C3, C4]
+    temporal: [T3, T4]
+    parietal: [P3, P4]
+    temporo-posterior: [T5, T6]
+    oksipital: [O1, O2]
+  artifact_prone: [frontopolar, frontotemporal, temporal]   # tidak ditafsirkan sebagai kortikal
+  romberg_reject_uv: 150.0
 
 romberg:
   pad_sec: 1.0              # buang transisi (tutup/buka mata) di awal & akhir segmen
@@ -113,7 +151,19 @@ hypotheses_v2:
         endpoint: [offset_central_TURUN, offset_central_TAHAN], expect: penari < non-penari, explor_d: [-0.90, -0.87]}
   H11: {label: "Kontrol keseimbangan TAHAN: mu periodik temporo-posterior/parietal lebih rendah pada penari",
         endpoint: mu_periodic_posterior_TAHAN, expect: penari < non-penari, explor_d: -2.00}
-  H12: {label: "Spesifisitas tuntutan gerak: beda grup EEG (H9–H11) lebih besar di TURUN/TAHAN daripada NAIK",
-        endpoint: interaksi_grup_x_subsegmen, expect: "|d_TURUN|,|d_TAHAN| > |d_NAIK|"}
-  H13: {label: "Hubungan otak–perilaku: garis latar TAHAN berkorelasi dengan CV durasi tahan (seluruh sampel, kontrol usia)",
+  H12: {label: "Spesifisitas tuntutan gerak: kenaikan garis latar sentral TURUN/TAHAN relatif NAIK lebih kecil pada penari",
+        endpoint: demand_minus_naik_offset_central, expect: penari < non-penari}
+  H13: {label: "Hubungan otak–perilaku: garis latar TAHAN berkorelasi dengan CV durasi tahan (seluruh sampel, kontrol usia bila ada)",
         endpoint: [offset_central_TAHAN, cv_tahan], expect: "rho > 0"}
+
+# Partisipan yang dipakai MEMBENTUK H6–H13 (eksplorasi 2026-09-23). Uji konfirmatori = partisipan lain.
+exploration_set: [P01, P02, P03, P04, P05, P06, P07, P10, P36, P37, P38]
+
+# Tujuan utama: regresi dosis-respons durasi menari (tahun) vs kontrol gerak, dikontrol usia.
+# Membutuhkan kolom dance_years & age di data/participants.csv (belum diisi per 2026-09-24).
+dose_response:
+  predictor: dance_years
+  covariates: [age]
+  outcomes: [cv_tahan, dur_naik_sec, dur_turun_sec, offset_central_TURUN, offset_central_TAHAN,
+             mu_periodic_central_TURUN, mu_periodic_posterior_TAHAN]
+  min_n: 8

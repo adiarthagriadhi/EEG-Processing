@@ -180,6 +180,38 @@ def participant_results(P, cfg):
     return "\n".join(parts)
 
 
+def section_segmen(P, cfg, qc):
+    """Pendekatan v2: jumlah segmen, peta area (gabungan 12 segmen), durasi, Romberg per area."""
+    import pandas as pd
+    res = P.results_dir
+    parts = ["<h2>7. Pendekatan v2 — segmen dari video, acuan gabungan, specparam</h2>",
+             f"<p>Offset {qc.get('offset_sec'):+.2f} dtk; acuan = {qc.get('n_quiet')} dari "
+             f"{qc.get('n_candidates')} jendela 2 dtk paling diam (BERDIRI RILEKS + ISTIRAHAT UTAMA); "
+             f"{qc.get('n_segments')} segmen, per fase {qc.get('n_seg_per_phase')}; batas ketelitian "
+             f"{qc.get('noise_floor_db')} dB (efek periodik per partisipan di bawah ini tidak ditafsirkan).</p>"]
+    a = pd.read_csv(res / f"{P.pid}_area_map.csv")
+    a = a[(a.pool == "SEMUA") & (a.level == "area")]
+    for col, lab in [("offset_change", "Perubahan garis latar (dB)"),
+                     ("mu_periodic_db", "Tonjolan mu periodik (dB)"),
+                     ("beta_periodic_db", "Tonjolan beta periodik (dB)")]:
+        t = a.pivot_table(index="unit", columns="phase", values=col).reindex(
+            columns=[c for c in cfg["segments"]["phases"] if c in set(a.phase)])
+        parts.append(f"<h3>{lab} — gabungan semua gerakan</h3>" + _table(t.reset_index()))
+    d = pd.read_csv(res / f"{P.pid}_durasi.csv")
+    s = d.groupby("task")[["dur_turun", "dur_tahan", "dur_naik"]].agg(["median", "std"])
+    s.columns = [f"{x}_{y}" for x, y in s.columns]
+    parts.append("<h3>Durasi subfase (dtk, dari video)</h3>" + _table(s.reset_index()))
+    rb = res / f"{P.pid}_romberg_area.csv"
+    if rb.exists():
+        r = pd.read_csv(rb)
+        if "alpha_periodic_db" in r or "mu_periodic_db" in r:
+            t = r.pivot_table(index="area", columns="kondisi",
+                              values=["cakupan", "n_win", "mu_periodic_db", "offset_db"])
+            t.columns = [f"{x}_{y}" for x, y in t.columns]
+            parts.append("<h3>Romberg per area (mu 8–13 Hz = alpha)</h3>" + _table(t.reset_index()))
+    return "\n".join(parts)
+
+
 def write(ctx, cfg):
     P = ctx["P"]
     parts = [f"<h1>QC {html.escape(P.pid)}</h1>"]
@@ -246,7 +278,10 @@ def write(ctx, cfg):
             if isinstance(rb.get(f"ptp_median_{cond}"), str):
                 parts.append(f"<p><small>Median peak-to-peak {cond} (µV): "
                              f"{html.escape(rb[f'ptp_median_{cond}'])}</small></p>")
+    if ctx.get("segmen"):
+        parts.append(section_segmen(P, cfg, ctx["segmen"]))
     if ctx.get("erd") is not None and len(ctx["erd"]):
+        parts.append("<h2>Lampiran: hasil metode lama (ERD power total, acuan per repetisi)</h2>")
         parts.append(participant_results(P, cfg))
     css = ("body{font-family:system-ui,sans-serif;max-width:1200px;margin:24px auto;padding:0 16px}"
            "img{max-width:100%}.bad{color:#b00020}.ok{color:#1b7e3c}"
