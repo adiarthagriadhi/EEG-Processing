@@ -31,9 +31,13 @@ def fig_timeline(tl, offset, eeg_dur):
                        else "#e6ab02" if "MATA" in r.task else "#999999")
         ax.barh(0, r.end - r.start, left=r.start, color=c, edgecolor="none")
     if offset is not None:
-        ax.axvline(-offset, color="k", ls="--", lw=1)
-        ax.axvline(eeg_dur - offset, color="red", lw=2)
-        ax.text(eeg_dur - offset, 0.45, " akhir EEG", color="red", va="center")
+        first, last = (offset, offset) if np.isscalar(offset) else (offset[0][1], offset[-1][1])
+        ax.axvline(-first, color="k", ls="--", lw=1)
+        ax.axvline(eeg_dur - last, color="red", lw=2)
+        ax.text(eeg_dur - last, 0.45, " akhir EEG", color="red", va="center")
+        if not np.isscalar(offset):
+            for start, _ in offset[1:]:
+                ax.axvline(start, color="k", ls=":", lw=1)
     ax.set_yticks([])
     ax.set_xlabel("waktu video (dtk)")
     ax.set_title("Timeline HUD (oranye TURUN, hijau TAHAN, ungu NAIK, kuning Romberg)")
@@ -185,7 +189,7 @@ def section_segmen(P, cfg, qc):
     import pandas as pd
     res = P.results_dir
     parts = ["<h2>7. Pendekatan v2 — segmen dari video, acuan gabungan, specparam</h2>",
-             f"<p>Offset {qc.get('offset_sec'):+.2f} dtk; acuan = {qc.get('n_quiet')} dari "
+             f"<p>Offset {qc.get('offset_sec')} dtk; acuan = {qc.get('n_quiet')} dari "
              f"{qc.get('n_candidates')} jendela 2 dtk paling diam (BERDIRI RILEKS + ISTIRAHAT UTAMA); "
              f"{qc.get('n_segments')} segmen, per fase {qc.get('n_seg_per_phase')}; batas ketelitian "
              f"{qc.get('noise_floor_db')} dB (efek periodik per partisipan di bawah ini tidak ditafsirkan).</p>",
@@ -227,9 +231,14 @@ def write(ctx, cfg):
         parts.append("<p class='ok'>Semua gerbang QC lolos.</p>")
     raw, tl = ctx["raw"], ctx["tl"]
     offset = ctx.get("offset")
+    if offset is None:
+        off_txt = "—"
+    elif np.isscalar(offset):
+        off_txt = f"{offset:+.2f} dtk"
+    else:
+        off_txt = "per blok " + ", ".join(f"{o:+.2f} dtk (video ≥ {s:.0f} dtk)" for s, o in offset)
     parts.append(f"<h2>1. Timeline & cakupan</h2><p>Durasi EEG {raw.times[-1]:.1f} dtk; "
-                 f"video {ctx['pose']['t'][-1]:.1f} dtk; offset "
-                 f"{'—' if offset is None else f'{offset:+.2f} dtk'} "
+                 f"video {ctx['pose']['t'][-1]:.1f} dtk; offset {off_txt} "
                  f"(t_eeg = t_video + offset).</p>")
     parts.append(fig_timeline(tl, offset, raw.times[-1]))
     if P.out("sync.json").exists():

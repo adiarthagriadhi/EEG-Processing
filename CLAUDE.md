@@ -319,6 +319,20 @@ pipeline harus dijalankan ulang.
   Set konfirmatori (P33–P35) hanya non-penari → belum dapat diuji.
 - Hasil lengkap: `hasil_analisis/v2/` (lihat README); ekspor ulang: `python scripts/ekspor_hasil.py`.
 
+## 🔀 Penggabungan sesi `claude/funny-johnson-5skifb` (2026-09-24) — keputusan pengguna: PROSEDUR SESI INI UNTUK SEMUA SAMPEL
+- Prosedur baku = pendekatan v2 sesi ini (offset tetap di SEMUA tahap, acuan paling diam dari VIDEO,
+  deteksi sinyal datar, tahap `segmen`, H6–H13). `eegpipe/area_map.py` sesi lain DIHAPUS (acuan dipilih dari
+  EEG paling tenang = sirkular; tanpa deteksi datar; offset tetap hanya di satu tahap). Dokumen sesi lain
+  dipindah ke `docs/sesi_funny_johnson/` (riwayat).
+- Diambil dari sesi lain: **offset per blok** (`sync.offset_blocks` = [[mulai_video_dtk, offset], …], batas =
+  awal ISTIRAHAT UTAMA; `sync.to_eeg()`), keputusan pengguna untuk P08/P11. Dalam mode tetap, drift
+  signifikan (|drift| > 0,3 dtk, p < 0,05) kini memicu ALARM → isi manual, mis.
+  `sync: {method: manual, offset_blocks: [[0, 1.28], [<awal ISTIRAHAT UTAMA>, 0.65]], basis: "…"}` (P11) dan
+  P08 +1,20 → +0,95.
+- **Hasil P08, P09, P11, P30–P32 dan meta-analisis 10 vs 7 di bagian "Temuan P08…" di bawah dihitung dengan
+  prosedur LAMA (skrip audit, tanpa deteksi datar) → HARUS dihitung ulang** dengan prosedur ini. Data mentah
+  keenamnya belum ada di mesin sesi ini (perlu diunggah ulang).
+
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
 pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-penari.
@@ -522,6 +536,32 @@ pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-pena
   di atas garis latar), tetapi reaktivitas EC−EO kecil (+0,3…+0,8 dB; oksipital p 0,10, frontal
   p 0,047 tanpa koreksi) dan tidak berbeda antar grup (p ≥ 0,59). Kendala utama Romberg = cakupan EC,
   bukan pemotongan segmen.
+
+## Temuan P08, P09, P11 (penari) & P30–P32 (non-penari), 2026-09-24
+- Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari, **kecuali P10
+  (non-penari, dikonfirmasi)** — jangan tetapkan grup dari nomor saja. Nama file bervariasi: `PXX_Baseline2.EDF` (P08/P11/P30),
+  video `PXX_video.webm`; glob `*Baseline*.EDF` / `*.webm` sudah menangkapnya.
+- OCR 4 rep × 3 gerakan di keenamnya; pose 0–1% frame tanpa deteksi; tanpa kanal buruk.
+- **Sinkronisasi:** P30/P31/P32 +0,98/+0,95/+1,00 dtk. **P09 +1,73 ± 0,17** (tertinggi di kohort;
+  offset blok 2 tersebar 0,92–2,78, cek onset −1,40 dtk IQR 2,25) → tinjau. **P08 & P11 gagal QC
+  drift** (−0,36 / −0,86 dtk, p ≤ 0,005): offset blok 1 ≠ blok 2 (P08 +1,20 → +0,95 bertahap;
+  P11 +1,28 → +0,65, lebih mirip loncatan di ISTIRAHAT UTAMA). Keputusan pengguna: **offset per
+  blok** (`sync.offset_blocks` di decisions, batas = awal ISTIRAHAT UTAMA; `sync.to_eeg()`).
+- Fase: P08/P11 12 ok; P09 & P31 hanya 7/6 ok (3 incomplete); epoch ERD 5–12.
+- **Romberg EC terpotong pada ketiga penari** (P09 9%, P08 45%, P11 66%) vs 98–100% non-penari —
+  pola sama dengan P02/P03/P04: EEG dihentikan sebelum video selesai.
+- Tahan agem: penari 5,93/2,14/3,34 vs non-penari 4,00/1,34/2,36 dtk.
+- H1–H5 (3 vs 3): tidak ada yang signifikan (p_FDR ≥ 0,84); H1 & H4 berlawanan arah. n terlalu kecil.
+- Tahap `group` butuh usia (regresi grup × usia) → `data/participants.csv` belum berisi usia.
+- Bug diperbaiki: log area_map crash (`SeriesGroupBy.iloc`) sehingga Romberg/baseline/laporan
+  tidak pernah jalan setelah area_map.
+- **Gabungan dengan audit 2026-09-23 (7 vs 4) — meta-analisis efek tetap Hedges g, 10 penari vs
+  7 non-penari** (data individual kohort lama tidak tersimpan; hanya d & rerata di catatan ini;
+  kohort baru dihitung dengan skrip audit yang sama, offset tetap 0,85): durasi NAIK g −1,50
+  (p_FDR 0,04; I² 34%), mu periodik TURUN g +1,39 (p_FDR 0,04), durasi TAHAN g +1,13 (p_FDR 0,06),
+  CV TAHAN g −1,26 (p_FDR 0,06; I² 45%), garis latar TAHAN g −0,77 / TURUN −0,54 (n.s.). Semua
+  searah dengan audit lama; efek kohort baru lebih kecil. Mu TURUN < 1,3 dB (di bawah batas
+  ketelitian). Beta TAHAN kohort baru d +21 = artefak SD≈0 pada n=3, abaikan.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:

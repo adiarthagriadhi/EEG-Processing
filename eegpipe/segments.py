@@ -104,10 +104,11 @@ def quiet_windows(tl, pose, offset, T, cfg):
     for _, r in tl[tl.task.isin(sc["baseline_tasks"])].iterrows():
         for a in np.arange(r.start + 0.5, r.end - sc["baseline_win_sec"] - 0.5 + 1e-9,
                            sc["baseline_step_sec"]):
-            if 0 <= a + offset and a + offset + sc["baseline_win_sec"] <= T:
+            ae = float(sync.to_eeg(a, offset))
+            if 0 <= ae and ae + sc["baseline_win_sec"] <= T:
                 k = (pt >= a) & (pt < a + sc["baseline_win_sec"])
                 if k.any():
-                    W.append((a + offset, float(np.nanmedian(mot[k]))))
+                    W.append((ae, float(np.nanmedian(mot[k]))))
     if not W:
         return [], dict(n_candidates=0)
     W = np.array(W)
@@ -147,7 +148,7 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
         for ph, w in phase_windows(m, cfg).items():
             if w is None:
                 continue
-            a, b = w[0] + offset, w[1] + offset
+            a, b = float(sync.to_eeg(w[0], offset)), float(sync.to_eeg(w[1], offset))
             if not np.isfinite([a, b]).all() or a < 0 or b > T:
                 continue
             P = spectra(X[:, int(a * sf):int(b * sf)], sf)                   # ch × f
@@ -268,7 +269,8 @@ def romberg_area(raw, tl, offset, pid, cfg, flat=None):
         r = tl[tl.task.str.upper() == lab]
         if r.empty:
             continue
-        a0, b0 = r.start.iloc[0] + offset + pad, r.end.iloc[-1] + offset - pad
+        a0 = float(sync.to_eeg(r.start.iloc[0], offset)) + pad
+        b0 = float(sync.to_eeg(r.end.iloc[-1], offset)) - pad
         a, b = max(a0, 0), min(b0, T)
         cov = max(0.0, b - a) / (b0 - a0)
         for ar, chs in sc["areas"].items():

@@ -57,9 +57,25 @@ def xcorr_offset(v, e, fs, max_lag_sec):
     return float(lags[ok][i]), float(cc[ok][i]), lags[ok], cc[ok]
 
 
+def offset_at(offset, t):
+    """Offset (dtk) pada waktu video t. offset = satu angka, atau offset per blok
+    [[mulai_video_dtk, offset_dtk], ...] (keputusan manual bila offset bergeser antar blok)."""
+    if np.isscalar(offset):
+        return offset
+    starts, offs = np.array(offset, float).T
+    i = np.searchsorted(starts, np.asarray(t, float), side="right") - 1
+    return offs[np.clip(i, 0, len(offs) - 1)]
+
+
+def to_eeg(t, offset):
+    """Waktu video → waktu EEG."""
+    return t + offset_at(offset, t)
+
+
 def coverage(onset_video, dur, offset, eeg_dur):
     """Fraksi segmen (waktu video) yang berada di dalam rekaman EEG."""
-    a, b = onset_video + offset, onset_video + offset + dur
+    a = float(to_eeg(onset_video, offset))
+    b = a + dur
     inside = max(0.0, min(b, eeg_dur) - max(a, 0.0))
     return inside / dur if dur > 0 else 0.0
 
@@ -224,6 +240,9 @@ def alarm(res, cfg, fixed):
     if not (r >= sc["alarm_min_r"] and consistent):
         return None, (f"estimasi data tidak dapat memverifikasi offset tetap (r kasar {r:.2f}, "
                       f"SE {se:.2f} dtk) → offset tetap dipakai tanpa verifikasi")
+    if abs(res.get("drift_sec", 0.0)) > sc["max_drift_sec"] and res.get("drift_p", 1.0) < 0.05:
+        return (f"offset bergeser {res['drift_sec']:+.2f} dtk sepanjang sesi (p={res['drift_p']:.3f}) "
+                f"→ pertimbangkan offset per blok (sync.offset_blocks, keputusan manual)"), None
     dev = est - fixed
     if abs(dev) > sc["alarm_dev_sec"]:
         return (f"estimasi data {est:+.2f} ± {se:.2f} dtk menyimpang {dev:+.2f} dtk dari offset "
@@ -244,7 +263,7 @@ def onset_check(raw, reps, offset, cfg):
     env = uniform_filter1d(np.median(np.abs(x), axis=0), int(0.2 * sf))
     lags = []
     for a in reps.get("act_arm", reps.act_turun).dropna():
-        c = int(round((a + offset) * sf))
+        c = int(round(float(to_eeg(a, offset)) * sf))
         if c - 6 * sf < 0 or c + 3 * sf > len(env):
             continue
         base = env[int(c - 6 * sf):int(c - 3 * sf)]

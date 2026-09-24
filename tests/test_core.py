@@ -84,6 +84,14 @@ def test_coverage():
     assert sync.coverage(366.4, 30.0, 1.6, 416.0) == 1.0
 
 
+def test_block_offsets():
+    blocks = [[0.0, 1.2], [180.0, 0.95]]
+    t = pd.Series([5.0, 179.9, 180.0, 400.0])
+    assert np.allclose(sync.to_eeg(t, blocks), [6.2, 181.1, 180.95, 400.95])
+    assert sync.to_eeg(10.0, 1.1) == pytest.approx(11.1)
+    assert sync.coverage(411.5, 29.5, blocks, 416.0) == pytest.approx((416 - 412.45) / 29.5)
+
+
 def test_iaf_rejects_flat_and_finds_peak():
     f = np.arange(1, 40.5, 0.5)
 
@@ -163,3 +171,10 @@ def test_phase_windows_incomplete_rep():
     from eegpipe.segments import phase_windows
     m = pd.Series(dict(act_arm=np.nan, act_turun=np.nan, act_tahan=np.nan, act_naik=np.nan, act_end=np.nan))
     assert all(v is None for v in phase_windows(m, load_config()).values())
+
+
+def test_sync_alarm_drift():
+    from eegpipe.config import load_config
+    from eegpipe.sync import alarm
+    drift = dict(offset_sec=0.95, offset_se_sec=0.1, r_coarse=0.5, spread_sec=0.1, drift_sec=-0.86, drift_p=0.005)
+    assert "per blok" in alarm(drift, load_config(), 0.85)[0]                       # P11
