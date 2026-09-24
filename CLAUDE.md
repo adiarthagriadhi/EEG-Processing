@@ -349,6 +349,11 @@ pipeline harus dijalankan ulang.
     untuk H7 (g −0,21), H8 (g −0,57), H11 (g −0,47); H9 mu sentral TURUN g +1,21 (p 0,056); H13 rho 0,63
     (p 0,034, p_FDR 0,25). Daya uji sangat rendah (n = 3 penari).
   - Model campuran tingkat segmen (20 partisipan): tidak ada beda grup di fase mana pun (p ≥ 0,33).
+- **H1–H5 dihitung ulang dengan prosedur v2 (2026-09-24)** (endpoint dari keluaran segmen; di config
+  `hypotheses_v2`). Seluruh 20: H1 g −0,02, H2 g −0,06, H3 durasi tahan agem 3,09 vs 2,43 dtk (g +0,66,
+  p 0,071), H4 g −0,04, H5 g −0,02. Konfirmatori H1–H5 (18 partisipan tanpa P02/P10 pembentuknya): semua
+  n.s. (H3 g +0,53, p 0,13). → **H1, H2, H4, H5 tidak didukung**; H3 searah tetapi lemah. Hasil awal P02 vs
+  P10 tidak bereplikasi. File: `hypothesis_v2_H1-H5_konfirmatori.csv`.
 - Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)

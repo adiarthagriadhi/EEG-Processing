@@ -147,6 +147,17 @@ hypotheses:
 # H6–H13. Endpoint dihitung dengan pendekatan baru (offset tetap 0,85 dtk, 12 segmen gabungan,
 # acuan gabungan). BELUM diimplementasikan di eegpipe/hypotheses.py (paket kerja berikutnya).
 hypotheses_v2:
+  # H1–H5 = hipotesis awal (2026-09-23, dari P02/P10), kini dihitung dengan prosedur v2 (keluaran tahap segmen).
+  H1:  {label: "Neural efficiency: |tonjolan mu periodik| kontralateral saat TAHAN agem lebih kecil pada penari",
+        endpoint: mu_periodic_contra_abs_TAHAN, expect: penari < non-penari}
+  H2:  {label: "Kestabilan motorik: kenaikan garis latar global (belahan) saat TAHAN lebih kecil pada penari",
+        endpoint: global_offset_TAHAN, expect: penari < non-penari}
+  H3:  {label: "Kontrol postural: durasi TAHAN agem lebih panjang pada penari",
+        endpoint: hold_agem_sec, expect: penari > non-penari}
+  H4:  {label: "Tahap kognitif: mu relatif fronto-sentro-parietal kiri saat TURUN lebih rendah pada non-penari",
+        endpoint: mu_relative_FCP_left_TURUN, expect: non-penari < penari}
+  H5:  {label: "Skema tubuh: lateralisasi kanan (mu relatif kanan − kiri) saat TAHAN pada penari",
+        endpoint: mu_relative_right_minus_left_TAHAN, expect: penari < non-penari}
   H6:  {label: "TURUN terkontrol: durasi turun lebih panjang pada penari",
         endpoint: dur_turun_sec, expect: penari > non-penari, explor_d: 0.75}
   H7:  {label: "TAHAN konsisten: variabilitas (CV) durasi tahan lebih kecil pada penari",

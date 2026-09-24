@@ -28,13 +28,29 @@ def endpoints(pid, res):
     for ph in ("PRA", "TURUN", "TAHAN", "NAIK", "POST"):
         e[f"offset_central_{ph}"] = g("sentral", ph, "offset_change")
         e[f"n_seg_{ph}"] = a["n_seg"].get(("sentral", ph), 0)
+    # H1–H5 (hipotesis awal) dari keluaran v2
+    k = am[am.level == "kanal"].set_index(["pool", "unit", "phase"])
+    kv = lambda pool, ch, ph, col: k[col].get((pool, ch, ph), np.nan)
+    e["mu_periodic_contra_abs_TAHAN"] = np.nanmean([abs(kv("AGEM KANAN", "C3", "TAHAN", "mu_periodic_db")),
+                                                    abs(kv("AGEM KIRI", "C4", "TAHAN", "mu_periodic_db"))])
+    bl = am[(am.pool == "SEMUA") & (am.level == "belahan") & (am.phase == "TAHAN")]
+    e["global_offset_TAHAN"] = bl.offset_change.mean()
+    ag = v[v.task.isin(["AGEM KANAN", "AGEM KIRI"])]
+    e["hold_agem_sec"] = ag.dur_tahan.median()
+    rel = lambda chs, ph: np.nanmean([kv("SEMUA", c, ph, "mu_relative_db") for c in chs])
+    e["mu_relative_FCP_left_TURUN"] = rel(["F3", "C3", "P3"], "TURUN")
+    e["mu_relative_right_minus_left_TAHAN"] = rel(["C4", "F4"], "TAHAN") - rel(["C3", "F3"], "TAHAN")
     e["demand_minus_naik_offset_central"] = (np.nanmean([e["offset_central_TURUN"], e["offset_central_TAHAN"]])
                                              - e["offset_central_NAIK"])
     return e
 
 
 def _alt(expect):
-    return "less" if expect.strip().startswith("penari <") else "greater"
+    """Alternatif untuk (penari − non-penari)."""
+    e = expect.strip()
+    if e.startswith("penari <") or e.startswith("non-penari >"):
+        return "less"
+    return "greater"                                   # "penari >" atau "non-penari <"
 
 
 def _partial_spearman(d, x, y, covars):
