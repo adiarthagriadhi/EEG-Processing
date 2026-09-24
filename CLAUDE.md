@@ -409,6 +409,9 @@ pipeline harus dijalankan ulang.
   0,26 vs 0,47; >45: 0,36 vs 0,55); model grup + usia: grup p < 0,001, usia p 0,63, interaksi p 0,50. Juga bertahan
   dgn usia: H11 (p 0,032), H6 (0,015), H3 (0,027), H12 (0,011; interaksi p 0,049). Garis latar TAHAN BERBALIK pada
   usia ≤ 25 (penari 6,5 vs non-penari 2,9 dB) → efek garis latar kohort 28 kemungkinan terkait komposisi usia.
+- **Sensitivitas pembersihan (38; A/B/C/D):** H11 (g −0,59…−0,82) dan H12 (g −0,74…−1,31) bertahan di SEMUA varian
+  (p ≤ 0,03); H10a menguat dengan median (g −0,64, p 0,03); H2, H10b, H13 tidak stabil (n.s. di sebagian besar varian);
+  H4 berganti besar antar varian (derau). Perilaku tidak berubah.
 - **Dosis-respons (38):** prediktor terkuat = **frekuensi menari/bulan → CV TAHAN** (seluruh sampel β −0,71,
   p_FDR < 0,001; di dalam penari n 23 β −0,69, p 0,004, p_FDR 0,027; usia n.s.). Lama menari (tahun) di dalam penari
   tidak berefek (r usia 0,77, VIF 2,4); onset menari tidak berefek. Proporsi hidup menari → CV TAHAN (seluruh sampel
