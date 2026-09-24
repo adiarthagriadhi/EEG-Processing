@@ -54,6 +54,11 @@ def fit(P):
     return r
 
 
+def _pool(S, sc):
+    """Gabungan spektrum antar-segmen: 'mean' (baku) atau 'median' (tahan nilai ekstrem; uji sensitivitas)."""
+    return np.median(S, 0) if sc.get("pool", "mean") == "median" else S.mean(0)
+
+
 def phase_windows(m, cfg):
     """Jendela analisis (detik VIDEO) satu repetisi: {fase: (a, b, durasi_fase)}; None = tak terukur."""
     sc = cfg["segments"]
@@ -192,7 +197,7 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
                     chrows.append(dict(base, level="kanal", unit=c, hemisphere=hemi[c], area=area_of[c],
                                        n_valid=nv, few_segments=True))
                     continue
-                f1 = fit(Ps[OK[:, k], k].mean(0))
+                f1 = fit(_pool(Ps[OK[:, k], k], sc))
                 chrows.append(dict(base, level="kanal", unit=c, hemisphere=hemi[c], area=area_of[c],
                                    n_valid=nv, few_segments=nv < minseg,
                                    **{f"{q}_change": f1[q] - f0[q] for q in ("offset", "exponent")},
@@ -221,7 +226,7 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
                 row = dict(base, level="area", unit=ar, area=ar, artifact_prone=ar in sc["artifact_prone"],
                            n_valid=int(keep.sum()))
                 if keep.sum() >= 2 and f0 is not None:
-                    Pa = np.stack([Ps[j][i][v[j]].mean(0) for j in np.where(keep)[0]]).mean(0)
+                    Pa = _pool(np.stack([Ps[j][i][v[j]].mean(0) for j in np.where(keep)[0]]), sc)
                     f1 = fit(Pa)
                     row.update(few_segments=keep.sum() < minseg,
                                **{f"{q}_change": f1[q] - f0[q] for q in ("offset", "exponent")},

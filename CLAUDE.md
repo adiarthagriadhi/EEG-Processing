@@ -362,6 +362,13 @@ pipeline harus dijalankan ulang.
   periodik lebih tinggi pada non-penari saat PRA/TURUN/TAHAN, g −1,2…−1,4 — area rawan artefak otot);
   **POST (beta rebound) lebih besar pada penari: temporo-posterior g +1,36 (p 0,006), oksipital g +1,08
   (p 0,021)**; beta frontal PRA g +0,98; durasi TAHAN median g +1,11; CV TURUN g −1,03.
+- **Uji sensitivitas pembersihan artefak (`scripts/sensitivitas_pembersihan.py`, 2026-09-24):** A baku; B tepi
+  sinyal datar diperlebar 1,6 dtk (ekor filter HP 1 Hz); C gabungan spektrum MEDIAN antar-segmen; D = B+C.
+  Perilaku (H3, H6–H8) tidak berubah. **Tidak ada varian yang memunculkan efek EEG grup baru** → hasil nol EEG
+  bukan akibat pilihan pembersihan. H11 tahan thd B (g −0,94) tetapi melemah dengan median (−0,48/−0,66);
+  H13 tahan thd B (rho 0,45) tetapi turun dengan median (0,16/0,22) → keduanya sebagian ditarik segmen
+  ekstrem (kemungkinan ledakan artefak gerak/kabel pada penahan yang tidak stabil). H1/H4/H5 berganti tanda
+  antar varian = derau. Ringkasan: `hasil_analisis/sensitivitas/ringkasan_H1-H13.csv`.
 - Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
