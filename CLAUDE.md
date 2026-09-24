@@ -371,7 +371,7 @@ pipeline harus dijalankan ulang.
   antar varian = derau. Ringkasan: `hasil_analisis/sensitivitas/ringkasan_H1-H13.csv`.
 - Konfound hari rekaman tetap: penari 9–10 Sep, non-penari 14 Sep (kecuali P10).
 
-## ✅ Kohort 28 partisipan (14 vs 14), 2026-09-24
+## ✅ Kohort 28 partisipan, 2026-09-24 — ⚠️ grup di bagian ini USANG (P29/P30/P34 = penari); lihat bagian Demografi di bawah
 - Ditambahkan P12–P15 (penari, 10 Sep) & P26–P28 (non-penari, 12 Sep), P29 (non-penari, 14 Sep). P15 punya 2 file
   baseline → dipakai `P15_Baseline.EDF` (19% datar vs 32%); `Baseline2` dipindah ke `data/raw/P15/_tidak_dipakai/`.
 - **KALIBRASI cek onset:** pada offset tetap, artefak EEG mendahului onset lengan video median −0,89 dtk (IQR −1,50…
@@ -390,6 +390,30 @@ pipeline harus dijalankan ulang.
   Beta periodik lebih tinggi pada penari: parietal PRA (g +0,99), temporo-posterior POST (g +0,96).
 - Model campuran segmen (28): tidak ada beda grup di fase mana pun (p ≥ 0,46).
 - Catatan: H13 sebelumnya melemah dengan gabungan median (uji sensitivitas 20 partisipan) → ulangi sensitivitas pada 28.
+
+## ✅ Demografi PARTISIPAN.xlsx + koreksi grup (2026-09-24) — MENGGANTIKAN pembagian grup sebelumnya
+- `data/participants.csv` kini dari PARTISIPAN.xlsx (38 partisipan): `age`, `dance_years` (PENGALAMAN),
+  `onset_age` (ONSET), `vakum_years` (PERNAH VAKUM), `activity_per_month` (AKTIFITAS/BULAN),
+  `proporsi_hidup_menari` = dance_years/age. **Grup TIDAK dapat ditebak dari nomor**: P29 (56 th, 49 th
+  menari), P30 (55/50) dan P34 (33/27) = PENARI (sebelumnya salah dicatat non-penari). Grup lengkap:
+  penari P01–P09, P11–P21, P29, P30, P34 (23); non-penari P10, P22–P28, P31–P33, P35–P38 (15).
+- Kohort 28 yang sudah diproses = 17 penari (usia 15–56, median 30) vs 11 non-penari (21–57, median 44).
+  Belum diproses: P16–P21 (penari lansia 55–102 th) dan P22–P25 (non-penari muda 20 th ×3, 48 th) →
+  PRIORITAS untuk memecah konfound usia.
+- **Hasil H1–H13 setelah koreksi grup (FDR atas 14 uji):** H7 CV TAHAN g −1,44 (p_FDR 0,009), H11 mu
+  periodik posterior TAHAN g −1,17 (p_FDR 0,015), H2, H3, H6, H8, H10b, H13 p_FDR 0,047–0,048; H10a/H12
+  ≈0,08; H1/H4/H5/H9 n.s. Tahan terhadap: tanpa P01/P08 (offset belum dikonfirmasi) dan pembatasan
+  usia tumpang-tindih 21–57 th + usia sebagai kovariat (CV TAHAN p 0,001; garis latar TAHAN p 0,010; mu
+  posterior TAHAN p 0,012; NAIK/TURUN p ≈ 0,047).
+- **Dosis-respons (`dose_response_v2.csv`; OLS HC3 + usia):** seluruh sampel, dance_years memprediksi CV
+  TAHAN, durasi TURUN, mu posterior TAHAN (p_FDR 0,004–0,006), NAIK/garis latar TAHAN (≈0,04–0,05); r
+  usia–tahun 0,12 (VIF 1,0). TETAPI model `penari + dance_years + usia` tidak dapat memisahkan grup dari
+  tahun (celah 0 vs ≥10 th) → efek seluruh sampel = efek grup. **Di dalam penari (n 17) dance_years
+  kolinear dengan usia (r 0,92, VIF 6,3) → tidak ada efek**; hanya activity_per_month → CV TAHAN (β −0,57,
+  p 0,012, p_FDR 0,08) dan onset_age → CV TAHAN (p 0,013, p_FDR 0,09). Dosis-respons sesungguhnya butuh
+  penari dengan tahun menari berbeda pada usia sama (P16–P21 akan membantu) → gunakan juga
+  proporsi_hidup_menari / onset_age / aktivitas.
+- Konfound hari rekaman tetap ada; P29/P30/P34 (penari, hari rekaman non-penari) sedikit mengurainya.
 
 ## ⭐ Tujuan Utama Riset (dikoreksi pengguna, 2026-09-23)
 **Regresi antara DURASI MENARI (tahun pengalaman) dan kemampuan kontrol gerak (EEG + perilaku)**
@@ -596,7 +620,7 @@ pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-pena
   bukan pemotongan segmen.
 
 ## Temuan P08, P09, P11 (penari) & P30–P32 (non-penari), 2026-09-24
-- Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari, **kecuali P10
+- ⚠️ USANG (lihat PARTISIPAN.xlsx: P29/P30/P34 penari). Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari, **kecuali P10
   (non-penari, dikonfirmasi)** — jangan tetapkan grup dari nomor saja. Nama file bervariasi: `PXX_Baseline2.EDF` (P08/P11/P30),
   video `PXX_video.webm`; glob `*Baseline*.EDF` / `*.webm` sudah menangkapnya.
 - OCR 4 rep × 3 gerakan di keenamnya; pose 0–1% frame tanpa deteksi; tanpa kanal buruk.

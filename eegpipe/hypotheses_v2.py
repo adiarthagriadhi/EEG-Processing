@@ -164,27 +164,38 @@ def mixed_segments(res, parts, pids):
 
 
 def dose_response(df, cfg):
-    """outcome ~ dance_years + kovariat (OLS, SE HC3) + VIF; hanya bila data tersedia."""
+    """outcome ~ prediktor paparan tari + usia (OLS, SE HC3) + VIF, per sampel.
+    Sampel 'semua': non-penari = 0 tahun/0 kali (hanya prediktor yang bermakna bila 0);
+    sampel 'penari': dosis-respons di dalam penari saja (termasuk usia mulai menari)."""
     import statsmodels.formula.api as smf
     dc = cfg["dose_response"]
-    need = [dc["predictor"]] + dc["covariates"]
-    if any(c not in df or df[c].notna().sum() < dc["min_n"] for c in need):
-        return pd.DataFrame([dict(catatan=f"menunggu data {need} di participants.csv "
-                                          f"(min n = {dc['min_n']})")])
+    cov = dc["covariates"]
     rows = []
-    for y in dc["outcomes"]:
-        d = df[[y] + need].dropna()
-        if len(d) < dc["min_n"]:
-            continue
-        m = smf.ols(f"{y} ~ " + " + ".join(need), d).fit(cov_type="HC3")
-        r_xy = d[need].corr().iloc[0, 1] if len(need) > 1 else 0.0
-        rows.append(dict(outcome=y, n=len(d), slope_per_tahun=m.params[dc["predictor"]],
-                         se=m.bse[dc["predictor"]], p=m.pvalues[dc["predictor"]],
-                         r_prediktor_kovariat=r_xy, vif=1 / (1 - r_xy ** 2) if abs(r_xy) < 1 else np.inf,
-                         r2=m.rsquared))
+    for pr in dc["predictors"]:
+        for smp in pr.get("samples", ["semua", "penari"]):
+            base = df if smp == "semua" else df[df.group == "penari"]
+            need = [pr["name"]] + cov
+            if any(c not in base for c in need):
+                continue
+            for y in dc["outcomes"]:
+                d = base[[y] + need].dropna()
+                if len(d) < dc["min_n"] or d[pr["name"]].nunique() < 3:
+                    continue
+                m = smf.ols(f"{y} ~ " + " + ".join(need), d).fit(cov_type="HC3")
+                r_xy = d[need].corr().iloc[0, 1] if cov else 0.0
+                sd_x, sd_y = d[pr["name"]].std(), d[y].std()
+                rows.append(dict(prediktor=pr["name"], sampel=smp, outcome=y, n=len(d),
+                                 slope=m.params[pr["name"]], se=m.bse[pr["name"]],
+                                 beta_std=m.params[pr["name"]] * sd_x / sd_y if sd_y > 0 else np.nan,
+                                 p=m.pvalues[pr["name"]],
+                                 slope_usia=m.params.get("age", np.nan), p_usia=m.pvalues.get("age", np.nan),
+                                 r_prediktor_usia=r_xy,
+                                 vif=1 / (1 - r_xy ** 2) if abs(r_xy) < 1 else np.inf, r2=m.rsquared))
     out = pd.DataFrame(rows)
     if len(out):
-        out["p_fdr"] = multipletests(out.p, method="fdr_bh")[1]
+        out["p_fdr"] = out.groupby(["prediktor", "sampel"]).p.transform(
+            lambda p: multipletests(p, method="fdr_bh")[1])
+        out["is_simulated"] = cfg["is_simulated"]
     return out
 
 

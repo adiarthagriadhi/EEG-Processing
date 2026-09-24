@@ -188,7 +188,13 @@ exploration_set: [P01, P02, P03, P04, P05, P06, P07, P10, P36, P37, P38]
 # Tujuan utama: regresi dosis-respons durasi menari (tahun) vs kontrol gerak, dikontrol usia.
 # Membutuhkan kolom dance_years & age di data/participants.csv (belum diisi per 2026-09-24).
 dose_response:
-  predictor: dance_years
+  # PARTISIPAN.xlsx (2026-09-24): PENGALAMAN → dance_years, ONSET → onset_age,
+  # AKTIFITAS/BULAN → activity_per_month, PERNAH VAKUM → vakum_years (deskriptif saja)
+  predictors:
+    - {name: dance_years, samples: [semua, penari]}
+    - {name: activity_per_month, samples: [semua, penari]}
+    - {name: proporsi_hidup_menari, samples: [semua, penari]}
+    - {name: onset_age, samples: [penari]}          # 0 pada non-penari tidak bermakna
   covariates: [age]
   outcomes: [cv_tahan, dur_naik_sec, dur_turun_sec, offset_central_TURUN, offset_central_TAHAN,
              mu_periodic_central_TURUN, mu_periodic_posterior_TAHAN]
