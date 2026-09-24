@@ -37,15 +37,24 @@ def stage_ocr(P, cfg, force=False):
 
 
 def stage_pose(P, cfg, force=False):
+    """pose.npz menyimpan kandidat mentah (cand_xy/cand_vis) + lintasan terpilih. Bila kandidat ada dan
+    aturan pemilihan berubah, cukup `--force phases` setelah memanggil pose.select (tanpa MediaPipe)."""
+    from . import pose as pz
     out = P.out("pose.npz")
+    vc = cfg["video"]
+    mode = vc.get("pose_select", "continuity")
     if out.exists() and not force:
-        return dict(np.load(out))
-    from .pose import track
-    box = P.decisions().get("participant_box", cfg["video"]["participant_box"])  # override per partisipan
-    res = track(P.video, box,
-                cfg["_root"] / cfg["paths"]["pose_model"], cfg["video"]["pose_frame_step"],
-                select=cfg["video"].get("pose_select", "continuity"),
-                num_poses=cfg["video"].get("pose_num_poses", 2))
+        res = dict(np.load(out))
+        if "cand_xy" in res and str(res.get("select_mode", "")) != mode + "_v2":
+            res.update(pz.select(res, mode))          # pilih ulang dengan aturan terbaru
+            res["select_mode"] = np.array(mode + "_v2")
+            np.savez(out, **res)
+            _log(P.pid, f"pose: pilih ulang ({mode}_v2), tanpa deteksi {np.isnan(res['trunk_y']).mean() * 100:.1f}%")
+        return res
+    box = P.decisions().get("participant_box", vc["participant_box"])  # override per partisipan
+    res = pz.track(P.video, box, cfg["_root"] / cfg["paths"]["pose_model"], vc["pose_frame_step"],
+                   select_mode=mode, num_poses=vc.get("pose_num_poses", 2))
+    res["select_mode"] = np.array(mode + "_v2")
     np.savez(out, **res)
     _log(P.pid, f"pose: {len(res['t'])} frame, tanpa deteksi "
                 f"{np.isnan(res['trunk_y']).mean() * 100:.1f}%")
