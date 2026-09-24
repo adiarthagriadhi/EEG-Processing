@@ -513,6 +513,13 @@ pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-pena
 - Tahap `group` butuh usia (regresi grup × usia) → `data/participants.csv` belum berisi usia.
 - Bug diperbaiki: log area_map crash (`SeriesGroupBy.iloc`) sehingga Romberg/baseline/laporan
   tidak pernah jalan setelah area_map.
+- **Gabungan dengan audit 2026-09-23 (7 vs 4) — meta-analisis efek tetap Hedges g, 10 penari vs
+  7 non-penari** (data individual kohort lama tidak tersimpan; hanya d & rerata di catatan ini;
+  kohort baru dihitung dengan skrip audit yang sama, offset tetap 0,85): durasi NAIK g −1,50
+  (p_FDR 0,04; I² 34%), mu periodik TURUN g +1,39 (p_FDR 0,04), durasi TAHAN g +1,13 (p_FDR 0,06),
+  CV TAHAN g −1,26 (p_FDR 0,06; I² 45%), garis latar TAHAN g −0,77 / TURUN −0,54 (n.s.). Semua
+  searah dengan audit lama; efek kohort baru lebih kecil. Mu TURUN < 1,3 dB (di bawah batas
+  ketelitian). Beta TAHAN kohort baru d +21 = artefak SD≈0 pada n=3, abaikan.
 
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
