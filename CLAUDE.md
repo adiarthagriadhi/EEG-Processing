@@ -496,8 +496,8 @@ pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-pena
   bukan pemotongan segmen.
 
 ## Temuan P08, P09, P11 (penari) & P30–P32 (non-penari), 2026-09-24
-- Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari (P10 tercatat
-  non-penari di atas — pengecualian?). Nama file bervariasi: `PXX_Baseline2.EDF` (P08/P11/P30),
+- Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari, **kecuali P10
+  (non-penari, dikonfirmasi)** — jangan tetapkan grup dari nomor saja. Nama file bervariasi: `PXX_Baseline2.EDF` (P08/P11/P30),
   video `PXX_video.webm`; glob `*Baseline*.EDF` / `*.webm` sudah menangkapnya.
 - OCR 4 rep × 3 gerakan di keenamnya; pose 0–1% frame tanpa deteksi; tanpa kanal buruk.
 - **Sinkronisasi:** P30/P31/P32 +0,98/+0,95/+1,00 dtk. **P09 +1,73 ± 0,17** (tertinggi di kohort;
