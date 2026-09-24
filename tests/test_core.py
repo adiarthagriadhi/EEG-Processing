@@ -84,6 +84,14 @@ def test_coverage():
     assert sync.coverage(366.4, 30.0, 1.6, 416.0) == 1.0
 
 
+def test_block_offsets():
+    blocks = [[0.0, 1.2], [180.0, 0.95]]
+    t = pd.Series([5.0, 179.9, 180.0, 400.0])
+    assert np.allclose(sync.to_eeg(t, blocks), [6.2, 181.1, 180.95, 400.95])
+    assert sync.to_eeg(10.0, 1.1) == pytest.approx(11.1)
+    assert sync.coverage(411.5, 29.5, blocks, 416.0) == pytest.approx((416 - 412.45) / 29.5)
+
+
 def test_iaf_rejects_flat_and_finds_peak():
     f = np.arange(1, 40.5, 0.5)
 

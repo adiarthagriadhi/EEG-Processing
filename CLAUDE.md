@@ -495,6 +495,25 @@ pada sampel beragam — analisis dosis-respons, bukan sekadar penari vs non-pena
   p 0,047 tanpa koreksi) dan tidak berbeda antar grup (p ≥ 0,59). Kendala utama Romberg = cakupan EC,
   bukan pemotongan segmen.
 
+## Temuan P08, P09, P11 (penari) & P30–P32 (non-penari), 2026-09-24
+- Grup (dikonfirmasi pengguna): nomor kecil = penari, nomor besar = non-penari (P10 tercatat
+  non-penari di atas — pengecualian?). Nama file bervariasi: `PXX_Baseline2.EDF` (P08/P11/P30),
+  video `PXX_video.webm`; glob `*Baseline*.EDF` / `*.webm` sudah menangkapnya.
+- OCR 4 rep × 3 gerakan di keenamnya; pose 0–1% frame tanpa deteksi; tanpa kanal buruk.
+- **Sinkronisasi:** P30/P31/P32 +0,98/+0,95/+1,00 dtk. **P09 +1,73 ± 0,17** (tertinggi di kohort;
+  offset blok 2 tersebar 0,92–2,78, cek onset −1,40 dtk IQR 2,25) → tinjau. **P08 & P11 gagal QC
+  drift** (−0,36 / −0,86 dtk, p ≤ 0,005): offset blok 1 ≠ blok 2 (P08 +1,20 → +0,95 bertahap;
+  P11 +1,28 → +0,65, lebih mirip loncatan di ISTIRAHAT UTAMA). Keputusan pengguna: **offset per
+  blok** (`sync.offset_blocks` di decisions, batas = awal ISTIRAHAT UTAMA; `sync.to_eeg()`).
+- Fase: P08/P11 12 ok; P09 & P31 hanya 7/6 ok (3 incomplete); epoch ERD 5–12.
+- **Romberg EC terpotong pada ketiga penari** (P09 9%, P08 45%, P11 66%) vs 98–100% non-penari —
+  pola sama dengan P02/P03/P04: EEG dihentikan sebelum video selesai.
+- Tahan agem: penari 5,93/2,14/3,34 vs non-penari 4,00/1,34/2,36 dtk.
+- H1–H5 (3 vs 3): tidak ada yang signifikan (p_FDR ≥ 0,84); H1 & H4 berlawanan arah. n terlalu kecil.
+- Tahap `group` butuh usia (regresi grup × usia) → `data/participants.csv` belum berisi usia.
+- Bug diperbaiki: log area_map crash (`SeriesGroupBy.iloc`) sehingga Romberg/baseline/laporan
+  tidak pernah jalan setelah area_map.
+
 ## Pertanyaan Terbuka untuk Pengguna (mohon dikonfirmasi sebelum coding dimulai)
 > Status: pertanyaan 1–4 sudah dijawab (lihat di atas). Yang masih terbuka:
 > 5 (struktur folder), 6 (bahasa pemrograman), verifikasi isi `Add_lead`,

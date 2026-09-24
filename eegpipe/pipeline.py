@@ -82,7 +82,7 @@ def stage_onset_check(P, cfg, raw, reps, offset, force=False):
     dec = P.decisions()
     s = dec.get("sync", {})
     if s.get("method") == "manual" or ("onset_check" in s and not force):
-        return s["offset_sec"]
+        return s.get("offset_blocks", s["offset_sec"])
     oc = cfg["sync"]["onset_check"]
     chk = sync.onset_check(raw, reps, offset, cfg)
     s["onset_check"] = chk
@@ -131,7 +131,8 @@ def stage_preprocess(P, cfg, raw, tl, offset, force=False):
     r = tl[tl.task == "ISTIRAHAT UTAMA"]
     rest = None
     if len(r):
-        a, b = r.start.iloc[0] + offset + 5, r.end.iloc[0] + offset - 5
+        a = float(sync.to_eeg(r.start.iloc[0], offset)) + 5
+        b = float(sync.to_eeg(r.end.iloc[0], offset)) - 5
         rest = (max(a, 0), min(b, raw.times[-1])) if b - a > 20 else None
     if "bad_channels" not in dec or dec.get("bad_channels_method", "").startswith("auto"):
         bads, z = preprocess.detect_bad_channels(filt, rest, cfg["eeg"]["bad_z"])
@@ -224,7 +225,7 @@ def stage_romberg(P, cfg, clean, tl, offset, force=False):
         if r.empty:
             continue
         on, dur = float(r.start.iloc[0]), float(r.end.iloc[-1] - r.start.iloc[0])
-        segs[cond] = (on + offset, dur, sync.coverage(on, dur, offset, eeg_dur))
+        segs[cond] = (float(sync.to_eeg(on, offset)), dur, sync.coverage(on, dur, offset, eeg_dur))
     feat = romberg.features(clean, segs, P.pid, cfg)
     feat["interpolated_channels"] = ";".join(P.decisions().get("bad_channels", []))
     pd.DataFrame([feat]).to_csv(out, index=False)

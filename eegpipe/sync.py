@@ -57,9 +57,25 @@ def xcorr_offset(v, e, fs, max_lag_sec):
     return float(lags[ok][i]), float(cc[ok][i]), lags[ok], cc[ok]
 
 
+def offset_at(offset, t):
+    """Offset (dtk) pada waktu video t. offset = satu angka, atau offset per blok
+    [[mulai_video_dtk, offset_dtk], ...] (keputusan manual bila offset bergeser antar blok)."""
+    if np.isscalar(offset):
+        return offset
+    starts, offs = np.array(offset, float).T
+    i = np.searchsorted(starts, np.asarray(t, float), side="right") - 1
+    return offs[np.clip(i, 0, len(offs) - 1)]
+
+
+def to_eeg(t, offset):
+    """Waktu video → waktu EEG."""
+    return t + offset_at(offset, t)
+
+
 def coverage(onset_video, dur, offset, eeg_dur):
     """Fraksi segmen (waktu video) yang berada di dalam rekaman EEG."""
-    a, b = onset_video + offset, onset_video + offset + dur
+    a = float(to_eeg(onset_video, offset))
+    b = a + dur
     inside = max(0.0, min(b, eeg_dur) - max(a, 0.0))
     return inside / dur if dur > 0 else 0.0
 

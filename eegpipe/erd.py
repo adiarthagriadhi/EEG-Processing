@@ -3,6 +3,8 @@ import mne
 import numpy as np
 import pandas as pd
 
+from .sync import to_eeg
+
 
 def make_epochs(raw, reps, offset, cfg):
     ok = reps.compliance.isin(["ok", "late", "short_hold", "hud_fallback"])
@@ -13,7 +15,7 @@ def make_epochs(raw, reps, offset, cfg):
         return None
     sf = raw.info["sfreq"]
     t0 = ph.act_arm if "act_arm" in ph else ph.act_turun          # gerak PERTAMA
-    samp = np.round((t0 + offset) * sf).astype(int)
+    samp = np.round(to_eeg(t0, offset) * sf).astype(int)
     events = np.column_stack([samp, np.zeros(len(ph), int), np.arange(1, len(ph) + 1)])
     event_id = {f"{r.task.replace(' ', '_')}/rep{r.rep}": i + 1 for i, r in ph.iterrows()}
     meta = ph[["task", "rep", "compliance"]].copy()
