@@ -1,0 +1,8 @@
+sync:
+  offset_sec: 0.78
+  offset_se_sec: 0.23
+  method: auto
+  accepted: false
+  problems:
+  - 33% repetisi menempel batas pencarian → puncak kasar kemungkinan salah
+  warnings: []

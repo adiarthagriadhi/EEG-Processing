@@ -1,0 +1,6 @@
+hipotesis,label,endpoint,expect,n_penari,n_nonpenari,mean_penari,mean_nonpenari,t,p_one_sided,p_fdr
+H1,Neural efficiency: perubahan tonjolan mu kontralateral lebih kecil pada penari,mu_periodic_contra_abs_TAHAN,penari < non-penari,7,4,1.5206322247323096,2.4429945556206576,-1.1238698650033974,0.1580066493139323,0.3496886186844816
+H2,Kestabilan motorik: kenaikan garis latar global lebih kecil pada penari,global_offset_TAHAN,penari < non-penari,7,4,-1.7661479154502129,2.3458836686106017,-0.8854305515697902,0.20981317121068896,0.3496886186844816
+H3,Kontrol postural: durasi menahan agem lebih panjang pada penari,hold_agem_sec,penari > non-penari,7,4,2.74757142857143,2.1176249999999985,1.2948135592797543,0.14026897256161341,0.3496886186844816
+H4,Tahap kognitif: penurunan mu fronto-parietal kiri lebih luas pada non-penari,mu_relative_FCP_left_TURUN,non-penari < penari,7,4,-0.5100008235623795,0.008258171336975234,-1.2299022123026142,0.86790184857587,0.86790184857587
+H5,Postur/skema tubuh: lateralisasi kanan saat TAHAN pada penari,mu_relative_right_minus_left_TAHAN,penari < non-penari,7,4,0.35032651252635266,0.8315995665723381,-0.5676368318445061,0.29444956790512605,0.36806195988140755

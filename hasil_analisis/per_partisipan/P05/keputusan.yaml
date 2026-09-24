@@ -1,0 +1,42 @@
+sync:
+  offset_sec: 1.08
+  offset_se_sec: 0.065
+  method: auto
+  accepted: true
+  problems: []
+  warnings:
+  - kombinasi sinyal tidak sepakat (IQR 0.77 dtk)
+  onset_check:
+    onset_lag_sec: -0.43
+    onset_lag_iqr: 0.62
+    onset_n: 10
+bad_channels:
+- F8
+bad_channels_method: 'auto: z log-SD istirahat'
+bad_channels_z:
+  Fp1: 0.13
+  Fp2: -0.09
+  F3: 0.2
+  F4: 0.09
+  C3: 1.9
+  C4: -0.67
+  P3: 1.54
+  P4: -0.52
+  O1: 2.16
+  O2: -0.19
+  F7: -3.48
+  F8: 3.48
+  T3: 1.34
+  T4: -0.91
+  T5: -0.52
+  T6: -0.68
+ica_blink_qc:
+  n_blinks: 119
+  blink_channel: Fp1
+  before: 360.5
+  after: 141.7
+ica_exclude:
+- 1
+- 0
+- 4
+ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

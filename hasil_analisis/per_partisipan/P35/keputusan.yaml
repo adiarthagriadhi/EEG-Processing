@@ -1,0 +1,11 @@
+sync:
+  offset_sec: -27.97
+  offset_se_sec: 0.253
+  method: auto
+  accepted: false
+  problems:
+  - offset per-repetisi tidak konsisten (SE 0.25 > 0.25 dtk)
+  - '|offset| -28.0 dtk > prior hitungan-3 (5.0 dtk)'
+  warnings:
+  - puncak kasar tidak tegas (r 0.01 vs -0.01)
+  - korelasi halus rendah (r 0.01)
