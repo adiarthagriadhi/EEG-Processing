@@ -29,9 +29,13 @@ tidak ada (P31: NGEED blok 1) tidak menggeser nomor.
   Tanpa video, **semua** jendela BERDIRI RILEKS (B + 2 dtk … maks. B + 8 dtk, berhenti 1 dtk sebelum
   repetisi berikut) + ISTIRAHAT UTAMA (B terakhir blok 1 + 8 dtk … 5 dtk sebelum blok 2) dipakai.
   Tidak dipilih dari EEG (sirkular). QC: `segmen_qc.json → reference_selection`.
+
+Analisis sampel pertama dengan jalur ini (P08, P09, P31, P32) dan perbandingannya dengan jalur video/pose
+dicatat terpisah di `analisis_timestamp_manual/`.
 - **Latensi terhadap instruksi HUD** (`latency_hud`) tidak terukur (NaN).
-- **Romberg EO** tidak ditandai. Turunan dari protokol (TT − 45 … TT − 15) tidak cocok karena B terakhir → TT
-  hanya ±43 dtk, jadi `derive_eo: false`. Perlu label EO sendiri bila EO dibutuhkan.
+- **Romberg EO** tidak ditandai. Turunan dari protokol (TT − 45 … TT − 15) dapat diaktifkan dengan
+  `derive_eo: true`, tetapi baku `false` karena jarak B terakhir → TT pada data uji lebih pendek dari 45 dtk
+  (lihat `analisis_timestamp_manual/README.md`). Perlu label EO sendiri bila EO dibutuhkan.
 
 ## Jalan
 ```bash

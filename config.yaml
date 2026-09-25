@@ -41,8 +41,8 @@ manual_timestamps:
   next_rep_lead_sec: 1.0      # … dan berakhir ≥ 1 dtk sebelum repetisi berikut
   rest_end_margin_sec: 5.0    # ISTIRAHAT UTAMA berakhir 5 dtk sebelum blok 2 (BERSIAP)
   romberg_sec: 30.0           # EC = TT … TT + 30 dtk
-  derive_eo: false            # EO dari protokol (TT − 45 … TT − 15) TIDAK cocok: B terakhir → TT hanya ±43 dtk
-                              # (P08/P09/P31/P32) → EO butuh penanda sendiri (mis. label EO) sebelum dipakai
+  derive_eo: false            # EO dari protokol (TT − 45 … TT − 15); baku mati: jarak B terakhir → TT pada data
+                              # uji < 45 dtk → EO butuh penanda sendiri (lihat docs/MANUAL_TIMESTAMPS.md)
   eo_gap_sec: 15.0
 
 sync:

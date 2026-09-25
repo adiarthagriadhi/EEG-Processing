@@ -1,35 +1,6 @@
 sync:
   offset_sec: 0.0
-  method: manual_timestamp
+  method: manual
   accepted: true
-  basis: timestamp manual peneliti (P09_timestamps.csv), offset 0 dtk
-phase_source: manual_timestamp
-manual_timestamp_sha1: 0ac2f25a043f
-manual_timestamp_problems: []
-bad_channels: []
-bad_channels_method: 'auto: z log-SD istirahat'
-bad_channels_z:
-  Fp1: 0.06
-  Fp2: 1.28
-  F3: -1.39
-  F4: 0.5
-  C3: -1.76
-  C4: 0.12
-  P3: -0.78
-  P4: -0.57
-  O1: -0.01
-  O2: -0.39
-  F7: -0.26
-  F8: 1.63
-  T3: 0.01
-  T4: 0.8
-  T5: -1.14
-  T6: 0.89
-ica_blink_qc:
-  n_blinks: 144
-  blink_channel: Fp2
-  before: 309.2
-  after: 192.8
-ica_exclude:
-- 5
-ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+  basis: timestamp video manual; start bersama (uji RMS blok gerak vs jeda)
+phase_source: manual_video
