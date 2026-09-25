@@ -1,18 +1,18 @@
 sync:
   offset_sec: 0.85
   method: fixed
-  estimate_sec: 0.28
-  estimate_se_sec: 0.161
+  estimate_sec: 8.45
+  estimate_se_sec: 0.248
   warnings: []
   accepted: true
   onset_check:
-    onset_lag_sec: -1.36
-    onset_lag_iqr: 1.69
-    onset_n: 9
-  onset_lag_calibrated_sec: -0.47
-  alarm_dismissed: 'estimasi data +0.28 ± 0.16 dtk menyimpang -0.57 dtk dari offset
-    tetap +0.85 dtk (r kasar 0.26) — DIBANTAH: cek onset -1.36 dtk (IQR 1.69, n 9)
-    (terkalibrasi -0.47) pada offset tetap'
+    onset_lag_sec: -0.69
+    onset_lag_iqr: 1.82
+    onset_n: 11
+  onset_lag_calibrated_sec: 0.2
+  alarm_dismissed: 'estimasi data +8.45 ± 0.25 dtk menyimpang +7.60 dtk dari offset
+    tetap +0.85 dtk (r kasar 0.32) — DIBANTAH: cek onset -0.69 dtk (IQR 1.82, n 11)
+    (terkalibrasi +0.20) pada offset tetap'
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
@@ -40,3 +40,35 @@ ica_blink_qc:
 ica_exclude:
 - 0
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: AGEM KIRI
+  rep: 1
+  kategori: sesuai
+  catatan: ''
+  butir: T026
+- task: AGEM KANAN
+  rep: 1
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T027
+- task: AGEM KANAN
+  rep: 2
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T028
+- task: AGEM KIRI
+  rep: 2
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T029
+- task: AGEM KANAN
+  rep: 3
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T030
+- task: AGEM KANAN
+  rep: 4
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T031
+reclass_manual: []

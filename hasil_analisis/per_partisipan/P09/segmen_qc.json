@@ -1,34 +1,35 @@
 {
   "n_candidates": 232,
   "n_quiet": 116,
-  "motion_thr": 2.001,
+  "motion_thr": 2.015,
   "baseline_valid_frac": {
-    "Fp1": 0.96,
-    "F3": 0.74,
-    "C3": 0.7,
+    "Fp1": 0.97,
+    "F3": 0.84,
+    "C3": 0.8,
     "P3": 0.92,
     "O1": 0.91,
     "F7": 1.0,
-    "T3": 0.9,
+    "T3": 0.91,
     "T5": 0.93,
     "Fp2": 1.0,
-    "F4": 0.94,
-    "C4": 0.92,
-    "P4": 0.85,
-    "O2": 0.94,
+    "F4": 0.95,
+    "C4": 0.93,
+    "P4": 0.94,
+    "O2": 0.95,
     "F8": 0.97,
-    "T4": 0.95,
-    "T6": 0.97
+    "T4": 0.96,
+    "T6": 0.99
   },
-  "n_baseline_allvalid": 73,
-  "noise_floor_db": 1.21,
-  "n_segments": 47,
+  "baseline_salvaged": 43,
+  "n_baseline_allvalid": 86,
+  "noise_floor_db": 1.13,
+  "n_segments": 48,
   "valid_frac_C3C4": {
     "NAIK": 0.5,
-    "POST": 0.44,
-    "PRA": 0.5,
-    "TAHAN": 0.44,
-    "TURUN": 0.78
+    "POST": 0.65,
+    "PRA": 0.8,
+    "TAHAN": 0.67,
+    "TURUN": 0.89
   },
   "flat_pct_total": {
     "Fp1": 7.5,
@@ -50,10 +51,10 @@
   },
   "offset_sec": 1.7,
   "n_seg_per_phase": {
-    "NAIK": 9,
-    "POST": 9,
-    "PRA": 12,
-    "TAHAN": 8,
+    "NAIK": 10,
+    "POST": 10,
+    "PRA": 10,
+    "TAHAN": 9,
     "TURUN": 9
   }
 }

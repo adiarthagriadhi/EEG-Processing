@@ -15,27 +15,27 @@ sync:
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 0.68
-  Fp2: 1.12
-  F3: 0.02
-  F4: -0.68
-  C3: 1.23
-  C4: -0.91
-  P3: -0.24
-  P4: -0.72
-  O1: 0.53
-  O2: -0.45
-  F7: 0.67
-  F8: -0.39
-  T3: 0.04
-  T4: -0.69
-  T5: 0.77
-  T6: -0.02
+  Fp1: 0.82
+  Fp2: 1.62
+  F3: 0.01
+  F4: -0.7
+  C3: 1.57
+  C4: -1.06
+  P3: -0.02
+  P4: -0.58
+  O1: 0.71
+  O2: -0.57
+  F7: 0.93
+  F8: -0.49
+  T3: 0.59
+  T4: -0.65
+  T5: 0.87
+  T6: -0.01
 ica_blink_qc:
   n_blinks: 177
   blink_channel: Fp1
   before: 252.9
-  after: 19.3
+  after: 18.8
 ica_exclude:
 - 2
 - 1

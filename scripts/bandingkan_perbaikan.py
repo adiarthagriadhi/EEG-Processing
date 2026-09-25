@@ -25,15 +25,19 @@ def per_participant(res, der):
     return pd.DataFrame(rows).set_index("participant_id")
 
 
+STAGES = [("sebelum", OLD, OLD / "derivatives"),
+          ("pose_datar", ROOT / "results_perbaikan_pose_datar", ROOT / "results_perbaikan_pose_datar/derivatives"),
+          ("reklasifikasi", NEW, ROOT / "data/derivatives")]
+
+
 def main():
-    a = per_participant(OLD, OLD / "derivatives")
-    b = per_participant(NEW, ROOT / "data/derivatives")
-    t = a.join(b, lsuffix="_sebelum", rsuffix="_sesudah")
+    st = [(n, r, d) for n, r, d in STAGES if r.exists()]
+    t = pd.concat([per_participant(r, d).add_suffix(f"_{n}") for n, r, d in st], axis=1)
     t.to_csv(NEW / "perbandingan_perbaikan_v2.csv")
-    ha = pd.read_csv(OLD / "hypothesis_v2_tests.csv").set_index("hipotesis")
-    hb = pd.read_csv(NEW / "hypothesis_v2_tests.csv").set_index("hipotesis")
     cols = ["effect", "p_one_sided", "p_fdr"]
-    h = ha[["endpoint"] + cols].join(hb[cols], lsuffix="_sebelum", rsuffix="_sesudah")
+    h = pd.read_csv(OLD / "hypothesis_v2_tests.csv").set_index("hipotesis")[["endpoint"]]
+    for n, r, _ in st:
+        h = h.join(pd.read_csv(r / "hypothesis_v2_tests.csv").set_index("hipotesis")[cols].add_suffix(f"_{n}"))
     h.to_csv(NEW / "perbandingan_perbaikan_H_v2.csv")
     print(t.round(2).to_string())
     print(h.round(3).to_string())

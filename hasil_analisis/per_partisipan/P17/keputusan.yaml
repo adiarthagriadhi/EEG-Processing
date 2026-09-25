@@ -39,3 +39,25 @@ ica_exclude:
 - 3
 - 5
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: NGEED
+  rep: 1
+  kategori: berdiri
+  catatan: berdiri
+  butir: T022
+- task: NGEED
+  rep: 2
+  kategori: berdiri
+  catatan: berdiri
+  butir: T023
+- task: NGEED
+  rep: 3
+  kategori: berdiri
+  catatan: berdiri
+  butir: T024
+- task: NGEED
+  rep: 4
+  kategori: berdiri
+  catatan: berdiri
+  butir: T025
+reclass_manual: []

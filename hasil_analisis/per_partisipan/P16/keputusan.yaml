@@ -7,9 +7,9 @@ sync:
     (102 th) kecil → offset tetap 0,85 TANPA VERIFIKASI.'
   tidak_terverifikasi: true
   onset_check:
-    onset_lag_sec: 2.42
-    onset_lag_iqr: 0.0
-    onset_n: 1
+    onset_lag_sec: 2.19
+    onset_lag_iqr: 0.23
+    onset_n: 2
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
@@ -37,3 +37,20 @@ ica_blink_qc:
 ica_exclude:
 - 0
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: NGEED
+  rep: 1
+  kategori: berdiri
+  catatan: berdiri
+  butir: T019
+- task: NGEED
+  rep: 2
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T020
+- task: AGEM KANAN
+  rep: 1
+  kategori: berdiri
+  catatan: berdiri tenang
+  butir: T021
+reclass_manual: []

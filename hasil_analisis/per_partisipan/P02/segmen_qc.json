@@ -20,6 +20,7 @@
     "T4": 1.0,
     "T6": 1.0
   },
+  "baseline_salvaged": 0,
   "n_baseline_allvalid": 116,
   "noise_floor_db": 2.27,
   "n_segments": 60,

@@ -391,7 +391,35 @@ pipeline harus dijalankan ulang.
 - Model campuran segmen (28): tidak ada beda grup di fase mana pun (p ≥ 0,46).
 - Catatan: H13 sebelumnya melemah dengan gabungan median (uji sensitivitas 20 partisipan) → ulangi sensitivitas pada 28.
 
-## ✅ KOHORT LENGKAP 38 partisipan (23 penari vs 15 non-penari), 2026-09-24 — status terkini
+## ✅ PERBAIKAN METODE 2026-09-24/25 (keputusan pengguna) — STATUS TERKINI, menggantikan hasil 38 di bawah
+Tiga versi hasil disimpan: `hasil_analisis/v2_sebelum_perbaikan/` → `v2_perbaikan_pose_datar/` → `v2/` (terkini,
++ reklasifikasi). Perbandingan: `v2/perbandingan_perbaikan_v2.csv`, `v2/perbandingan_perbaikan_H_v2.csv`.
+Metode lengkap: EEG_PROCESSING.md "Perbaikan metode 2026-09-24" bagian A–E.
+- **Sinyal datar terverifikasi di EDF mentah** (±0,1 µV = nol, 3–60 dtk, 6–9 kanal sekaligus) = reset/putus kanal
+  KT88, BUKAN pembersihan; ambang tidak sensitif. Perbaikan: kanal-segmen > 10% datar memakai bagian bersih
+  terpanjang (≥ 0,5 dtk & ≥ 50% jendela) → kanal-segmen gerak valid 79,7% → 85,9%.
+- **Pelacak pose "front"**: MediaPipe mode IMAGE, 3 kandidat/frame DISIMPAN (`cand_xy`; pilih ulang tanpa
+  MediaPipe), partisipan = kaki terbawah; penonton ditolak bila kaki lebih tinggi DAN bergeser > 50 px ke samping;
+  kerangka tak masuk akal diabaikan. Penonton berdiri/duduk di belakang partisipan (11–14 Sep) sebelumnya membuat
+  pelacak salah orang (P06, P16, P28, P35 17–38% waktu; P18, P38).
+- **Tinjauan manual peneliti (74 butir; `data/decisions/tinjauan_manual_2026-09-25.csv` → decisions via
+  `scripts/terapkan_tinjauan.py`)**: 15 repetisi dipindah gerak (`reclass_manual`): kanan↔kiri P10 (2), P14 (1),
+  P19 (3), P27 (1), P32 (blok 1, 4), P36 (1), P37 (1); agem → NGEED P14 (2), P37 (3). Tidak turun/berdiri → `tanpa_turun`
+  (tanpa segmen): P09, P16, P17 (NGEED 1–4), P21, P22, P23 (6), P28, P31, P33, P38. "Turun tak terdeteksi" (25) → deteksi
+  ulang longgar (ambang 20/80%, jendela +6 dtk; kedalaman ≥ 8 px hanya untuk yang dikonfirmasi) →
+  `phase_source=video_longgar`. Tetap tak terukur (lintasan 1–7 px): P03 N2, P16 N2, P18 AK2, P38 AK1.
+  Deteksi otomatis salah sisi dari pergelangan TIDAK andal (3/4 kandidat keliru) → hanya penanda kandidat.
+- Ringkasan 38 partisipan (sebelum → pose+datar → reklasifikasi): repetisi ok 321 → 330 → 340; incomplete 55 → 48
+  → 33; segmen 2042 → 2080 → 2092.
+- **H1–H13 terkini (38; FDR atas 14):** H3 tahan agem g +1,53 (p_FDR < 0,001); H12 g −1,24 (0,001); H6 durasi TURUN
+  g +1,07 (0,008); H7 CV TAHAN g −0,98 (0,008); H10b, H11 (g −0,63/−0,60), H2, H8, H10a, H13 p_FDR 0,08–0,09; H1, H4,
+  H5, H9 nol. Model grup + usia: H3, H7, H6, H12 grup p ≤ 0,004, usia n.s. Model campuran segmen: n.s. Peta
+  eksploratif 12/208 p < 0,05; lolos FDR hanya median durasi TAHAN (g +1,28). Dosis-respons: aktivitas/bulan →
+  CV TAHAN (dalam penari β −0,67, p_FDR 0,047) dan durasi TURUN (β +0,58, p_FDR 0,047); lama menari (tahun) tetap
+  tidak terpisah dari usia di dalam penari.
+- Perubahan H3 besar karena repetisi yang sebelumnya salah lacak (P18 tahan 0,33 → 1,86 dtk; P27 4,0 → 2,3 dtk).
+
+## ✅ KOHORT LENGKAP 38 partisipan (23 penari vs 15 non-penari), 2026-09-24 — ⚠️ SEBELUM perbaikan metode (lihat atas)
 - Ditambahkan P16–P21 (penari 55–102 th, 11 Sep) & P22–P25 (non-penari, 12 Sep). Video dari Google Drive via
   `drive.usercontent.google.com` (googleusercontent/OneDrive diblokir proxy). Baseline ganda → dipakai sinyal datar
   terendah (P17 Baseline, P19 Baseline, P20 Baseline3, P23 Baseline2, P24 Baseline2; sisanya `_tidak_dipakai/`).

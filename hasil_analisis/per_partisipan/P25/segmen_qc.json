@@ -1,34 +1,35 @@
 {
   "n_candidates": 233,
   "n_quiet": 117,
-  "motion_thr": 2.298,
+  "motion_thr": 2.362,
   "baseline_valid_frac": {
     "Fp1": 0.98,
-    "F3": 0.68,
-    "C3": 0.93,
-    "P3": 0.85,
+    "F3": 0.77,
+    "C3": 0.97,
+    "P3": 0.93,
     "O1": 1.0,
-    "F7": 0.97,
-    "T3": 0.69,
-    "T5": 0.79,
-    "Fp2": 0.97,
-    "F4": 0.97,
-    "C4": 0.97,
+    "F7": 0.96,
+    "T3": 0.8,
+    "T5": 0.89,
+    "Fp2": 0.96,
+    "F4": 0.95,
+    "C4": 0.95,
     "P4": 1.0,
     "O2": 1.0,
-    "F8": 0.97,
+    "F8": 0.96,
     "T4": 1.0,
     "T6": 1.0
   },
-  "n_baseline_allvalid": 76,
-  "noise_floor_db": 1.07,
-  "n_segments": 59,
+  "baseline_salvaged": 54,
+  "n_baseline_allvalid": 85,
+  "noise_floor_db": 1.23,
+  "n_segments": 60,
   "valid_frac_C3C4": {
-    "NAIK": 0.75,
-    "POST": 0.88,
+    "NAIK": 0.88,
+    "POST": 0.96,
     "PRA": 0.83,
-    "TAHAN": 0.73,
-    "TURUN": 0.71
+    "TAHAN": 0.83,
+    "TURUN": 0.88
   },
   "flat_pct_total": {
     "Fp1": 7.8,
@@ -53,7 +54,7 @@
     "NAIK": 12,
     "POST": 12,
     "PRA": 12,
-    "TAHAN": 11,
+    "TAHAN": 12,
     "TURUN": 12
   }
 }

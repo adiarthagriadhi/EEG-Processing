@@ -1,34 +1,35 @@
 {
   "n_candidates": 232,
   "n_quiet": 116,
-  "motion_thr": 2.092,
+  "motion_thr": 2.088,
   "baseline_valid_frac": {
     "Fp1": 1.0,
     "F3": 1.0,
-    "C3": 0.69,
-    "P3": 0.63,
-    "O1": 0.79,
-    "F7": 0.84,
-    "T3": 0.76,
-    "T5": 0.72,
+    "C3": 0.79,
+    "P3": 0.75,
+    "O1": 0.91,
+    "F7": 0.9,
+    "T3": 0.9,
+    "T5": 0.83,
     "Fp2": 1.0,
     "F4": 1.0,
-    "C4": 0.86,
+    "C4": 0.92,
     "P4": 1.0,
     "O2": 1.0,
     "F8": 1.0,
-    "T4": 0.94,
+    "T4": 0.99,
     "T6": 1.0
   },
-  "n_baseline_allvalid": 73,
-  "noise_floor_db": 2.3,
-  "n_segments": 56,
+  "baseline_salvaged": 87,
+  "n_baseline_allvalid": 86,
+  "noise_floor_db": 2.25,
+  "n_segments": 55,
   "valid_frac_C3C4": {
     "NAIK": 0.91,
-    "POST": 0.95,
-    "PRA": 0.88,
-    "TAHAN": 0.77,
-    "TURUN": 0.95
+    "POST": 1.0,
+    "PRA": 0.91,
+    "TAHAN": 0.82,
+    "TURUN": 1.0
   },
   "flat_pct_total": {
     "Fp1": 0.0,
@@ -52,7 +53,7 @@
   "n_seg_per_phase": {
     "NAIK": 11,
     "POST": 11,
-    "PRA": 12,
+    "PRA": 11,
     "TAHAN": 11,
     "TURUN": 11
   }

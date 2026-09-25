@@ -1,13 +1,13 @@
 sync:
+  method: manual
   offset_sec: 0.85
-  method: fixed
-  estimate_sec: 0.78
-  estimate_se_sec: 0.098
-  warnings: []
-  accepted: true
+  tanggal: '2026-09-24'
+  basis: 'alarm drift +0,37 dtk (p 0,041) TIDAK dikonfirmasi pindai kohort (pose baru):
+    puncak 0.65 dtk (r 0.54), blok 1 0.65, blok 2 0.6 → offset tetap 0,85.'
+  tidak_terverifikasi: false
   onset_check:
     onset_lag_sec: -1.88
-    onset_lag_iqr: 1.22
+    onset_lag_iqr: 1.47
     onset_n: 5
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'

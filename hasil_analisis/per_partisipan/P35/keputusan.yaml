@@ -1,16 +1,14 @@
 sync:
+  method: manual
   offset_sec: 0.85
-  method: fixed
-  estimate_sec: -27.97
-  estimate_se_sec: 0.253
-  warnings:
-  - estimasi data tidak dapat memverifikasi offset tetap (r kasar 0.01, SE 0.25 dtk)
-    → offset tetap dipakai tanpa verifikasi
-  accepted: true
+  tanggal: '2026-09-25'
+  tidak_terverifikasi: true
+  basis: alarm xcorr +21,2 (r 0,11) dengan pose baru; pindai kohort sebelumnya tanpa
+    kopling (r ≈ 0) → offset tetap 0,85 tanpa verifikasi.
   onset_check:
-    onset_lag_sec: -0.38
-    onset_lag_iqr: 2.62
-    onset_n: 2
+    onset_lag_sec: -3.0
+    onset_lag_iqr: 0.0
+    onset_n: 1
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:

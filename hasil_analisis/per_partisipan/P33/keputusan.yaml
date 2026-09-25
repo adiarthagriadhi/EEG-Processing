@@ -1,14 +1,15 @@
 sync:
   offset_sec: 0.85
   method: fixed
-  estimate_sec: 0.78
-  estimate_se_sec: 0.23
+  estimate_sec: 0.7
+  estimate_se_sec: 0.22
   warnings: []
   accepted: true
   onset_check:
-    onset_lag_sec: -0.89
-    onset_lag_iqr: 0.55
-    onset_n: 5
+    onset_lag_sec: -1.42
+    onset_lag_iqr: 1.03
+    onset_n: 4
+  onset_lag_calibrated_sec: -0.53
 bad_channels:
 - Fp1
 - Fp2
@@ -37,3 +38,15 @@ ica_blink_qc:
   after: 305.7
 ica_exclude: []
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: NGEED
+  rep: 1
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T063
+- task: AGEM KIRI
+  rep: 1
+  kategori: tidak_turun
+  catatan: ''
+  butir: T064
+reclass_manual: []

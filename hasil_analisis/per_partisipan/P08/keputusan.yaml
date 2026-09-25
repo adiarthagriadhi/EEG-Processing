@@ -20,7 +20,7 @@ sync:
       video.'
   onset_check:
     onset_lag_sec: -1.07
-    onset_lag_iqr: 0.49
+    onset_lag_iqr: 0.71
     onset_n: 9
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'

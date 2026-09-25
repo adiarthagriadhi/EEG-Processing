@@ -1,7 +1,7 @@
 {
   "n_candidates": 231,
   "n_quiet": 116,
-  "motion_thr": 1.462,
+  "motion_thr": 1.481,
   "baseline_valid_frac": {
     "Fp1": 1.0,
     "F3": 1.0,
@@ -20,6 +20,7 @@
     "T4": 1.0,
     "T6": 1.0
   },
+  "baseline_salvaged": 0,
   "n_baseline_allvalid": 116,
   "noise_floor_db": 2.19,
   "n_segments": 60,
@@ -27,7 +28,7 @@
     "NAIK": 0.96,
     "POST": 1.0,
     "PRA": 1.0,
-    "TAHAN": 0.92,
+    "TAHAN": 1.0,
     "TURUN": 1.0
   },
   "flat_pct_total": {

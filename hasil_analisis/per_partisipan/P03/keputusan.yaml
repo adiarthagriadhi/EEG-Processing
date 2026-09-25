@@ -1,13 +1,13 @@
 sync:
+  method: manual
   offset_sec: 0.85
-  method: fixed
-  estimate_sec: 1.03
-  estimate_se_sec: 0.129
-  warnings: []
-  accepted: true
+  tanggal: '2026-09-24'
+  basis: 'alarm xcorr +1,43 (ambang baru 0,5 dtk) TIDAK dikonfirmasi pindai kohort
+    (pose baru): puncak 0.9 dtk (r 0.54), blok 1 0.85, blok 2 0.9 → offset tetap 0,85.'
+  tidak_terverifikasi: false
   onset_check:
-    onset_lag_sec: -0.36
-    onset_lag_iqr: 0.5
+    onset_lag_sec: 0.03
+    onset_lag_iqr: 0.66
     onset_n: 5
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
@@ -37,3 +37,10 @@ ica_exclude:
 - 0
 - 1
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: NGEED
+  rep: 2
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T001
+reclass_manual: []

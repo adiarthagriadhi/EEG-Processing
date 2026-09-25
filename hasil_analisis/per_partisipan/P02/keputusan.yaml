@@ -9,6 +9,7 @@ sync:
     onset_lag_sec: -0.26
     onset_lag_iqr: 0.17
     onset_n: 12
+  onset_lag_calibrated_sec: 0.63
 ica_exclude:
 - 0
 - 6

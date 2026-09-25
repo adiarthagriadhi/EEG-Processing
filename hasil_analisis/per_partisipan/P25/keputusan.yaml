@@ -6,8 +6,8 @@ sync:
     0,60, blok 2 0,70 (r 0,31) → offset tetap 0,85.'
   tidak_terverifikasi: false
   onset_check:
-    onset_lag_sec: -2.26
-    onset_lag_iqr: 2.06
+    onset_lag_sec: -2.17
+    onset_lag_iqr: 1.94
     onset_n: 6
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
@@ -38,3 +38,10 @@ ica_exclude:
 - 1
 - 2
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: AGEM KIRI
+  rep: 4
+  kategori: turun_tidak_terdeteksi
+  catatan: ''
+  butir: T049
+reclass_manual: []

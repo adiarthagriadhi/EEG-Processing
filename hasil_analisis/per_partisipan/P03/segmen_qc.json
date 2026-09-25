@@ -1,7 +1,7 @@
 {
   "n_candidates": 235,
-  "n_quiet": 119,
-  "motion_thr": 2.103,
+  "n_quiet": 118,
+  "motion_thr": 1.899,
   "baseline_valid_frac": {
     "Fp1": 1.0,
     "F3": 1.0,
@@ -20,9 +20,10 @@
     "T4": 1.0,
     "T6": 1.0
   },
-  "n_baseline_allvalid": 119,
-  "noise_floor_db": 3.55,
-  "n_segments": 56,
+  "baseline_salvaged": 0,
+  "n_baseline_allvalid": 118,
+  "noise_floor_db": 3.46,
+  "n_segments": 53,
   "valid_frac_C3C4": {
     "NAIK": 1.0,
     "POST": 1.0,
@@ -52,8 +53,8 @@
   "n_seg_per_phase": {
     "NAIK": 11,
     "POST": 11,
-    "PRA": 12,
-    "TAHAN": 11,
+    "PRA": 11,
+    "TAHAN": 9,
     "TURUN": 11
   }
 }

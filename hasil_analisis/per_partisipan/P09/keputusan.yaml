@@ -15,29 +15,46 @@ sync:
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 0.08
-  Fp2: 1.41
-  F3: -1.56
-  F4: 0.6
-  C3: -1.79
-  C4: 0.07
-  P3: -0.75
-  P4: -0.52
-  O1: 0.04
-  O2: -0.34
-  F7: -0.19
-  F8: 1.79
-  T3: -0.04
-  T4: 0.99
-  T5: -1.25
-  T6: 1.03
+  Fp1: 0.05
+  Fp2: 1.18
+  F3: -1.37
+  F4: 0.45
+  C3: -1.63
+  C4: 0.1
+  P3: -0.78
+  P4: -0.57
+  O1: -0.01
+  O2: -0.41
+  F7: -0.28
+  F8: 1.6
+  T3: 0.01
+  T4: 0.77
+  T5: -1.13
+  T6: 0.92
 ica_blink_qc:
   n_blinks: 144
   blink_channel: Fp2
   before: 309.2
-  after: 70.3
+  after: 89.2
 ica_exclude:
 - 2
-- 10
 - 1
+- 4
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: AGEM KANAN
+  rep: 1
+  kategori: tidak_turun
+  catatan: mungkin pertengahan gerak, belum posisi maksimal
+  butir: T007
+- task: AGEM KANAN
+  rep: 2
+  kategori: tidak_turun
+  catatan: mungkin pertengahan gerak, belum posisi maksimal
+  butir: T008
+- task: AGEM KANAN
+  rep: 3
+  kategori: turun_tidak_terdeteksi
+  catatan: mungkin pertengahan gerak, belum posisi maksimal
+  butir: T009
+reclass_manual: []

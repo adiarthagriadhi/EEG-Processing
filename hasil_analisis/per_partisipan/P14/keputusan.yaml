@@ -41,3 +41,40 @@ ica_exclude:
 - 2
 - 0
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: AGEM KANAN
+  rep: 1
+  kategori: gerak_lain
+  catatan: contoh referensi bukan agem tetapi ngeed
+  butir: T015
+- task: AGEM KANAN
+  rep: 2
+  kategori: gerak_lain
+  catatan: contoh referensi bukan agem tetapi ngeed
+  butir: T016
+- task: AGEM KIRI
+  rep: 3
+  kategori: gerak_lain
+  catatan: contoh referensi bukan agem tetapi ngeed
+  butir: T017
+- task: NGEED
+  rep: 1
+  kategori: gerak_lain
+  catatan: awal ngeed, contoh bukan agem tetapi ngeed
+  butir: T018
+reclass_manual:
+- task: AGEM KANAN
+  rep: 1
+  jadi: NGEED
+  basis: tinjauan visual peneliti 2026-09-25 (T015; contoh referensi bukan agem tetapi
+    ngeed)
+- task: AGEM KANAN
+  rep: 2
+  jadi: NGEED
+  basis: tinjauan visual peneliti 2026-09-25 (T016; contoh referensi bukan agem tetapi
+    ngeed)
+- task: AGEM KIRI
+  rep: 3
+  jadi: AGEM KANAN
+  basis: tinjauan visual peneliti 2026-09-25 (T017; contoh referensi bukan agem tetapi
+    ngeed)

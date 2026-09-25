@@ -1,0 +1,17 @@
+participant_id,kondisi,area,cakupan,n_win,artifact_prone,is_simulated,offset_db,exponent,theta_periodic_db,mu_periodic_db,beta_periodic_db
+P17,EO,frontopolar,1.0,17,True,False,38.19363084830469,1.2217647779868972,-0.12264368663135072,-0.1391177016649232,0.43898821545859723
+P17,EO,frontal,1.0,0,False,False,,,,,
+P17,EO,frontotemporal,1.0,0,True,False,,,,,
+P17,EO,sentral,1.0,0,False,False,,,,,
+P17,EO,temporal,1.0,0,True,False,,,,,
+P17,EO,parietal,1.0,0,False,False,,,,,
+P17,EO,temporo-posterior,1.0,0,False,False,,,,,
+P17,EO,oksipital,1.0,0,False,False,,,,,
+P17,EC,frontopolar,1.0,25,True,False,28.791640002483433,0.5154900297535172,2.123969371364627,0.6376830679864529,0.04205624375876421
+P17,EC,frontal,1.0,18,False,False,39.77147505238606,1.7832051348716431,0.48065075068994045,0.9493607670143738,1.20381860797698
+P17,EC,frontotemporal,1.0,0,True,False,,,,,
+P17,EC,sentral,1.0,11,False,False,31.245558775782868,1.5609455922065407,-3.035401670039828,-1.8573754427375606,0.5796161918741977
+P17,EC,temporal,1.0,0,True,False,,,,,
+P17,EC,parietal,1.0,14,False,False,41.95373589980609,1.9807064484695949,-1.111909100135315,-0.1699928990075339,0.139712124463264
+P17,EC,temporo-posterior,1.0,13,False,False,43.97865133333282,2.16739601544191,-0.11558381982515131,-0.3558129372462582,1.0774491162199016
+P17,EC,oksipital,1.0,0,False,False,,,,,

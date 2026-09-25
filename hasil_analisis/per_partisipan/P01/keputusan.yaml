@@ -19,28 +19,28 @@ sync:
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 0.83
-  Fp2: 1.79
-  F3: -0.21
+  Fp1: 0.8
+  Fp2: 1.77
+  F3: -0.22
   F4: -0.86
-  C3: -1.32
+  C3: -1.25
   C4: -1.08
-  P3: -0.25
+  P3: -0.23
   P4: 0.03
-  O1: 1.61
-  O2: 0.13
-  F7: 0.41
-  F8: 0.14
-  T3: -0.52
-  T4: -1.98
-  T5: 0.92
+  O1: 1.54
+  O2: 0.16
+  F7: 0.4
+  F8: 0.04
+  T3: -0.55
+  T4: -2.0
+  T5: 0.93
   T6: -0.03
 ica_blink_qc:
   n_blinks: 92
   blink_channel: Fp1
   before: 265.0
-  after: 173.3
+  after: 81.9
 ica_exclude:
-- 10
+- 2
 - 0
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'

@@ -1,10 +1,10 @@
 {
   "n_candidates": 231,
   "n_quiet": 116,
-  "motion_thr": 1.694,
+  "motion_thr": 1.661,
   "baseline_valid_frac": {
     "Fp1": 1.0,
-    "F3": 0.77,
+    "F3": 0.87,
     "C3": 1.0,
     "P3": 1.0,
     "O1": 1.0,
@@ -12,7 +12,7 @@
     "T3": 1.0,
     "T5": 1.0,
     "Fp2": 1.0,
-    "F4": 0.78,
+    "F4": 0.89,
     "C4": 1.0,
     "P4": 1.0,
     "O2": 1.0,
@@ -20,15 +20,16 @@
     "T4": 1.0,
     "T6": 1.0
   },
-  "n_baseline_allvalid": 88,
-  "noise_floor_db": 2.3,
+  "baseline_salvaged": 31,
+  "n_baseline_allvalid": 101,
+  "noise_floor_db": 2.01,
   "n_segments": 60,
   "valid_frac_C3C4": {
     "NAIK": 0.96,
     "POST": 1.0,
     "PRA": 1.0,
-    "TAHAN": 0.75,
-    "TURUN": 0.92
+    "TAHAN": 0.88,
+    "TURUN": 1.0
   },
   "flat_pct_total": {
     "Fp1": 0.0,

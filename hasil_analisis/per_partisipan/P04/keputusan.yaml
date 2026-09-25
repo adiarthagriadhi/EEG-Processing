@@ -9,33 +9,45 @@ sync:
   - offset_sec: 0.85
     method: fixed
   onset_check:
-    onset_lag_sec: -0.96
-    onset_lag_iqr: 1.68
+    onset_lag_sec: -0.99
+    onset_lag_iqr: 1.81
     onset_n: 12
 bad_channels: []
 bad_channels_method: 'auto: z log-SD istirahat'
 bad_channels_z:
-  Fp1: 1.28
-  Fp2: 0.96
+  Fp1: 1.31
+  Fp2: 0.88
   F3: -0.63
-  F4: 0.04
-  C3: -0.28
-  C4: -0.48
-  P3: 0.85
-  P4: -0.54
-  O1: 1.42
-  O2: 0.82
-  F7: -0.77
-  F8: -0.41
-  T3: -0.72
-  T4: 0.85
-  T5: 0.19
-  T6: -0.04
+  F4: 0.09
+  C3: -0.21
+  C4: -0.52
+  P3: 0.83
+  P4: -0.57
+  O1: 1.32
+  O2: 0.76
+  F7: -0.75
+  F8: -0.33
+  T3: -0.71
+  T4: 0.81
+  T5: 0.18
+  T6: -0.09
 ica_blink_qc:
   n_blinks: 125
   blink_channel: Fp1
   before: 568.8
-  after: 170.0
+  after: 171.2
 ica_exclude:
 - 1
 ica_method: 'auto: serakah, ERP kedipan Fp1+Fp2'
+tinjauan:
+- task: AGEM KIRI
+  rep: 3
+  kategori: sesuai
+  catatan: ''
+  butir: T002
+- task: AGEM KIRI
+  rep: 4
+  kategori: sesuai
+  catatan: ''
+  butir: T003
+reclass_manual: []

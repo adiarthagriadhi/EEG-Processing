@@ -1431,3 +1431,15 @@ Hasil sebelum perbaikan disimpan di `results_sebelum_perbaikan/` (lokal) dan
   partisipan) → DITINJAU MANUAL oleh peneliti (`scripts/lembar_tinjauan.py`: PDF + CSV) → diterapkan dari
   `data/decisions/PXX.yaml` `reclass_sisi` (task, rep, jadi). Repetisi dipindah: rep + 10, `task_hud`/`rep_hud` asli.
 - Lembar tinjauan juga mencakup repetisi incomplete (kategori: tidak_turun / turun_tidak_terdeteksi / gerak_lain).
+
+### E. Tinjauan manual & deteksi fase longgar (2026-09-25)
+- Peneliti menilai 74 butir (lembar tinjauan): sisi/gerak sebenarnya dan kategori repetisi tidak lengkap.
+  `scripts/terapkan_tinjauan.py` menulis `tinjauan` dan `reclass_manual` ke `data/decisions/PXX.yaml` (isian yang
+  bergeser kolom — catatan di kolom kategori — dibaca sebagai catatan; kata "agem kanan/kiri/ngeed" di catatan →
+  gerak sebenarnya; "berdiri" → kategori berdiri).
+- `reclass_manual` diterapkan di tahap fase (rep + 10; `reclass` = salah_sisi / gerak_lain; label asli di
+  `task_hud`/`rep_hud`). Repetisi `tanpa_turun` (otomatis kedalaman < 15 px, atau dinilai tidak_turun/berdiri)
+  tidak menghasilkan segmen EEG.
+- Deteksi ulang (`phases.relaxed`): repetisi incomplete dicoba lagi dengan ambang 20%/80% dan jendela pencarian
+  +6 dtk setelah jadwal HUD; batas kedalaman 8 px hanya untuk repetisi yang dikonfirmasi peneliti "turun".
+  Berhasil → `phase_source = video_longgar` (dapat dikecualikan dalam uji sensitivitas).

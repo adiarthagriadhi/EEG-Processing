@@ -1,34 +1,35 @@
 {
   "n_candidates": 230,
   "n_quiet": 115,
-  "motion_thr": 1.745,
+  "motion_thr": 1.713,
   "baseline_valid_frac": {
-    "Fp1": 0.78,
-    "F3": 0.65,
+    "Fp1": 0.86,
+    "F3": 0.76,
     "C3": 1.0,
-    "P3": 0.63,
-    "O1": 0.82,
-    "F7": 0.8,
-    "T3": 0.96,
-    "T5": 0.82,
-    "Fp2": 0.78,
-    "F4": 0.81,
-    "C4": 0.85,
-    "P4": 0.78,
-    "O2": 0.78,
-    "F8": 0.85,
+    "P3": 0.72,
+    "O1": 0.87,
+    "F7": 0.84,
+    "T3": 0.98,
+    "T5": 0.85,
+    "Fp2": 0.85,
+    "F4": 0.86,
+    "C4": 0.9,
+    "P4": 0.83,
+    "O2": 0.84,
+    "F8": 0.9,
     "T4": 1.0,
-    "T6": 0.99
+    "T6": 1.0
   },
-  "n_baseline_allvalid": 54,
-  "noise_floor_db": 2.29,
-  "n_segments": 47,
+  "baseline_salvaged": 89,
+  "n_baseline_allvalid": 66,
+  "noise_floor_db": 2.65,
+  "n_segments": 49,
   "valid_frac_C3C4": {
-    "NAIK": 0.94,
-    "POST": 0.94,
-    "PRA": 0.91,
-    "TAHAN": 0.89,
-    "TURUN": 0.94
+    "NAIK": 1.0,
+    "POST": 0.95,
+    "PRA": 1.0,
+    "TAHAN": 0.9,
+    "TURUN": 1.0
   },
   "flat_pct_total": {
     "Fp1": 19.5,
@@ -50,10 +51,10 @@
   },
   "offset_sec": 0.85,
   "n_seg_per_phase": {
-    "NAIK": 9,
-    "POST": 9,
-    "PRA": 11,
-    "TAHAN": 9,
+    "NAIK": 10,
+    "POST": 10,
+    "PRA": 10,
+    "TAHAN": 10,
     "TURUN": 9
   }
 }
