@@ -55,3 +55,6 @@ seluruh 38 partisipan, atau timestamp manual hanya sebagai validasi pelacak pose
 - `per_partisipan/PXX/`: `timeline.csv`, `reps.csv`, `segmen_qc.json`, `keputusan.yaml`.
 - `perbandingan_endpoint_video_vs_manual.csv`, `perbandingan_durasi_per_repetisi.csv`, `perbandingan_H1-H13.csv`.
 - `hypothesis_v2_endpoints_38_dgn_4_manual.csv`, `hypothesis_v2_tests_38_dgn_4_manual.csv`.
+
+## Data cleaning bertahap
+- Tahap 1, inventaris kualitas sinyal (tanpa mengubah data): `tahap1_kualitas/README.md`.
