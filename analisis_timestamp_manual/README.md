@@ -61,4 +61,5 @@ seluruh 38 partisipan, atau timestamp manual hanya sebagai validasi pelacak pose
 - `hypothesis_v2_endpoints_38_dgn_4_manual.csv`, `hypothesis_v2_tests_38_dgn_4_manual.csv`.
 
 ## Data cleaning bertahap
+Rencana dan status: `RENCANA_CLEANING.md`.
 - Tahap 1, inventaris kualitas sinyal (tanpa mengubah data): `tahap1_kualitas/README.md`.
