@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
-                      analisis, aturan, mata_otot, posisi, referensi, verifikasi)
+                      analisis, aturan, koreksi_global, mata_otot, posisi, referensi, verifikasi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -495,6 +495,29 @@ def pilot(pids):
         print(d.round(2).to_string(index=False))
 
 
+def koreksi_menyeluruh(pids):
+    """Pasca-pilot: bandingkan cara menyatakan power (M0–M4) untuk kenaikan power menyeluruh (tanpa Baseline.EDF)."""
+    out = HASIL / "pilot_koreksi_global"
+    out.mkdir(parents=True, exist_ok=True)
+    D = []
+    for pid in pids:
+        meta, P, OK = koreksi_global.spektrum_jendela(pid)
+        D.append(koreksi_global.nilai(meta, P, OK))
+        print(f"[{pid}] {len(meta)} jendela")
+    D = pd.concat(D)
+    D.round(3).to_csv(out / "nilai_repetisi_per_metode.csv", index=False)
+    E = koreksi_global.evaluasi(D)
+    E.round(3).to_csv(out / "evaluasi_per_metode.csv", index=False)
+    pd.set_option("display.width", 250)
+    kol = ["participant_id", "metode", "menyeluruh_Gerak", "menyeluruh_Tahan", "menyeluruh_Naik", "LI_tahan_mu",
+           "LI_tahan_mu_t", "reliabilitas"]
+    print(E[kol].round(2).to_string(index=False))
+    kol2 = ["participant_id", "metode"] + [c for c in E.columns if c.startswith("sentral_") and not c.endswith("_t")]
+    print(E[kol2].round(2).to_string(index=False))
+    if "aperiodik_offset_db" in D:
+        print(D.groupby(["participant_id", "fase"]).aperiodik_offset_db.median().round(2).unstack())
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5, "tahap6": tahap6, "pilot": pilot}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5, "tahap6": tahap6, "pilot": pilot, "global": koreksi_menyeluruh}[cmd](pids or ["P08", "P09", "P31", "P32"])

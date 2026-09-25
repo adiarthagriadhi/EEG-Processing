@@ -594,3 +594,37 @@ def pilot_topografi(P, grup, path, vlim=3.0):
                  fontsize=11, y=1.0)
     fig.savefig(path, dpi=120, bbox_inches="tight")
     plt.close(fig)
+
+
+METODE_WARNA = {"M0_absolut": ("#2a78d6", "M0 absolut (sekarang)"), "M1_specparam": ("#eb6834", "M1 specparam"),
+                "M2_relatif": ("#1baf7a", "M2 relatif"), "M3_berdiri": ("#eda100", "M3 acuan Berdiri"),
+                "M4_otot": ("#4a3aa7", "M4 koreksi otot")}
+
+
+def koreksi_global(E, path):
+    """(a) kenaikan menyeluruh |rata-rata kanal| per fase gerak; (b) LI Tahan mu; (c) reliabilitas; titik = partisipan."""
+    ms = [m for m in METODE_WARNA if m in set(E.metode)]
+    E = E.assign(menyeluruh_abs=E[["menyeluruh_Gerak", "menyeluruh_Tahan", "menyeluruh_Naik"]].abs().mean(axis=1))
+    panel = [("menyeluruh_abs", "(a) kenaikan menyeluruh |rata-rata 16 kanal|\n(dB, rerata Gerak/Tahan/Naik; kecil = baik)"),
+             ("LI_tahan_mu", "(b) lateralisasi Tahan mu, kontra − ipsi\n(dB; negatif = pola fisiologis)"),
+             ("reliabilitas", "(c) reliabilitas belah-dua pola kanal × pita\n(median 4 fase; besar = baik)")]
+    fig, axes = plt.subplots(1, 3, figsize=(14, 3.8))
+    for ax, (col, lab) in zip(axes, panel):
+        for i, m in enumerate(ms):
+            v = E[E.metode == m][col].values
+            ax.scatter(np.full(len(v), i) + np.linspace(-0.12, 0.12, len(v)), v, s=28, color=METODE_WARNA[m][0],
+                       edgecolor=SURFACE, linewidth=0.8, zorder=3)
+            ax.scatter([i], [np.nanmedian(v)], s=220, marker="_", color=INK, linewidth=2.2, zorder=4)
+        ax.set_xticks(range(len(ms)), [METODE_WARNA[m][1].replace(" (", "\n(").replace(" ", "\n", 1) for m in ms],
+                      fontsize=8)
+        ax.set_title(lab, fontsize=9.5, loc="left")
+        if col == "LI_tahan_mu":
+            ax.axhline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    fig.suptitle("Pasca-pilot — cara menyatakan power pita vs kenaikan power menyeluruh (titik = partisipan, garis = median)",
+                 x=0.01, ha="left", fontsize=11, y=1.06)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)

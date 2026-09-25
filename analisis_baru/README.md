@@ -565,3 +565,38 @@ Semua uji di bawah adalah uji **di dalam partisipan** antar-repetisi (n = 8–12
 ![perilaku](hasil/pilot_analisis/perilaku_durasi.png)
 ![romberg](hasil/pilot_analisis/romberg_berger.png)
 ![topografi](hasil/pilot_analisis/topografi_gerak_tahan.png)
+
+---
+
+## Pasca-pilot: koreksi kenaikan power menyeluruh (tanpa Baseline.EDF)
+Kode: `gerakeeg/koreksi_global.py`. Perintah: `jalankan.py global`. Hasil: `hasil/pilot_koreksi_global/`. Pipeline sama
+sampai Tahap 6; yang dibandingkan hanya **cara menyatakan power pita**.
+
+Kriteria ditetapkan sebelum melihat hasil dan tidak memakai perbedaan grup: (a) kenaikan menyeluruh (rata-rata 16
+kanal) mendekati 0; (b) lateralisasi Tahan tetap negatif; (c) reliabilitas belah-dua tidak turun. ERD sentral hanya
+dilaporkan.
+
+| Median 4 partisipan | (a) kenaikan menyeluruh (dB) | (b) LI Tahan mu (dB) | LI negatif | (c) reliabilitas |
+|---|---|---|---|---|
+| M0 absolut (sekarang) | 2,06 | −4,31 | 4/4 | **0,76** |
+| M1 specparam | 1,88 | −2,13 | 4/4 | 0,41 |
+| M2 relatif (pita / total 2–30 Hz) | **0,77** | −1,31 | 4/4 | 0,59 |
+| M3 acuan akhir Berdiri | **0,71** | −4,19 | 4/4 | 0,36 |
+| M4 koreksi otot | 1,00 | −1,82 | 4/4 | 0,65 |
+
+- **Tidak ada metode yang menang di ketiga kriteria.**
+- **Specparam (M1) tidak menghapus kenaikan.** Garis latar aperiodik memang naik +2…+7 dB (P08, P31, P32; P09 turun),
+  tetapi puncak periodik juga tetap positif. Selain itu specparam pada jendela 1 dtk (29 titik frekuensi) paling tidak
+  stabil (reliabilitas 0,41).
+- **M2 relatif** dan **M3 acuan Berdiri** paling baik menghapus kenaikan menyeluruh. M3 mempertahankan lateralisasi,
+  tetapi reliabilitasnya rendah (acuan Berdiri pendek dan bervariasi). M2 melemahkan lateralisasi (−4,3 → −1,3 dB),
+  sementara reliabilitasnya sedang.
+- **Koreksi otot (M4)** mengurangi separuh kenaikan, sehingga sebagian kenaikan menyeluruh memang terkait otot.
+- Pengamatan penting: **lateralisasi (selisih C3 − C4 di dalam partisipan) sudah otomatis bebas dari kenaikan
+  menyeluruh**, karena kenaikan yang sama di kedua sisi saling meniadakan. Karena itu M0 tetap paling andal untuk LI.
+
+**Usul (keputusan pasca-pilot, menunggu persetujuan):**
+- ukuran **tingkat** (ERD sentral U1–U4, peta area) memakai **M2 relatif**, dengan M0 dan M4 sebagai sensitivitas;
+- ukuran **selisih** (lateralisasi) tetap memakai **M0**.
+
+![metode](hasil/pilot_koreksi_global/perbandingan_metode.png)
