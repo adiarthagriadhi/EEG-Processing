@@ -1,5 +1,8 @@
 # Analisis timestamp fase manual: P08, P09, P31, P32 (2026-09-25)
 
+> Folder ini = model repo (eegpipe v2) yang dijalankan dengan timestamp manual. **Metode baru yang berdiri
+> sendiri (istilah Gerak/Tahan/Naik/Berdiri/Tutup Mata, data cleaning bertahap) ada di `analisis_baru/`.**
+
 Catatan dan hasil analisis sesi ini, **terpisah** dari catatan utama repo (CLAUDE.md, `hasil_analisis/`).
 Hasil di sini tidak menggantikan `hasil_analisis/v2/`.
 
