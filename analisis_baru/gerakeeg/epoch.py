@@ -43,6 +43,16 @@ def _bersih(xf, datar, i0, i1):
     return (datar[:, i0:i1].mean(axis=1) < DATAR_BATAS) & (np.ptp(xf[:, i0:i1], axis=1) <= EKSTREM_UV)
 
 
+def _potong(xf, datar, i0, i1, skema):
+    """Potongan [i0, i1) dengan skema referensi (None = asli). → (x, tidak_datar, bersih)."""
+    x, fd = xf[:, i0:i1], datar[:, i0:i1].mean(axis=1)
+    if skema is not None:
+        from .referensi import terapkan
+        x, fd = terapkan(skema, x, fd)
+    nd = fd < DATAR_BATAS
+    return x, nd, nd & (np.ptp(x, axis=1) <= EKSTREM_UV)
+
+
 def potong_B(W):
     """Epoch B dari jendela observasi fase repetisi."""
     out = []
@@ -98,7 +108,7 @@ def potong_E(W, T):
     return pd.DataFrame(out)
 
 
-def acuan(xf, datar, sf, W, panjang, geser):
+def acuan(xf, datar, sf, W, panjang, geser, skema=None):
     """Power acuan per kanal (rata-rata potongan bersih Istirahat)."""
     ist = W[W.fase == ISTIRAHAT]
     P = {b: [] for b in list(PITA) + ["otot"]}
@@ -108,25 +118,25 @@ def acuan(xf, datar, sf, W, panjang, geser):
             i0, i1 = int(round(s * sf)), int(round((s + panjang) * sf))
             if i1 > xf.shape[1]:
                 break
-            ok = _bersih(xf, datar, i0, i1)
-            pw = _power(xf[:, i0:i1], sf)
+            x, _, ok = _potong(xf, datar, i0, i1, skema)
+            pw = _power(x, sf)
             for b in P:
                 P[b].append(np.where(ok, pw[b], np.nan))
             M.append(ok)
     return {b: np.nanmean(np.array(v), axis=0) for b, v in P.items()}, np.array(M).mean(axis=0)
 
 
-def estimasi(xf, datar, sf, epochs, ref, metode):
+def estimasi(xf, datar, sf, epochs, ref, metode, skema=None):
     """Per epoch/jendela: bersih per kanal + power dB relatif acuan. → baris panjang (repetisi × fase × kanal)."""
     rows = []
     for e in epochs.itertuples():
         i0, i1 = int(round(e.mulai * sf)), int(round(e.selesai * sf))
         if i0 < 0 or i1 > xf.shape[1]:
             continue
-        ok = _bersih(xf, datar, i0, i1)
-        nd = datar[:, i0:i1].mean(axis=1) < DATAR_BATAS
-        pw = _power(xf[:, i0:i1], sf)
-        for k, c in enumerate(KANAL):
+        x, nd, ok = _potong(xf, datar, i0, i1, skema)
+        pw = _power(x, sf)
+        from .referensi import nama
+        for k, c in enumerate(nama(skema) if skema else KANAL):
             r = dict(metode=metode, gerakan=e.gerakan, rep=e.rep, fase=e.fase, mulai=e.mulai, kanal=c,
                      bersih=bool(ok[k]), muat=getattr(e, "muat", True),
                      otot_db=10 * np.log10(pw["otot"][k] / ref["otot"][k]) if nd[k] else np.nan)
@@ -150,6 +160,7 @@ def ringkas(pid, W, epochs, est, rep):
     """Ukuran per metode × fase: hasil (yield), cakupan fase, kontaminasi otot, presisi, reliabilitas belah-dua.
     epochs: {"B": df, "T": df, "E": df} (B/T = epoch tetap 1,5 dtk; E = jendela geser)."""
     rows = []
+    kan = list(dict.fromkeys(est.kanal))
     for m, ep in epochs.items():
         for f in FASE_REPETISI:
             e = est[(est.metode == m) & (est.fase == f)]
@@ -173,8 +184,8 @@ def ringkas(pid, W, epochs, est, rep):
                         tot += (a + E_PANJANG) - max(a, end)
                         end = a + E_PANJANG
                     det.append(tot)
-                detik_bersih = np.median(det + [0.0] * (len(KANAL) - len(det)))
-            n_valid = r.groupby("kanal").size().reindex(KANAL, fill_value=0)
+                detik_bersih = np.median(det + [0.0] * (len(kan) - len(det)))
+            n_valid = r.groupby("kanal").size().reindex(kan, fill_value=0)
             se = []
             for (c,), g2 in r.groupby(["kanal"]):
                 for b in PITA:

@@ -35,7 +35,8 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Inventaris kualitas sinyal per fase (tanpa mengubah data) | **Selesai** |
-| 2 | Referensi: A rata-rata per belahan · B rata-rata 16 kanal · C bipolar tetangga · D telinga A1/A2 (asli) | Berikutnya |
+| – | Epoching: B / T / TE / E | **Selesai → TE dipakai** (keputusan pengguna 2026-09-25) |
+| 2 | Referensi: A rata-rata per belahan · B rata-rata 16 kanal · C bipolar tetangga · D telinga A1/A2 (asli) | **Selesai → usul A** (menunggu persetujuan) |
 | 3 | Kanal buruk & sinyal datar: A per rekaman · B per jendela · C interpolasi datar pendek | Menunggu |
 | 4 | Lonjakan artefak gerak: A ASR (kalibrasi Istirahat) · B tolak per potongan, ambang per partisipan · C hanya ditandai | Menunggu |
 | 5 | Mata & otot: A ICA + ICLabel · B BSS-CCA (otot) · C regresi kedipan Fp1/Fp2 | Menunggu |
@@ -250,3 +251,48 @@ Median 4 partisipan (`ringkasan_epoch.csv`):
   artefak (Tahap 2–5).
 
 ![epoch banding](hasil/epoch_banding/epoch_banding.png)
+
+---
+
+## Tahap 2: skema referensi (dinilai dengan epoch TE)
+Kode: `gerakeeg/referensi.py`. Perintah: `jalankan.py tahap2`. Hasil: `hasil/tahap2_referensi/`.
+
+Referensi diterapkan per jendela 1 dtk. Kanal yang datar di jendela itu tidak ikut membentuk referensi, sehingga
+kanal yang sedang reset/putus tidak mencemari kanal lain. Acuan Istirahat dihitung dengan skema yang sama.
+
+| Median 4 partisipan | Fase | D telinga (asli) | **A rata-rata belahan** | B rata-rata 16 | C bipolar |
+|---|---|---|---|---|---|
+| % kanal-jendela bersih | Gerak / Tahan / Naik / Berdiri | 36 / 42 / 32 / 51 | **56 / 60 / 51 / 65** | 34 / 44 / 35 / 56 | 37 / 42 / 33 / 49 |
+| Otot 20–34 Hz (dB) | Gerak / Tahan / Naik / Berdiri | 1,7 / 2,1 / 3,1 / 1,1 | **1,0 / 1,2 / 2,3 / 0,4** | 2,3 / 2,7 / 3,4 / 1,1 | 1,4 / 1,7 / 2,6 / 0,8 |
+| Detik bersih per kanal | Gerak / Tahan / Naik / Berdiri | 6 / 14 / 5 / 25 | **9 / 19 / 8 / 30** | 6 / 15 / 5 / 28 | 5 / 14 / 5 / 25 |
+| Galat baku power (dB) | Gerak / Tahan / Naik / Berdiri | 1,8 / 1,5 / 1,5 / 1,1 | **1,3 / 1,3** / 1,6 / **1,0** | 1,4 / 1,4 / 1,8 / 1,0 | 1,6 / 1,4 / 1,6 / 1,0 |
+| Reliabilitas belah-dua | Gerak / Tahan / Naik / Berdiri | 0,75 / 0,62 / 0,36 / 0,80 | **0,76 / 0,78 / 0,74 / 0,85** | 0,55 / 0,72 / 0,55 / 0,78 | 0,66 / 0,70 / −0,18 / 0,74 |
+| Korelasi dalam belahan | semua fase | 0,51–0,64 | −0,15…−0,09 | 0,26–0,52 | −0,08…−0,02 |
+| Korelasi antar belahan | semua fase | −0,10…0,02 | 0,00 | **−0,48…−0,42** | 0,01–0,02 |
+
+- **A (rata-rata per belahan) unggul di semua ukuran data.** Persentase bersih naik +14…+20 poin. Kontaminasi otot
+  turun. Reliabilitas Naik naik dari 0,36 ke 0,74, jadi Naik kini dapat dianalisis. Korelasi dalam belahan hilang:
+  nilai sekitar −0,1 adalah nilai bawaan rata-rata referensi (≈ −1/7). Artefak bersama dari A1/A2 memang terhapus.
+- **B (rata-rata 16 kanal) justru menyebarkan artefak.** Artefak A1 dikurangkan juga dari kanal kanan, sehingga muncul
+  korelasi negatif antar belahan (−0,4…−0,5). Perolehan datanya kecil.
+- **C (bipolar) menghapus artefak bersama**, tetapi kanal bersih tidak bertambah dan Naik menjadi tidak reliabel
+  (−0,18). Selisih dua kanal yang sama-sama bising tetap bising.
+- Keseimbangan belahan dengan A: kanal bersih saat Gerak kiri 69%, kanan 38% (D: 34% vs 19%). Belahan kanan tetap
+  lebih buruk (`korelasi_belahan.csv`), yang merupakan sasaran Tahap 3–5.
+
+**Konsekuensi A yang harus diingat saat menafsirkan:**
+1. Aktivitas otak yang merata di satu belahan ikut terhapus. Yang tersisa adalah perbedaan antar-kanal di dalam
+   belahan, sehingga ERD yang fokal (mis. C3 lebih kuat daripada kanal lain di kiri) tetap terlihat, sedangkan ERD
+   yang merata di seluruh belahan tidak.
+2. Indeks lateralisasi (C3 vs C4) kini membandingkan C3 relatif belahan kiri dengan C4 relatif belahan kanan, bukan
+   potensial mentah. Nilainya tidak dapat dibandingkan langsung dengan analisis repo.
+3. Kanal yang ≥ 10% datar tidak ikut membentuk referensi. Bila kurang dari 2 kanal tidak-datar dalam satu belahan,
+   seluruh belahan dianggap hilang di jendela itu.
+
+**Uji Berger tidak informatif.** Alpha oksipital relatif saat Tutup Mata TIDAK lebih tinggi daripada Istirahat di
+skema mana pun, termasuk telinga asli (−1,4…−0,02 dB). Masalahnya ada di data, bukan di referensi. Kemungkinannya:
+(a) alpha memang lemah pada rekaman ini, sesuai catatan repo sebelumnya (tidak ada puncak alpha jelas); (b) kondisi
+mata saat Istirahat tidak diketahui, bisa saja sebagian partisipan menutup mata; (c) P09 hanya 7 jendela Tutup Mata.
+Perlu konfirmasi ke pengguna: apakah mata terbuka saat Istirahat utama?
+
+![tahap 2](hasil/tahap2_referensi/tahap2_referensi.png)

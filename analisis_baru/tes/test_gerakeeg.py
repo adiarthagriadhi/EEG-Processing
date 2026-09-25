@@ -82,3 +82,22 @@ def test_epoch_terarah_T_dan_TE():
     TE = epoch.potong_TE(W, 500.0)
     g = TE[(TE.rep == 1) & (TE.fase == "Tahan")]                                   # tengah + akhir: 8,33 … 11
     assert g.mulai.min() >= 7 + 4 / 3 - 1e-9 and g.selesai.max() <= 11 + 1e-9
+
+
+def test_skema_referensi():
+    from gerakeeg import referensi
+    from gerakeeg.istilah import KANAL
+    rng = np.random.default_rng(1)
+    x = rng.normal(0, 5, (16, 100))
+    x[:8] += 50 * np.sin(np.linspace(0, 6, 100))              # artefak bersama belahan kiri (A1)
+    fd = np.zeros(16)
+    y, _ = referensi.terapkan("A_belahan", x, fd)
+    assert np.abs(y[:8].mean(axis=0)).max() < 1e-9           # komponen bersama belahan hilang
+    assert np.ptp(y[:8], axis=1).max() < 60                  # artefak 100 µV ptp terhapus
+    fd[2] = 0.5                                              # C3 datar → tidak ikut referensi
+    y2, fd2 = referensi.terapkan("B_rata16", x, fd)
+    ok = [i for i in range(16) if i != 2]
+    assert np.allclose(y2[0], x[0] - x[ok].mean(axis=0)) and fd2[2] == 0.5
+    yb, fb = referensi.terapkan("C_bipolar", x, fd)
+    assert referensi.nama("C_bipolar")[1] == "F3-C3" and fb[1] == 0.5 and fb[2] == 0.5
+    assert np.allclose(yb[0], x[KANAL.index("Fp1")] - x[KANAL.index("F3")])

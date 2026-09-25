@@ -7,10 +7,11 @@ Keluaran: analisis_baru/hasil/tahap1_kualitas/
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding, posisi   # noqa: E402
+from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding, posisi, referensi   # noqa: E402
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -121,6 +122,45 @@ def bagian(pids):
     print(M.round(2).to_string())
 
 
+def tahap2(pids):
+    """Tahap 2: bandingkan skema referensi (D telinga asli, A rata-rata belahan, B rata-rata 16, C bipolar)
+    dengan epoch TE."""
+    out = HASIL / "tahap2_referensi"
+    out.mkdir(parents=True, exist_ok=True)
+    R, K, BG, IS, REP = [], [], [], [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rep, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rep, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        eTE = epoch.potong_TE(W, xf.shape[1] / sf)
+        Wr = W[W.fase.isin(epoch.FASE_REPETISI)]
+        for sk in referensi.SKEMA:
+            ref, m_ist = epoch.acuan(xf, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, sk)
+            est = epoch.estimasi(xf, datar, sf, eTE, ref, "TE", sk)
+            rp = epoch.per_repetisi(est)
+            R.append(epoch.ringkas(pid, Wr, {"TE": eTE}, est, rp).assign(skema=sk))
+            REP.append(rp.assign(participant_id=pid, skema=sk))
+            kor, ber = referensi.evaluasi_tambahan(pid, xf, datar, sf, W, eTE, sk, ref)
+            K.append(kor)
+            BG.append(ber)
+            IS.append(dict(participant_id=pid, skema=sk, pct_istirahat_bersih=round(100 * float(np.median(m_ist)), 1)))
+        print(f"[{pid}] {len(eTE)} jendela TE × {len(referensi.SKEMA)} skema")
+    R, K, BG, IS = pd.concat(R), pd.concat(K), pd.DataFrame(BG), pd.DataFrame(IS)
+    R.to_csv(out / "ringkasan_skema_fase.csv", index=False)
+    K.round(3).to_csv(out / "korelasi_belahan.csv", index=False)
+    BG.merge(IS, on=["participant_id", "skema"]).round(2).to_csv(out / "berger_istirahat.csv", index=False)
+    pd.concat(REP).round(3).to_csv(out / "estimasi_per_repetisi.csv", index=False)
+    grafik.tahap2(R, K, BG, out / "tahap2_referensi.png")
+    pd.set_option("display.width", 250)
+    kol = ["pct_kanal_epoch_bersih", "otot_db_median", "detik_bersih_median_kanal", "pct_kanal_rep_valid_ge3",
+           "se_db_median", "reliabilitas_belah_dua"]
+    print(R.groupby(["fase", "skema"], sort=False)[kol].median().round(2).to_string())
+    print(K.groupby(["fase", "skema"], sort=False)[["r_kiri", "r_kanan", "r_antar", "bersih_kiri",
+                                                    "bersih_kanan"]].median().round(2).to_string())
+    print(BG.merge(IS).round(2).to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2}[cmd](pids or ["P08", "P09", "P31", "P32"])

@@ -217,3 +217,64 @@ def profil_bagian(R, path):
     fig.tight_layout()
     fig.savefig(path, dpi=125, bbox_inches="tight")
     plt.close(fig)
+
+
+SKEMA_WARNA = {"D_telinga": ("#2a78d6", "D telinga A1/A2 (asli)"), "A_belahan": ("#eb6834", "A rata-rata per belahan"),
+               "B_rata16": ("#1baf7a", "B rata-rata 16 kanal"), "C_bipolar": ("#4a3aa7", "C bipolar tetangga")}
+
+
+def tahap2(R, K, BG, path):
+    """Baris 1: % kanal bersih, otot, reliabilitas per fase; baris 2: korelasi dalam belahan, antar belahan,
+    efek Berger. Titik = partisipan; garis hitam pendek = median."""
+    from .istilah import FASE_REPETISI
+    sk = [s for s in SKEMA_WARNA if s in set(R.skema)]
+    off = dict(zip(sk, np.linspace(-0.27, 0.27, len(sk))))
+    x = np.arange(len(FASE_REPETISI))
+    panel = [(R, "pct_kanal_epoch_bersih", "% kanal-jendela bersih", None),
+             (R, "otot_db_median", "Otot 20–34 Hz (dB vs Istirahat)", None),
+             (R, "reliabilitas_belah_dua", "Reliabilitas belah-dua", (-0.8, 1.05)),
+             (K, "r_kiri_kanan", "Korelasi DALAM belahan\n(rata-rata kiri & kanan)", (-0.3, 1.0)),
+             (K, "r_antar", "Korelasi ANTAR belahan", (-0.6, 0.6))]
+    K = K.assign(r_kiri_kanan=K[["r_kiri", "r_kanan"]].mean(axis=1))
+    fig, axes = plt.subplots(2, 3, figsize=(14, 7.2))
+    axes = axes.ravel()
+    for ax, (D, col, lab, lim) in zip(axes, panel):
+        D = K if D is not R else R
+        for s in sk:
+            g = D[D.skema == s]
+            for pid, gp in g.groupby("participant_id"):
+                v = gp.set_index("fase").reindex(FASE_REPETISI)[col].values
+                ax.scatter(x + off[s], v, s=20, color=SKEMA_WARNA[s][0], edgecolor=SURFACE, linewidth=0.8, zorder=3)
+            md = g.groupby("fase")[col].median().reindex(FASE_REPETISI).values
+            ax.scatter(x + off[s], md, s=110, marker="_", color=INK, linewidth=2, zorder=4)
+        ax.set_xticks(x, FASE_REPETISI, fontsize=8.5)
+        ax.set_title(lab, fontsize=9.5, loc="left")
+        if lim:
+            ax.set_ylim(*lim)
+        if col in ("otot_db_median", "r_antar"):
+            ax.axhline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    ax = axes[5]
+    xs = np.arange(len(sk))
+    for i, s in enumerate(sk):
+        v = BG[BG.skema == s].berger_alpha_rel_db.values
+        ax.scatter(np.full(len(v), i), v, s=26, color=SKEMA_WARNA[s][0], edgecolor=SURFACE, zorder=3)
+        ax.scatter([i], [np.nanmedian(v)], s=160, marker="_", color=INK, linewidth=2, zorder=4)
+    ax.axhline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+    ax.set_xticks(xs, [s.split("_")[0] for s in sk])
+    ax.set_title("Efek Berger: alpha RELATIF oksipital\nTutup Mata vs Istirahat (dB; > 0 = sesuai)", fontsize=9.5,
+                 loc="left")
+    ax.grid(axis="y", color=GRID, lw=0.6)
+    ax.set_axisbelow(True)
+    _rapikan(ax)
+    h = [plt.Line2D([], [], marker="o", ls="", color=SKEMA_WARNA[s][0], markersize=6) for s in sk]
+    h.append(plt.Line2D([], [], marker="_", ls="", color=INK, markersize=12, markeredgewidth=2))
+    fig.legend(h, [SKEMA_WARNA[s][1] for s in sk] + ["median 4 partisipan"], loc="upper left", ncol=5,
+               frameon=False, bbox_to_anchor=(0.01, 1.04), fontsize=8.5)
+    fig.suptitle("Tahap 2 — skema referensi, dinilai dengan epoch TE (sebelum koreksi artefak lain)", x=0.01, y=1.08,
+                 ha="left", fontsize=11.5)
+    fig.tight_layout()
+    fig.savefig(path, dpi=125, bbox_inches="tight")
+    plt.close(fig)
