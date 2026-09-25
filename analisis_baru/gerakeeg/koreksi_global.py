@@ -4,6 +4,8 @@ epoch TE, bersih, R1 cakupan ≥ 75%). Yang dibandingkan hanya cara menyatakan p
   M0_absolut   : 10·log10(power pita / power pita Istirahat)             (cara sekarang)
   M1_specparam : puncak periodik (log-spektrum − garis latar aperiodik, 2–30 Hz) dikurangi puncak periodik Istirahat
   M2_relatif   : (power pita / power total 2–30 Hz) relatif Istirahat
+  M2b_relatif4 : seperti M2 dengan total 4–30 Hz (tanpa delta: delta naik tajam karena gerak dan dapat menurunkan
+                 power relatif mu/beta tanpa ERD sungguhan)
   M3_berdiri   : seperti M0, acuan = akhir Berdiri di dalam tugas (jendela TE Berdiri, semua repetisi)
   M4_otot      : M0 dikurangi b·otot (b = kemiringan regresi dB pita ~ dB otot 20–34 Hz per partisipan × pita)
 
@@ -22,7 +24,7 @@ from .istilah import FASE_REPETISI, KANAL
 
 F = np.arange(1, 35)                      # bin 1 Hz
 PITA = {"theta": (4, 8), "mu": (8, 13), "beta": (13, 30)}
-METODE = ["M0_absolut", "M1_specparam", "M2_relatif", "M3_berdiri", "M4_otot"]
+METODE = ["M0_absolut", "M1_specparam", "M2_relatif", "M2b_relatif4", "M3_berdiri", "M4_otot"]
 
 
 def _psd(x, sf):
@@ -79,6 +81,7 @@ def nilai(meta, P, OK, c_min=0.75):
                       for k in range(len(KANAL))])
     ref_fo = [(_fooof(ref[k]) if np.isfinite(ref[k]).all() else None) for k in range(len(KANAL))]
     tot = lambda p: _band(p, 2, 31)
+    tot4 = lambda p: _band(p, 4, 31)
     rows = []
     for (g, r, f), idx in meta[~ist].groupby(["gerakan", "rep", "fase"]).groups.items():
         idx = np.array(idx)
@@ -100,6 +103,7 @@ def nilai(meta, P, OK, c_min=0.75):
             for b, (lo, hi) in PITA.items():
                 row[f"M0_absolut_{b}"] = 10 * np.log10(_band(p, lo, hi) / _band(ref[k], lo, hi))
                 row[f"M2_relatif_{b}"] = 10 * np.log10((_band(p, lo, hi) / tot(p)) / (_band(ref[k], lo, hi) / tot(ref[k])))
+                row[f"M2b_relatif4_{b}"] = 10 * np.log10((_band(p, lo, hi) / tot4(p)) / (_band(ref[k], lo, hi) / tot4(ref[k])))
                 row[f"M3_berdiri_{b}"] = 10 * np.log10(_band(p, lo, hi) / _band(ref_b[k], lo, hi))
             row["otot_db"] = 10 * np.log10(_band(p, 20, 35) / _band(ref[k], 20, 35))
             if ref_fo[k] is not None:

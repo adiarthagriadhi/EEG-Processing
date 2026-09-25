@@ -580,7 +580,8 @@ dilaporkan.
 |---|---|---|---|---|
 | M0 absolut (sekarang) | 2,06 | −4,31 | 4/4 | **0,76** |
 | M1 specparam | 1,88 | −2,13 | 4/4 | 0,41 |
-| M2 relatif (pita / total 2–30 Hz) | **0,77** | −1,31 | 4/4 | 0,59 |
+| M2 relatif (pita / total 2–30 Hz) | 0,77 | −1,31 | 4/4 | 0,59 |
+| **M2b relatif (pita / total 4–30 Hz)** | **0,35** | −1,05 | 4/4 | 0,58 |
 | M3 acuan akhir Berdiri | **0,71** | −4,19 | 4/4 | 0,36 |
 | M4 koreksi otot | 1,00 | −1,82 | 4/4 | 0,65 |
 
@@ -596,7 +597,9 @@ dilaporkan.
   menyeluruh**, karena kenaikan yang sama di kedua sisi saling meniadakan. Karena itu M0 tetap paling andal untuk LI.
 
 **Usul (keputusan pasca-pilot, menunggu persetujuan):**
-- ukuran **tingkat** (ERD sentral U1–U4, peta area) memakai **M2 relatif**, dengan M0 dan M4 sebagai sensitivitas;
+- ukuran **tingkat** (ERD sentral U1–U4, peta area) memakai **M2b relatif 4–30 Hz**, dengan M0 dan M4 sebagai
+  sensitivitas. M2b dipilih daripada M2 karena delta naik tajam saat gerak (+5…+13 dB, Tahap 1): bila delta ikut dalam
+  "total", mu/beta relatif turun tanpa ERD sungguhan. M2b juga lebih baik pada kriteria (a) (0,35 vs 0,77 dB);
 - ukuran **selisih** (lateralisasi) tetap memakai **M0**.
 
 ![metode](hasil/pilot_koreksi_global/perbandingan_metode.png)

@@ -597,7 +597,8 @@ def pilot_topografi(P, grup, path, vlim=3.0):
 
 
 METODE_WARNA = {"M0_absolut": ("#2a78d6", "M0 absolut (sekarang)"), "M1_specparam": ("#eb6834", "M1 specparam"),
-                "M2_relatif": ("#1baf7a", "M2 relatif"), "M3_berdiri": ("#eda100", "M3 acuan Berdiri"),
+                "M2_relatif": ("#1baf7a", "M2 relatif"), "M2b_relatif4": ("#e87ba4", "M2b relatif 4–30"),
+                "M3_berdiri": ("#eda100", "M3 acuan Berdiri"),
                 "M4_otot": ("#4a3aa7", "M4 koreksi otot")}
 
 
