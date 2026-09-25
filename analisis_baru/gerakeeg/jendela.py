@@ -6,7 +6,10 @@ Aturan (keputusan pengguna 2026-09-25):
   terbuka, opsional), TT = Tutup Mata.
 - Jendela observasi fase = [onset fase − 0,5 dtk, onset fase berikutnya]. Durasi fase = onset berikut − onset.
 - Berdiri berakhir pada onset Gerak berikutnya, paling lama 8 dtk sesudah B (akhir blok / sebelum Tutup Mata).
-- Buka Mata = [BM − 0,5, min(BM + 30, TT)]; Tutup Mata = [TT − 0,5, TT + 30].
+- Buka Mata: BM = label `BM` bila ada, bila tidak BM = TT − 45 dtk (protokol tetap, konfirmasi pengguna 2026-09-25).
+  Jendela observasi [BM − 0,5, min(BM + 30, TT)]; analisis mulai maks(BM + 1, B terakhir + 8 dtk) karena TT − 45 jatuh
+  0,1–2,3 dtk SEBELUM B terakhir (gerak terakhir belum selesai) dan agar tidak memakai ulang jendela Berdiri terakhir.
+- Tutup Mata = [TT − 0,5, TT + 30].
 - Istirahat (turunan, tanpa timestamp) = jeda panjang antar-blok: [B terakhir blok 1 + 8, Gerak pertama blok 2 − 5];
   dipakai hanya sebagai acuan kualitas (power 1–4 Hz dan 20–34 Hz).
 - Repetisi dinomori per gerakan menurut blok protokol: blok 1 = rep 1–2, blok 2 = rep 3–4.
@@ -24,6 +27,7 @@ class Aturan:
     maju_dtk: float = 0.5          # jendela dimulai sekian detik sebelum onset
     berdiri_maks_dtk: float = 8.0  # Berdiri paling lama sesudah B (protokol BERDIRI RILEKS 8 dtk)
     tutup_mata_dtk: float = 30.0
+    bm_sebelum_tt_dtk: float = 45.0   # BM = TT − 45 dtk bila label BM tidak ada (buka mata 30 + istirahat 15 dtk)
     jeda_blok_dtk: float = 60.0    # jeda > ini = pergantian blok (istirahat utama)
     istirahat_awal_dtk: float = 8.0
     istirahat_akhir_dtk: float = 5.0
@@ -70,6 +74,10 @@ def repetisi(ts, aturan=Aturan()):
     rep["durasi_Berdiri"] = np.where(same, nxt - rep.onset_Berdiri, np.nan)   # hanya bila repetisi berikut ada di blok sama
     if bm is not None and tt is not None and bm >= tt:
         masalah.append(f"BM ({bm:.3f} dtk) tidak sebelum TT ({tt:.3f} dtk)")
+    rep.attrs["BM_sumber"] = "label BM" if bm is not None else None
+    if bm is None and tt is not None:
+        bm = tt - aturan.bm_sebelum_tt_dtk
+        rep.attrs["BM_sumber"] = f"TT − {aturan.bm_sebelum_tt_dtk:g} dtk (tetap)"
     rep.attrs["BM"] = bm
     return rep, tt, masalah
 
@@ -95,8 +103,10 @@ def jendela(rep, tt, aturan=Aturan()):
     bm = rep.attrs.get("BM")
     if bm is not None:
         akhir = bm + aturan.tutup_mata_dtk if tt is None or tt <= bm else min(bm + aturan.tutup_mata_dtk, tt)
+        b_akhir = rep.onset_Berdiri.max()
+        mulai_an = max(bm + 1.0, b_akhir + aturan.berdiri_maks_dtk) if np.isfinite(b_akhir) else bm + 1.0
         W.append(dict(gerakan="-", rep=0, blok=0, fase=BUKA_MATA, onset=bm, mulai=bm - aturan.maju_dtk,
-                      selesai=akhir, durasi_fase=akhir - bm))
+                      selesai=akhir, durasi_fase=akhir - bm, mulai_analisis=mulai_an))
     if tt is not None:
         W.append(dict(gerakan="-", rep=0, blok=0, fase=TUTUP_MATA, onset=tt, mulai=tt - aturan.maju_dtk,
                       selesai=tt + aturan.tutup_mata_dtk, durasi_fase=aturan.tutup_mata_dtk))

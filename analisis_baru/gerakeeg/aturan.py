@@ -29,10 +29,13 @@ TM_MIN_JENDELA = 8           # Buka/Tutup Mata: ≥ 8 jendela bersih (≈ 2,75 d
 
 
 def potong_mata(W, T):
-    """Jendela 1 dtk (geser 0,25) untuk Buka Mata dan Tutup Mata: onset + 1 dtk … akhir segmen (dalam EDF)."""
+    """Jendela 1 dtk (geser 0,25) untuk Buka Mata dan Tutup Mata: onset + 1 dtk (Buka Mata: mulai_analisis) … akhir
+    segmen (dalam EDF)."""
     out = []
     for w in W[W.fase.isin(MATA)].itertuples():
-        a, b = w.onset + 1.0, min(w.selesai, T)
+        a = getattr(w, "mulai_analisis", np.nan)
+        a = w.onset + 1.0 if not np.isfinite(a) else a       # Buka Mata: sesudah Berdiri terakhir (jendela.py)
+        b = min(w.selesai, T)
         s = np.arange(a, b - epoch.E_PANJANG + 1e-9, epoch.E_GESER)
         out.append(pd.DataFrame(dict(gerakan="-", rep=0, fase=w.fase, mulai=s, selesai=s + epoch.E_PANJANG)))
     return (pd.concat(out, ignore_index=True) if out

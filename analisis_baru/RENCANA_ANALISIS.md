@@ -33,7 +33,7 @@ untuk metode baru.
    hipotesis utama.
 5. **Gerak dan Naik** hanya diwakili inisiasinya (±1,5 dtk pertama). Temuannya disebut "inisiasi gerak/naik", bukan
    seluruh fase.
-6. **Romberg:** buka mata kini ditandai (`BM`). Efek Berger belum terlihat terhadap Istirahat, sehingga diuji ulang
+6. **Romberg:** buka mata = TT − 45 dtk (tetap). Efek Berger belum terlihat terhadap Istirahat, sehingga diuji ulang
    terhadap Buka Mata sebagai syarat validitas (Bagian 7).
 7. **Hari rekaman bertumpang tindih dengan grup** (penari 9–11 Sep; non-penari 12–14 Sep, kecuali P10). Ditangani di
    Bagian 6.
@@ -101,8 +101,8 @@ Temuan utama dianggap **kokoh** bila arah efek grup sama di semua sensitivitas d
 K-otot, K-ref dan K-usia.
 
 ## 7. Romberg: Buka Mata vs Tutup Mata (Paper D)
-Label `BM` ditambahkan pengguna (2026-09-25). Segmen: Buka Mata [BM + 1, min(BM + 30, TT)], Tutup Mata [TT + 1, TT + 30],
-keduanya dibatasi durasi EDF. Pipeline dan aturan bersih sama. Nilai kanal dipakai bila ≥ 8 jendela bersih.
+Buka mata = TT − 45 dtk (tetap menurut protokol, konfirmasi pengguna 2026-09-25). Segmen analisis: Buka Mata
+[maks(BM + 1, B terakhir + 8), BM + 30 = TT − 15] (±20 dtk), Tutup Mata [TT + 1, TT + 30]; keduanya dibatasi durasi EDF. Pipeline dan aturan bersih sama. Nilai kanal dipakai bila ≥ 8 jendela bersih.
 
 **Syarat masuk per partisipan:** kedua segmen punya nilai O1/O2 yang lolos. Partisipan dengan EDF terpotong sebelum
 Tutup Mata (mis. P09, 14% tercakup) dikeluarkan dari Paper D dan dilaporkan.
@@ -145,4 +145,5 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | Tanggal | Revisi | Alasan |
 |---|---|---|
 | 2026-09-25 | Draf pertama | – |
+| 2026-09-25 | Buka mata = TT − 45 dtk (tetap), analisis mulai sesudah Berdiri terakhir | Konfirmasi pengguna; masih draf |
 | 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |

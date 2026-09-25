@@ -19,7 +19,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | **Tahan** | `T` | Tahan − 0,5 … Naik | Naik − Tahan |
 | **Naik** | `N` (sesudah `T`) | Naik − 0,5 … Berdiri | Berdiri − Naik |
 | **Berdiri** | `B` | Berdiri − 0,5 … Gerak berikutnya (maks. Berdiri + 8 dtk) | Gerak berikutnya − Berdiri |
-| **Buka Mata** | `BM` (opsional) | BM − 0,5 … min(BM + 30, TT) | ≤ 30 dtk |
+| **Buka Mata** | tidak perlu: BM = TT − 45 dtk (tetap; label `BM` dipakai bila ada) | BM − 0,5 … BM + 30 (= TT − 15); analisis mulai maks(BM + 1, B terakhir + 8) | ±20 dtk dianalisis |
 | **Tutup Mata** | `TT` | TT − 0,5 … TT + 30 | 30 dtk |
 | **Istirahat*** | (tidak ada) | Berdiri terakhir blok 1 + 8 … Gerak pertama blok 2 − 5 | ±170 dtk |
 
@@ -28,8 +28,10 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 - Setiap jendela dimulai 0,5 dtk sebelum timestamp onsetnya. Durasi fase tetap dihitung dari timestamp.
 - Repetisi dinomori per gerakan menurut blok: blok 1 = rep 1–2, blok 2 = rep 3–4. P31 tidak punya Ngeed di
   blok 1, jadi Ngeed-nya rep 3–4.
-- Buka mata (Romberg EO) ditandai dengan label `BM` (ditambahkan pengguna 2026-09-25). File tanpa `BM` tetap
-  terbaca; segmen Buka Mata saja yang tidak dibuat. `BM` harus sebelum `TT`; bila tidak, dicatat sebagai masalah.
+- Buka mata (Romberg EO) = TT − 45 dtk, tetap menurut protokol (konfirmasi pengguna 2026-09-25): buka mata 30 dtk, lalu
+  istirahat 15 dtk, lalu tutup mata. TT − 45 jatuh 0,1–2,3 dtk SEBELUM B terakhir pada keempat partisipan (gerak terakhir
+  belum selesai), sehingga analisis Buka Mata dimulai sesudah fase Berdiri terakhir (B terakhir + 8 dtk). Label `BM`
+  di timestamp tetap diterima dan diutamakan bila ada.
 - Urutan label yang menyimpang dicatat di `hasil/tahap1_kualitas/masalah_timestamp.csv`. Pada keempat
   partisipan tidak ada.
 
@@ -472,7 +474,8 @@ nilai dB di dataset belum ditafsirkan dan belum dibandingkan antar-fase atau ant
   mewakili bagian fase yang ditargetkan, bukan satu potongan kecil.
 - **R2 (nilai partisipan × fase × kanal):** dipakai bila ≥ r_min repetisi lolos R1. Nilai = rata-rata dB antar-repetisi
   dan SE antar-repetisi, untuk semua gerakan gabungan dan per gerakan.
-- **Tutup Mata:** jendela 1 dtk (TT + 1 … TT + 30, dalam EDF); nilai kanal dipakai bila ≥ 8 jendela bersih.
+- **Buka Mata / Tutup Mata:** jendela 1 dtk (Buka Mata: B terakhir + 8 … TT − 15; Tutup Mata: TT + 1 … TT + 30; dalam
+  EDF); nilai kanal dipakai bila ≥ 8 jendela bersih.
 - **Pemilihan (ditetapkan sebelum melihat hasil):** c_min terbesar dari {0, 25, 50, 75%} yang masih menyisakan
   ≥ 75% sel lolos R2 (median 4 fase) dengan r_min = 3.
 
@@ -484,12 +487,14 @@ nilai dB di dataset belum ditafsirkan dan belum dibandingkan antar-fase atau ant
 | cakupan ≥ 50% | 94 | 100 | 100 | 100 |
 | **cakupan ≥ 75% (terpilih)** | 94 | 97 | 100 | 95 |
 
-| Per partisipan, % kanal lolos (terpilih) | Gerak | Tahan | Naik | Berdiri | Tutup Mata |
-|---|---|---|---|---|---|
-| P08 | 100 | 100 | 100 | 100 | 100 |
-| P09 | 100 | 100 | 100 | 94 | – (EDF hanya mencakup 14%) |
-| P31 | 100 | 100 | 100 | 100 | 100 |
-| P32 | 80 | 88 | 100 | 88 | 100 |
+| Per partisipan, % kanal lolos (terpilih) | Gerak | Tahan | Naik | Berdiri | Buka Mata | Tutup Mata |
+|---|---|---|---|---|---|---|
+| P08 | 100 | 100 | 100 | 100 | 100 | 100 |
+| P09 | 100 | 100 | 100 | 94 | 100 | – (EDF hanya mencakup 14%) |
+| P31 | 100 | 100 | 100 | 100 | 100 | 100 |
+| P32 | 80 | 88 | 100 | 88 | 100 | 100 |
+
+Buka Mata: 75–84 jendela 1 dtk per kanal (±19–21 dtk), median 36–71 bersih.
 
 **Presisi nilai repetisi** (`R1_presisi_vs_n.csv`): galat RMS nilai repetisi terhadap nilai dari semua jendela bersih
 turun dari ±3,5 dB (1 jendela) ke ±1,4–1,7 dB (6 jendela; Tahan/Berdiri). SD antar-repetisi ±3,2–3,9 dB per fase. Jadi

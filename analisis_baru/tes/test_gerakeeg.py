@@ -189,3 +189,16 @@ def test_label_buka_mata():
     assert set(M.fase) == {"Buka Mata", "Tutup Mata"} and M[M.fase == "Buka Mata"].mulai.min() == 371
     _, _, m3 = jendela.repetisi(_ts(_satu_rep("AKA", 5) + [("TT", 380), ("BM", 390)]))
     assert any("BM" in x for x in m3)                                             # urutan salah dicatat
+
+
+def test_buka_mata_dari_tt_minus_45():
+    from gerakeeg import aturan
+    seq = _satu_rep("AKA", 5) + _satu_rep("AKA", 21) + _satu_rep("N", 280) + [("TT", 330)]
+    rep, tt, masalah = jendela.repetisi(_ts(seq))
+    assert masalah == [] and rep.attrs["BM"] == 285 and rep.attrs["BM_sumber"].startswith("TT")
+    W = jendela.jendela(rep, tt).set_index("fase")
+    bm = W.loc["Buka Mata"]
+    assert (bm.onset, bm.selesai) == (285, 315)                        # BM + 30 = TT − 15
+    assert bm.mulai_analisis == 287.5 + 8                              # B terakhir (287,5) + 8 dtk > BM + 1
+    M = aturan.potong_mata(jendela.jendela(rep, tt), 500.0)
+    assert M[M.fase == "Buka Mata"].mulai.min() == 295.5
