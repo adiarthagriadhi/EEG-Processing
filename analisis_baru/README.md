@@ -40,7 +40,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | 3 | Kanal buruk & sinyal datar: per rekaman · per jendela (robust) · referensi median · interpolasi | **Selesai → A2 robust dipakai** (keputusan pengguna) |
 | 4 | Lonjakan artefak gerak: ASR k 20/10/5 · ambang adaptif per partisipan · hanya ditandai | **Selesai → ASR k = 20** |
 | – | **Rencana beku + verifikasi kohort** (`RENCANA_BEKU.md`, `jalankan.py verifikasi semua`) | **Beku 2026-09-25**; menunggu data semua partisipan |
-| 5 | Mata & otot: A ICA + ICLabel · B BSS-CCA (otot) · C regresi kedipan Fp1/Fp2 | Menunggu |
+| 5 | Mata & otot: ICA (aturan MNE) · BSS-CCA (otot) · regresi kedipan Fp1/Fp2 | **Sementara → usul tanpa koreksi tambahan** (dikonfirmasi pada set penyetelan yang lebih besar) |
 | 6 | Aturan pakai jendela & uji sensitivitas | Menunggu |
 
 Setiap tahap diukur ulang dengan inventaris Tahap 1. Tahap berikutnya dimulai setelah hasil disetujui.
@@ -404,3 +404,54 @@ Tiga panel per partisipan:
 Latar = fase; batang di atas = rentang epoch TE; hitam = potongan 1 dtk ≤ 150 µV; merah = > 150 µV; abu-abu = datar atau
 kanal hilang. Untuk tampilan, A2 diterapkan per blok 1 dtk berurutan. Dalam analisis, A2 diterapkan per jendela TE
 (geser 0,25 dtk), sehingga batas blok pada gambar bisa sedikit berbeda.
+
+---
+
+## Tahap 5 (SEMENTARA): artefak mata & otot di atas pipeline beku
+Kode: `gerakeeg/mata_otot.py`. Perintah: `jalankan.py tahap5`. Hasil: `hasil/tahap5_mata_otot/`. Belum dibekukan. Sesuai
+RENCANA_BEKU, keputusan akhir diambil pada set penyetelan yang lebih besar.
+
+| Varian | Isi |
+|---|---|
+| dasar | Pipeline beku (ASR k 20 → A2), tanpa koreksi tambahan |
+| ICA mata | ICA Picard 15 komponen pada sinyal kontinu sesudah ASR; komponen kedipan = z korelasi dengan Fp1/Fp2 > 3 |
+| ICA mata + otot | + komponen otot (MNE `find_bads_muscle`, 7–34 Hz) |
+| CCA otot | BSS-CCA per jendela; komponen dengan rasio 20–34 / 2–15 Hz di atas persentil 95 Istirahat dibuang |
+| regresi mata | Proksi EOG = rata-rata Fp1/Fp2 (1–7 Hz), koefisien dari Istirahat; Fp1/Fp2 lalu dikeluarkan |
+| ICA mata + CCA otot | gabungan |
+
+ICLabel tidak dipakai, karena dilatih pada data ≥ 32 kanal dengan rentang 1–100 Hz. Data ini 16 kanal, 100 Hz, dan
+dibatasi perangkat ±35 Hz.
+
+**Kedipan sudah banyak berkurang sebelum Tahap 5.** Median |r| antara proksi kedipan (Fp1/Fp2 asli) dan F3/F4/F7/F8 pada
+jendela TE yang berisi kedipan:
+
+| | asli | + ASR | + ASR + A2 (dasar) | ICA mata | regresi mata |
+|---|---|---|---|---|---|
+| P08 | 0,31 | 0,29 | 0,18 | 0,17 | 0,35 |
+| P09 | 0,48 | 0,44 | 0,29 | 0,29 | 0,30 |
+| P31 | 0,54 | 0,23 | 0,18 | 0,18 | 0,24 |
+| P32 | 0,25 | 0,20 | 0,24 | 0,22 | 0,22 |
+
+Median 4 partisipan, Gerak / Tahan / Naik / Berdiri:
+
+| | dasar | ICA mata | ICA mata + otot | CCA otot | regresi mata | ICA mata + CCA otot |
+|---|---|---|---|---|---|---|
+| % kanal-jendela bersih | 65 / 65 / 56 / 69 | 66 / 65 / 56 / 69 | 67 / 66 / 57 / 69 | 66 / 65 / 57 / 69 | 56 / 56 / 49 / 59 | 67 / 65 / 57 / 69 |
+| Otot 20–34 Hz (dB)* | 0,72 / 0,72 / 1,84 / 0,13 | 0,72 / 0,72 / 1,78 / 0,13 | 0,64 / 0,76 / 1,78 / 0,16 | 0,82 / 0,94 / 2,25 / 0,22 | 0,45 / 0,82 / 1,72 / −0,02 | 0,98 / 0,94 / 2,17 / 0,22 |
+| Galat baku (dB) | 1,36 / 1,27 / 1,54 / 1,04 | 1,33 / 1,22 / 1,61 / 0,99 | 1,33 / 1,22 / 1,64 / 0,99 | 1,31 / 1,25 / 1,54 / 1,04 | 1,44 / 1,32 / 1,61 / 1,11 | 1,34 / 1,25 / 1,61 / 0,97 |
+| Reliabilitas belah-dua | 0,78 / 0,79 / 0,80 / 0,86 | 0,80 / 0,79 / 0,75 / 0,86 | 0,80 / 0,79 / 0,74 / 0,86 | 0,83 / 0,80 / 0,77 / 0,87 | 0,72 / 0,77 / 0,76 / 0,84 | 0,85 / 0,80 / 0,76 / 0,87 |
+
+\* relatif terhadap Istirahat hasil varian yang sama. CCA menurunkan otot Istirahat sendiri (−0,4…−0,9 dB), sehingga angka
+relatifnya naik walaupun otot saat tugas juga turun.
+
+- **ICA hampir tidak berbuat apa-apa.** Komponen kedipan hanya ditemukan pada 2 dari 4 partisipan (P08, P32), dan komponen
+  otot pada 1 (P31). ICA juga hanya dapat dipasang pada sampel tanpa kanal datar (155–267 dtk), sehingga koreksinya hanya
+  berlaku pada 36–64% waktu. Akibatnya perlakuan antar-bagian rekaman tidak seragam.
+- **CCA otot** sedikit menaikkan reliabilitas Gerak (0,78 → 0,83), tetapi juga menghapus aktivitas 20–34 Hz saat Istirahat
+  (−0,4…−0,9 dB). Pita beta atas ikut terkena, dan ini berisiko untuk ERD beta.
+- **Regresi mata lebih buruk.** Fp1/Fp2 hilang, data bersih turun ±10 poin, dan sisa kedipan P08 malah naik (0,18 → 0,35).
+- **Usul (sementara): tidak ada koreksi mata/otot tambahan pada pipeline utama.** ICA mata dipakai sebagai uji sensitivitas.
+  Kanal frontopolar dan frontotemporal (Fp, F7/F8, T3/T4) tetap ditandai rawan artefak saat penafsiran.
+
+![tahap 5](hasil/tahap5_mata_otot/tahap5_mata_otot.png)

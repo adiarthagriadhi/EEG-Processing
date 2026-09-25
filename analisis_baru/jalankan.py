@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
-                      posisi, referensi, verifikasi)
+                      mata_otot, posisi, referensi, verifikasi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -335,6 +335,80 @@ def gelombang(pids, gerakan="Agem Kanan", rep=1):
         print(f"[{pid}] {f.name}")
 
 
+def _sisa_kedipan(xf, datar, sf, x, dat, rujuk, eTE, batas_uv=80.0):
+    """Median |r| antara proksi kedipan (rata-rata Fp1/Fp2 asli, 1–7 Hz) dan F3/F4/F7/F8 hasil proses, pada jendela TE
+    yang berisi kedipan (proksi peak-to-peak > batas_uv)."""
+    from scipy.signal import butter, sosfiltfilt
+    sos = butter(4, [1, 7], btype="band", fs=sf, output="sos")
+    e = sosfiltfilt(sos, xf[mata_otot.FP].mean(axis=0))
+    fr = [kanal.KANAL.index(c) for c in ("F3", "F4", "F7", "F8")]
+    rr, n = [], 0
+    for w in eTE.itertuples():
+        i0, i1 = int(round(w.mulai * sf)), int(round(w.selesai * sf))
+        if i1 > xf.shape[1] or datar[mata_otot.FP, i0:i1].any() or np.ptp(e[i0:i1]) < batas_uv:
+            continue
+        y, fd = rujuk(x[:, i0:i1], dat[:, i0:i1].mean(axis=1))
+        n += 1
+        rr += [abs(np.corrcoef(e[i0:i1], y[k])[0, 1]) for k in fr if fd[k] < 0.1]
+    return (round(float(np.median(rr)), 3) if rr else np.nan), n
+
+
+def tahap5(pids):
+    """Tahap 5 (SEMENTARA): artefak mata & otot di atas pipeline beku (ASR k 20 → A2, epoch TE)."""
+    out = HASIL / "tahap5_mata_otot"
+    out.mkdir(parents=True, exist_ok=True)
+    R, INFO, REP = [], [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rp, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rp, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        eTE = epoch.potong_TE(W, xf.shape[1] / sf)
+        Wr = W[W.fase.isin(epoch.FASE_REPETISI)]
+        xa, _ = lonjakan.asr(xf, datar, sf, W, 20)
+        rj = kanal.robust
+        cache = {}
+        ref0 = None
+        for v in mata_otot.VARIAN:
+            x, dat, f, info = xa, datar, rj, {}
+            if v in ("T5_ICA_mata", "T5_ICAmata_CCAotot"):
+                if "ica_mata" not in cache:
+                    cache["ica_mata"] = mata_otot.ica(xa, datar, sf, otot=False)
+                x, info = cache["ica_mata"]
+            elif v == "T5_ICA_mata_otot":
+                x, info = mata_otot.ica(xa, datar, sf, otot=True)
+            elif v == "T5_regresi_mata":
+                x, dat, info = mata_otot.regresi_mata(xa, datar, sf, W)
+            if v in ("T5_CCA_otot", "T5_ICAmata_CCAotot"):
+                amb = mata_otot.cca_ambang(x, dat, sf, W, rj)
+                f = mata_otot.rujuk_dengan_cca(rj, sf, amb)
+                info = {**info, "ambang_cca": round(amb, 3)}
+            ref, _ = epoch.acuan(x, dat, sf, W, epoch.E_PANJANG, epoch.E_GESER, f)
+            if ref0 is None:
+                ref0 = ref
+            est = epoch.estimasi(x, dat, sf, eTE, ref, "TE", f)
+            rpp = epoch.per_repetisi(est)
+            R.append(epoch.ringkas(pid, Wr, {"TE": eTE}, est, rpp).assign(varian=v))
+            REP.append(rpp.assign(participant_id=pid, varian=v))
+            kd, nk = _sisa_kedipan(xf, datar, sf, x, dat, f, eTE)
+            dist = {f"istirahat_{b}_db": round(float(np.nanmedian(10 * np.log10(ref[b] / ref0[b]))), 2)
+                    for b in ("theta", "mu", "beta", "otot")}
+            INFO.append(dict(participant_id=pid, varian=v, sisa_kedipan_r=kd, n_jendela_kedip=nk, **dist,
+                             **{k: (str(val) if isinstance(val, list) else val) for k, val in info.items()}))
+        print(f"[{pid}] selesai")
+    R, INFO = pd.concat(R), pd.DataFrame(INFO)
+    R.to_csv(out / "ringkasan_varian_fase.csv", index=False)
+    INFO.to_csv(out / "info_varian.csv", index=False)
+    pd.concat(REP).round(3).to_csv(out / "estimasi_per_repetisi.csv", index=False)
+    grafik.tahap_varian(R, out / "tahap5_mata_otot.png", grafik.T5_WARNA,
+                        "Tahap 5 (sementara) — mata & otot (ASR k 20 → A2, epoch TE)")
+    pd.set_option("display.width", 250)
+    kol = ["pct_kanal_epoch_bersih", "otot_db_median", "detik_bersih_median_kanal", "se_db_median",
+           "reliabilitas_belah_dua"]
+    print(R.groupby(["fase", "varian"], sort=False)[kol].median().round(2).to_string())
+    print(INFO.to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5}[cmd](pids or ["P08", "P09", "P31", "P32"])

@@ -142,3 +142,17 @@ def test_kohort_ambang_75():
     assert K.loc["K4_ASR20", "keputusan"].startswith("TINJAU") and K.loc["K4_ASR20", "n"] == 7
     assert K.loc["K3_A2", "keputusan"] == "dipertahankan"
     assert K.loc["K0_data", "lolos"] == 7
+
+
+def test_cca_otot_buang_komponen_bising():
+    from gerakeeg import mata_otot
+    rng = np.random.default_rng(3)
+    t = np.arange(100) / 100
+    lambat = np.vstack([np.sin(2 * np.pi * f * t + p) for f, p in zip([3, 5, 7, 9, 11, 6], rng.uniform(0, 6, 6))])
+    A = rng.normal(size=(8, 6))
+    otot = rng.normal(0, 1, 100)                             # derau putih ≈ otot (datar spektrum)
+    x = A @ lambat * 10 + np.outer(rng.normal(size=8), otot) * 10
+    y = mata_otot.cca_otot(x, np.zeros(8), 100.0, ambang=0.5)
+    r = lambda a, b: abs(np.corrcoef(a, b)[0, 1])
+    assert np.mean([r(y[i] - (A @ lambat * 10)[i], otot) for i in range(8)]) < \
+        np.mean([r(x[i] - (A @ lambat * 10)[i], otot) for i in range(8)])         # porsi otot berkurang

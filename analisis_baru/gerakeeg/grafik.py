@@ -356,7 +356,7 @@ def tahap_varian(R, path, warna, judul):
         _rapikan(ax)
     h = [plt.Line2D([], [], marker="o", ls="", color=warna[v][0], markersize=6) for v in vs]
     h.append(plt.Line2D([], [], marker="_", ls="", color=INK, markersize=12, markeredgewidth=2))
-    fig.legend(h, [warna[v][1] for v in vs] + ["median 4 partisipan"], loc="upper left", ncol=6,
+    fig.legend(h, [warna[v][1] for v in vs] + ["median 4 partisipan"], loc="upper left", ncol=len(vs) + 1,
                frameon=False, bbox_to_anchor=(0.01, 1.07), fontsize=8.5)
     fig.suptitle(judul, x=0.01, y=1.15, ha="left", fontsize=11.5)
     fig.tight_layout()
@@ -427,3 +427,8 @@ def gelombang(pid, tahapan, datar, sf, W, TE, gerakan, rep, path, jarak_uv=120.0
     fig.tight_layout()
     fig.savefig(path, dpi=120, bbox_inches="tight")
     plt.close(fig)
+
+
+T5_WARNA = {"T5_dasar": ("#2a78d6", "dasar (ASR + A2)"), "T5_ICA_mata": ("#eb6834", "ICA mata"),
+            "T5_ICA_mata_otot": ("#1baf7a", "ICA mata + otot"), "T5_CCA_otot": ("#eda100", "CCA otot"),
+            "T5_regresi_mata": ("#e87ba4", "regresi mata (Fp)"), "T5_ICAmata_CCAotot": ("#4a3aa7", "ICA mata + CCA otot")}
