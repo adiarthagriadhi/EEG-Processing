@@ -241,7 +241,7 @@ Median 4 partisipan (`ringkasan_epoch.csv`):
   bersih 10 → 51%). Tetapi hanya satu epoch 1,5 dtk per repetisi, sehingga datanya sedikit dan reliabilitas Tahan
   rendah (median 0,0).
 - **TE paling bersih dan paling seragam** di hampir semua fase: kanal bersih tertinggi dan kontaminasi otot terendah
-  pada Gerak, Tahan dan Naik. Datanya 2–5× lebih banyak dari T. Reliabilitasnya mendekati E (Gerak 0,8; Berdiri 0,8),
+  pada Gerak, Tahan dan Naik. Datanya 1,4–2,5× lebih banyak dari T. Reliabilitasnya mendekati E (Gerak 0,8; Berdiri 0,8),
   kecuali Tahan (0,6 vs 0,8).
 - **E** tetap menang pada jumlah data dan galat baku, tetapi kontaminasi ototnya lebih tinggi dan isinya mencampur
   bagian fase yang berbeda (lihat bagian sebelumnya).
