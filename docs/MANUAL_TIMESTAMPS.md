@@ -1,22 +1,40 @@
-# Timestamp video manual (P08, P09)
+# Timestamp fase manual (keputusan pengguna 2026-09-25)
 
-OCR HUD menghasilkan offset yang berbeda per sampel. P08 dan P09 memakai
-tanda manual di video sebagai `timeline` + `reps`.
+Bila `data/manual_timestamps/PXX_timestamps.csv` ada, `python -m eegpipe run PXX` memakai timestamp
+peneliti sebagai waktu fase dan **melewati** tahap `ocr`, `pose`, `sync`, `phases` dan cek onset.
+Video tidak dibutuhkan. Tahap `preprocess`, `erd`, `spectral`, `romberg`, `baseline` (bila Baseline.EDF ada),
+`segmen`, serta `hypotheses-v2` berjalan **dengan model dan parameter yang sama** seperti jalur video.
 
-## Sinkron
-`waktu_EEG = waktu_video` (offset 0 s). RMS EEG tinggi di blok gerak,
-rendah di jeda 110–270 s.
+## Label
+| label | arti | kolom reps |
+|---|---|---|
+| `N` / `AKA` / `AKI` | mulai turun ngeed / agem kanan / agem kiri | `act_turun` (= `act_arm`, acuan PRA) |
+| `T` | mulai menahan posisi | `act_tahan` |
+| `N` (sesudah `T`) | mulai naik | `act_naik` |
+| `B` | berdiri | `act_end` (acuan POST) |
+| `TT` | mulai tutup mata | Romberg EC = TT … TT + 30 dtk |
 
-## Paket
-NTNB→NGEED, AKA TNB→AGEM KANAN, AKI TNB→AGEM KIRI, TT→BERDIRI MATA TERTUTUP.
+Spasi di label diabaikan. Urutan yang menyimpang dicatat di `decisions/PXX.yaml → manual_timestamp_problems`
+dan di laporan QC; repetisi tak lengkap = `compliance: incomplete`.
 
-Overlap window EEG: 1,0 s sebelum TURUN/TAHAN; 0,5 s sebelum NAIK.
-Onset durasi tetap di kolom `act_*`.
+## Sinkronisasi
+`t_EEG = t_timestamp + manual_timestamps.offset_sec` (baku 0). Tidak ada estimasi/alarm offset.
+
+## Penomoran repetisi
+Jeda > 60 dtk = ISTIRAHAT UTAMA. Blok 1 = rep 1–2, blok 2 = rep 3–4 per gerakan, sehingga blok yang
+tidak ada (P31: NGEED blok 1) tidak menggeser nomor.
+
+## Yang berbeda dari jalur video (tidak dapat dihindari tanpa video)
+- **Acuan gabungan**: jalur video memilih 50% jendela 2 dtk paling diam menurut gerak tubuh di video.
+  Tanpa video, **semua** jendela BERDIRI RILEKS (B + 2 dtk … maks. B + 8 dtk, berhenti 1 dtk sebelum
+  repetisi berikut) + ISTIRAHAT UTAMA (B terakhir blok 1 + 8 dtk … 5 dtk sebelum blok 2) dipakai.
+  Tidak dipilih dari EEG (sirkular). QC: `segmen_qc.json → reference_selection`.
+- **Latensi terhadap instruksi HUD** (`latency_hud`) tidak terukur (NaN).
+- **Romberg EO** tidak ditandai. Turunan dari protokol (TT − 45 … TT − 15) tidak cocok karena B terakhir → TT
+  hanya ±43 dtk, jadi `derive_eo: false`. Perlu label EO sendiri bila EO dibutuhkan.
 
 ## Jalan
 ```bash
-python scripts/ingest_manual_timestamps.py P08
-python scripts/ingest_manual_timestamps.py P09
-python -m eegpipe run P08 --force preprocess
+python scripts/ingest_manual_timestamps.py --all   # cek urutan label (tanpa EEG)
+python -m eegpipe run P08                          # timestamp berubah → otomatis ulang mulai preprocess
 ```
-Jangan `--force ocr|pose|sync|phases` setelah ingest.

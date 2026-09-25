@@ -296,6 +296,20 @@ Salinan hasil turunan (tanpa data mentah) ada di `hasil_analisis/` (lihat README
 (EDF, video) dan fif/npz TIDAK ada di repo — sesi baru perlu mengunggah ulang data mentah bila
 pipeline harus dijalankan ulang.
 
+## 🕒 Jalur TIMESTAMP MANUAL (2026-09-25, keputusan pengguna) — P08, P09, P31, P32
+- `data/manual_timestamps/PXX_timestamps.csv` (label N/AKA/AKI → T → N(aik) → B; TT = tutup mata; detik EEG,
+  **offset 0**) otomatis menggantikan ocr + pose + sync + phases (`eegpipe/manual_ts.py`, `stage_manual`).
+  Tahap preprocess…segmen & `hypotheses-v2` = model/parameter SAMA. Detail: docs/MANUAL_TIMESTAMPS.md.
+- Beda yang tak terhindarkan: acuan = SEMUA jendela BERDIRI RILEKS + ISTIRAHAT UTAMA (tanpa video tidak ada
+  pemilihan "50% paling diam"); latency_hud NaN; Romberg EO tidak ditandai (turunan protokol TT−45 tidak cocok:
+  B terakhir → TT ±43 dtk) → `derive_eo: false`. P31: NGEED blok 1 tidak ada → rep 3–4 saja.
+- **Kesesuaian durasi manual vs pose buruk** (40 repetisi): TURUN manual +0,95 dtk lebih panjang (r −0,03), TAHAN
+  +0,34 (r 0,49), NAIK +0,68 (r 0,15) → definisi fase berbeda sistematis. Mengganti 4 dari 38 partisipan ke
+  manual mengubah H3 g 1,53 → 0,98, H6 g 1,07 → 0,62 (p_FDR 0,11); H7 (g −1,04) & H12 (g −1,05) bertahan.
+  → **Jangan campur sumber fase dalam uji grup**; tandai semua 38 secara manual ATAU pakai manual sebagai validasi.
+- Sinyal datar & cakupan EC sama dengan sebelumnya (P08 21,5%/EC 46%, P09 12,4%/9%, P31 15,8%/100%, P32 11,4%/100%).
+- Hasil: `hasil_analisis/timestamp_manual/` (README di hasil_analisis).
+
 ## ✅ Pendekatan v2 DIIMPLEMENTASIKAN (2026-09-24) — status terkini, menggantikan catatan lama bila bertentangan
 - **Sinkronisasi:** `sync.mode: fixed`, offset 0,85 dtk (dibekukan). Estimasi xcorr hanya ALARM, yang harus
   dikonfirmasi cek onset-ke-onset. P34: alarm xcorr +33 dtk DIBANTAH (onset pada 0,85 = −0,15 dtk, n 4) →

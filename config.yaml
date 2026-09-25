@@ -6,6 +6,7 @@ paths:
   raw: data/raw                 # data/raw/PXX/{*Baseline*.EDF, *Trial*.EDF, *.webm}
   derivatives: data/derivatives # hasil antara per partisipan
   decisions: data/decisions     # keputusan manual per partisipan (PXX.yaml)
+  manual_timestamps: data/manual_timestamps   # PXX_timestamps.csv (timestamp fase manual peneliti)
   reports: reports
   results: results
   participants: data/participants.csv   # participant_id, group, timepoint, age
@@ -27,6 +28,22 @@ video:
   pose_select: front        # 2026-09-24: kaki paling bawah (partisipan di penanda lantai); lama: continuity
   pose_num_poses: 3
   pose_frame_step: 2         # 15 fps: ~5 mnt/partisipan; presisi waktu ~66 ms
+
+manual_timestamps:
+  # Bila data/manual_timestamps/PXX_timestamps.csv ada, file itu MENGGANTIKAN ocr + pose + sync + phases:
+  # waktu fase (N/AKA/AKI → T → N → B, TT = tutup mata) langsung dalam detik EEG (keputusan pengguna
+  # 2026-09-25). Tahap preprocess … segmen dan uji hipotesis memakai model yang sama dengan jalur video.
+  enabled: true
+  offset_sec: 0.0             # t_EEG = t_timestamp + offset
+  block_gap_sec: 60.0         # jeda > ini antar-repetisi = ISTIRAHAT UTAMA (batas blok 1/2)
+  berdiri_start_sec: 2.0      # BERDIRI RILEKS (acuan) mulai 2 dtk sesudah B (setelah jendela POST)
+  berdiri_max_sec: 8.0        # … paling lama 8 dtk (protokol)
+  next_rep_lead_sec: 1.0      # … dan berakhir ≥ 1 dtk sebelum repetisi berikut
+  rest_end_margin_sec: 5.0    # ISTIRAHAT UTAMA berakhir 5 dtk sebelum blok 2 (BERSIAP)
+  romberg_sec: 30.0           # EC = TT … TT + 30 dtk
+  derive_eo: false            # EO dari protokol (TT − 45 … TT − 15) TIDAK cocok: B terakhir → TT hanya ±43 dtk
+                              # (P08/P09/P31/P32) → EO butuh penanda sendiri (mis. label EO) sebelum dipakai
+  eo_gap_sec: 15.0
 
 sync:
   # PENDEKATAN v2 (keputusan pengguna 2026-09-23): waktu fase SEPENUHNYA dari video; EEG dipetakan

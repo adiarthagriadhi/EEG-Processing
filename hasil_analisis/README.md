@@ -38,3 +38,10 @@ Baseline.EDF lama, hipotesis H1–H5, `SIMULATED_*` (DATA SIMULASI, bukan data r
 - `v2/` = hasil SESUDAH perbaikan (baku saat ini); `v2_sebelum_perbaikan/` = hasil sebelumnya (disimpan untuk
   perbandingan). Ringkasan perubahan: `v2/perbandingan_perbaikan_v2.csv` (per partisipan) dan
   `v2/perbandingan_perbaikan_H_v2.csv` (H1–H13). Metode: EEG_PROCESSING.md, bagian "Perbaikan metode 2026-09-24".
+
+## `timestamp_manual/` — fase dari timestamp manual peneliti (2026-09-25; P08, P09, P31, P32)
+Offset 0; model v2 sama (lihat docs/MANUAL_TIMESTAMPS.md). `PXX_*.csv` seperti `v2/`; `per_partisipan/PXX/`
+(timeline, reps, segmen_qc, keputusan). Perbandingan dengan jalur video/pose: `perbandingan_durasi_per_repetisi.csv`,
+`perbandingan_endpoint_video_vs_manual.csv`, `perbandingan_H1-H13.csv` (38 partisipan, 4 diganti manual;
+`hypothesis_v2_*_38_dgn_4_manual.csv`). JANGAN jalankan `scripts/ekspor_hasil.py` tanpa data semua partisipan:
+skrip itu menghapus dan menulis ulang seluruh hasil_analisis/.

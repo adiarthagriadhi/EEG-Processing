@@ -1,0 +1,9 @@
+participant_id,kondisi,area,cakupan,n_win,artifact_prone,is_simulated
+P09,EC,frontopolar,0.093,0,True,False
+P09,EC,frontal,0.093,1,False,False
+P09,EC,frontotemporal,0.093,0,True,False
+P09,EC,sentral,0.093,1,False,False
+P09,EC,temporal,0.093,0,True,False
+P09,EC,parietal,0.093,1,False,False
+P09,EC,temporo-posterior,0.093,0,False,False
+P09,EC,oksipital,0.093,1,False,False

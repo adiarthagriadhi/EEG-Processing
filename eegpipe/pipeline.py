@@ -14,6 +14,16 @@ from .eeg_io import load_edf
 STAGES = ["ocr", "pose", "sync", "phases", "preprocess", "erd", "spectral", "romberg", "baseline", "segmen", "report"]
 
 
+def _has(P, attr):
+    """True bila file tepat satu ditemukan (mis. Baseline.EDF tidak selalu tersedia)."""
+    try:
+        getattr(P, attr)
+        return True
+    except FileNotFoundError:
+        _log(P.pid, f"{attr}: file tidak ada — tahap dilewati")
+        return False
+
+
 class QCStop(Exception):
     """QC gagal: perlu keputusan manual di data/decisions/PXX.yaml."""
 
@@ -337,6 +347,42 @@ def stage_segmen(P, cfg, clean, reps, tl, pose, offset, raw, force=False):
     return qc
 
 
+def stage_manual_changed(P):
+    """True bila isi file timestamp berbeda dari yang dipakai hasil tersimpan (hash di decisions)."""
+    import hashlib
+    from . import manual_ts
+    h = hashlib.sha1(manual_ts.manual_path(P).read_bytes()).hexdigest()[:12]
+    dec = P.decisions()
+    if dec.get("manual_timestamp_sha1") == h:
+        return False
+    dec["manual_timestamp_sha1"] = h
+    P.save_decisions(dec)
+    return True
+
+
+def stage_manual(P, cfg, raw):
+    """Timestamp manual peneliti (data/manual_timestamps/PXX_timestamps.csv) menggantikan ocr + pose +
+    sync + phases: waktu fase langsung dalam detik EEG dengan offset tetap (baku 0)."""
+    from . import manual_ts
+    tl, reps, info = manual_ts.build(manual_ts.load(manual_ts.manual_path(P)), cfg)
+    tl.to_csv(P.out("timeline.csv"), index=False)
+    reps.to_csv(P.out("reps.csv"), index=False)
+    offset = float(cfg.get("manual_timestamps", {}).get("offset_sec", 0.0))
+    dec = P.decisions()
+    dec["sync"] = dict(offset_sec=offset, method="manual_timestamp", accepted=True,
+                       basis=f"timestamp manual peneliti ({manual_ts.manual_path(P).name}), offset {offset:g} dtk")
+    dec["phase_source"] = "manual_timestamp"
+    dec["manual_timestamp_problems"] = info["problems"]
+    P.save_decisions(dec)
+    late = reps.act_end.max()
+    if np.isfinite(late) and late > raw.times[-1]:
+        info["problems"].append(f"repetisi terakhir ({late:.1f} dtk) melewati akhir EEG ({raw.times[-1]:.1f} dtk)")
+    _log(P.pid, f"timestamp manual: {info['n_ok']}/{info['n_rep']} repetisi lengkap, rep per gerakan "
+                f"{info['reps_per_task']}, offset {offset:+.2f} dtk"
+                + (f" — MASALAH: {info['problems']}" if info["problems"] else ""))
+    return tl, reps, offset
+
+
 def run(pid, cfg, stages=None, force=()):
     from . import report
     P = Participant(pid, cfg)
@@ -344,19 +390,30 @@ def run(pid, cfg, stages=None, force=()):
     # memaksa satu tahap = memaksa semua tahap sesudahnya (hasilnya bergantung)
     first = min([STAGES.index(s) for s in force if s in STAGES] +
                 [0 if "all" in force else len(STAGES)])
-    f = lambda s: STAGES.index(s) >= first
+    f = lambda s: STAGES.index(s) >= first          # dievaluasi saat dipanggil (first dapat turun)
+    from . import manual_ts
     raw = load_edf(P.trial_edf, cfg)
-    tl = stage_ocr(P, cfg, f("ocr"))
-    pose = stage_pose(P, cfg, f("pose"))
-    ctx = dict(P=P, tl=tl, pose=pose, raw=raw, problems=[])
+    manual = manual_ts.exists(P)
+    if manual:                                        # timestamp manual: tanpa video/OCR/pose/sinkronisasi
+        changed = stage_manual_changed(P)
+        if changed or first < STAGES.index("preprocess"):
+            first = min(first, STAGES.index("preprocess"))   # timestamp berubah / --force ocr…phases
+        tl, reps, offset = stage_manual(P, cfg, raw)
+        ctx = dict(P=P, tl=tl, pose=None, raw=raw, problems=[], reps=reps, offset=offset, manual=True)
+    else:
+        tl = stage_ocr(P, cfg, f("ocr"))
+        pose = stage_pose(P, cfg, f("pose"))
+        ctx = dict(P=P, tl=tl, pose=pose, raw=raw, problems=[])
+    pose = ctx["pose"]
     try:
-        s = stage_sync(P, cfg, tl, pose, raw, f("sync"))
-        offset = s.get("offset_blocks", s["offset_sec"])
-        ctx["offset"] = offset
-        reps = stage_phases(P, cfg, tl, pose, f("phases"))
-        ctx["reps"] = reps
-        offset = stage_onset_check(P, cfg, raw, reps, offset, f("sync"))
-        ctx["offset"] = offset
+        if not manual:
+            s = stage_sync(P, cfg, tl, pose, raw, f("sync"))
+            offset = s.get("offset_blocks", s["offset_sec"])
+            ctx["offset"] = offset
+            reps = stage_phases(P, cfg, tl, pose, f("phases"))
+            ctx["reps"] = reps
+            offset = stage_onset_check(P, cfg, raw, reps, offset, f("sync"))
+            ctx["offset"] = offset
         if "preprocess" in stages:
             clean = stage_preprocess(P, cfg, raw, tl, offset, f("preprocess"))
             ctx["clean"] = clean
@@ -366,7 +423,7 @@ def run(pid, cfg, stages=None, force=()):
                 ctx["spectral"] = stage_spectral(P, cfg, f("spectral"))
             if "romberg" in stages:
                 ctx["romberg"] = stage_romberg(P, cfg, clean, tl, offset, f("romberg"))
-            if "baseline" in stages:
+            if "baseline" in stages and _has(P, "baseline_edf"):
                 ctx["baseline"] = stage_baseline(P, cfg, f("baseline"))
             if "segmen" in stages:
                 ctx["segmen"] = stage_segmen(P, cfg, clean, reps, tl, pose, offset, raw, f("segmen"))
