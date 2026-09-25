@@ -1,0 +1,6 @@
+sync:
+  offset_sec: 0.0
+  method: manual
+  accepted: true
+  basis: timestamp video manual; start bersama (uji RMS blok gerak vs jeda)
+phase_source: manual_video
