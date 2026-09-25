@@ -270,7 +270,7 @@ kanal yang sedang reset/putus tidak mencemari kanal lain. Acuan Istirahat dihitu
 | Korelasi dalam belahan | semua fase | 0,51–0,64 | −0,15…−0,09 | 0,26–0,52 | −0,08…−0,02 |
 | Korelasi antar belahan | semua fase | −0,10…0,02 | 0,00 | **−0,48…−0,42** | 0,01–0,02 |
 
-- **A (rata-rata per belahan) unggul di semua ukuran data.** Persentase bersih naik +14…+20 poin. Kontaminasi otot
+- **A (rata-rata per belahan) unggul di semua ukuran data.** Persentase bersih naik +13…+21 poin. Kontaminasi otot
   turun. Reliabilitas Naik naik dari 0,36 ke 0,74, jadi Naik kini dapat dianalisis. Korelasi dalam belahan hilang:
   nilai sekitar −0,1 adalah nilai bawaan rata-rata referensi (≈ −1/7). Artefak bersama dari A1/A2 memang terhapus.
 - **B (rata-rata 16 kanal) justru menyebarkan artefak.** Artefak A1 dikurangkan juga dari kanal kanan, sehingga muncul
@@ -290,7 +290,7 @@ kanal yang sedang reset/putus tidak mencemari kanal lain. Acuan Istirahat dihitu
    seluruh belahan dianggap hilang di jendela itu.
 
 **Uji Berger tidak informatif.** Alpha oksipital relatif saat Tutup Mata TIDAK lebih tinggi daripada Istirahat di
-skema mana pun, termasuk telinga asli (−1,4…−0,02 dB). Masalahnya ada di data, bukan di referensi. Kemungkinannya:
+skema mana pun, termasuk telinga asli (−1,8…−0,02 dB). Masalahnya ada di data, bukan di referensi. Kemungkinannya:
 (a) alpha memang lemah pada rekaman ini, sesuai catatan repo sebelumnya (tidak ada puncak alpha jelas); (b) kondisi
 mata saat Istirahat tidak diketahui, bisa saja sebagian partisipan menutup mata; (c) P09 hanya 7 jendela Tutup Mata.
 Perlu konfirmasi ke pengguna: apakah mata terbuka saat Istirahat utama?
