@@ -1,0 +1,5 @@
+participant_id,grup,U1_beta_Gerak,U2_mu_Gerak,U3_beta_Tahan,U4_mu_Tahan,U5_CV_Tahan
+P08,penari,-0.13,2.181,1.098,1.948,0.112
+P09,penari,-0.804,-1.268,0.843,1.715,0.166
+P31,non-penari,1.763,2.188,-0.573,-1.024,0.363
+P32,non-penari,2.518,2.845,4.963,3.711,0.341

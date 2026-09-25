@@ -145,5 +145,6 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | Tanggal | Revisi | Alasan |
 |---|---|---|
 | 2026-09-25 | Draf pertama | – |
+| 2026-09-25 | **Pilot dijalankan** pada set penyetelan (P08, P09, P31, P32) atas permintaan pengguna, sebelum rencana dibekukan. Hasil di `hasil/pilot_analisis/`. | Permintaan pengguna. Konsekuensi: rencana ini sudah "melihat" data pilot. Setiap perubahan sesudah tanggal ini wajib dicatat dengan alasan, dan keempat partisipan tidak dihitung sebagai data konfirmasi. |
 | 2026-09-25 | Buka mata = TT − 45 dtk (tetap), analisis mulai sesudah Berdiri terakhir | Konfirmasi pengguna; masih draf |
 | 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |

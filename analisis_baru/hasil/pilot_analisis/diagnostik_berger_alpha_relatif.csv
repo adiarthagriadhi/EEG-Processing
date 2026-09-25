@@ -1,0 +1,9 @@
+participant_id,fase,mu_db,theta_db,beta_db,alpha_rel
+P08,Buka Mata,3.306,3.501,1.965,0.771
+P08,Tutup Mata,-1.473,-3.667,-1.376,0.504
+P09,Buka Mata,-6.729,-7.172,-5.625,0.023
+P09,Tutup Mata,-8.346,-6.898,-8.137,-1.752
+P31,Buka Mata,-6.992,-6.124,-4.866,-1.426
+P31,Tutup Mata,-1.689,-2.645,0.098,-0.267
+P32,Buka Mata,-3.579,-3.883,-2.616,-0.146
+P32,Tutup Mata,-5.275,-4.729,-3.203,-0.826

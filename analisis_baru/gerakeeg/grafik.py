@@ -478,3 +478,119 @@ def tahap6(pres, sdr, hasil, path):
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
+
+
+def _label_pid(pid, grup):
+    return f"{pid} ({grup.get(pid, '?')})"
+
+
+def pilot_profil(S1, grup, path):
+    """mu & beta sentral (rata-rata antar-repetisi ± IK 95%) per fase, satu garis per partisipan."""
+    from .istilah import FASE_REPETISI
+    pids = sorted(S1.participant_id.unique())
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
+    x = np.arange(len(FASE_REPETISI))
+    for ax, p in zip(axes, ("mu", "beta")):
+        for i, (c, pid) in enumerate(zip(PESERTA, pids)):
+            g = S1[(S1.participant_id == pid) & (S1.pita == p)].set_index("fase").reindex(FASE_REPETISI)
+            xx = x + (i - 1.5) * 0.08
+            ax.errorbar(xx, g.rerata, yerr=[g.rerata - g.ci_bawah, g.ci_atas - g.rerata], color=c, lw=1.6,
+                        marker="o", markersize=5, capsize=0, elinewidth=1, label=_label_pid(pid, grup))
+        ax.axhline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+        ax.set_xticks(x, ["Gerak\n(inisiasi)", "Tahan", "Naik\n(inisiasi)", "Berdiri"])
+        ax.set_title(f"{p} sentral C3/C4 (dB vs Istirahat; < 0 = ERD)", fontsize=10, loc="left")
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    axes[0].legend(frameon=False, fontsize=8, loc="upper right", ncol=2)
+    fig.suptitle("PILOT n = 4 (set penyetelan) — profil ERD/ERS sentral per fase; titik = rata-rata repetisi, "
+                 "garis = IK 95%", x=0.01, ha="left", fontsize=11, y=1.03)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+
+
+def pilot_perilaku(perilaku, grup, path):
+    """Durasi tiap fase per repetisi (titik) per partisipan."""
+    pids = sorted(perilaku.participant_id.unique())
+    fase = ["Gerak", "Tahan", "Naik", "Berdiri"]
+    fig, axes = plt.subplots(1, 4, figsize=(13, 3.4))
+    for ax, f in zip(axes, fase):
+        for i, (c, pid) in enumerate(zip(PESERTA, pids)):
+            v = perilaku[perilaku.participant_id == pid][f"durasi_{f}"].dropna().values
+            jit = np.random.default_rng(i).uniform(-0.12, 0.12, len(v))
+            ax.scatter(np.full(len(v), i) + jit, v, s=16, color=c, edgecolor=SURFACE, linewidth=0.5, zorder=3)
+            ax.scatter([i], [np.median(v)], s=140, marker="_", color=INK, linewidth=2, zorder=4)
+        ax.set_xticks(range(len(pids)), [_label_pid(p, grup).replace(" (", "\n(") for p in pids], fontsize=7.5)
+        ax.set_title(f"durasi {f} (dtk)", fontsize=10, loc="left")
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    fig.suptitle("PILOT — durasi fase per repetisi (timestamp manual); garis hitam = median", x=0.01, ha="left",
+                 fontsize=11, y=1.04)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+
+
+def pilot_romberg(R, grup, path):
+    """Tutup − Buka Mata (dB, IK 95% bootstrap) per area untuk alpha/mu dan theta."""
+    pids = sorted(R.participant_id.unique())
+    areas = ["oksipital", "parietal", "sentral", "frontal"]
+    fig, axes = plt.subplots(1, 2, figsize=(12, 3.8), sharey=True)
+    for ax, p, judul in zip(axes, ("mu", "theta"), ("alpha 8–13 Hz", "theta 4–8 Hz")):
+        for i, (c, pid) in enumerate(zip(PESERTA, pids)):
+            g = R[(R.participant_id == pid) & (R.pita == p)].set_index("area").reindex(areas)
+            y = np.arange(len(areas))[::-1] + (i - 1.5) * 0.15
+            if "tutup_minus_buka_db" not in g or g.tutup_minus_buka_db.isna().all():
+                continue
+            ax.errorbar(g.tutup_minus_buka_db, y, xerr=[g.tutup_minus_buka_db - g.ci_bawah,
+                                                        g.ci_atas - g.tutup_minus_buka_db],
+                        fmt="o", color=c, markersize=5, elinewidth=1, label=_label_pid(pid, grup))
+        ax.axvline(0, color=INK2, lw=0.8, ls=(0, (3, 3)))
+        ax.set_yticks(np.arange(len(areas))[::-1], areas)
+        ax.set_title(f"{judul}: Tutup − Buka Mata (dB; > 0 = naik saat mata tertutup)", fontsize=9.5, loc="left")
+        ax.grid(axis="x", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, l, frameon=False, fontsize=8.5, loc="upper left", ncol=4, bbox_to_anchor=(0.01, 1.0))
+    fig.suptitle("PILOT — Romberg: uji validitas efek Berger (alpha oksipital harus naik saat Tutup Mata)", x=0.01,
+                 ha="left", fontsize=11, y=1.08)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+
+
+def pilot_topografi(P, grup, path, vlim=3.0):
+    """Topografi 16 kanal (nilai partisipan, lolos R2) mu & beta pada inisiasi Gerak dan Tahan."""
+    import mne
+    from matplotlib.colors import LinearSegmentedColormap
+    from .istilah import KANAL
+    info = mne.create_info(KANAL, 100.0, "eeg")
+    info.set_montage("standard_1020")
+    cmap = LinearSegmentedColormap.from_list("div", ["#2a78d6", "#f0efec", "#d03b3b"])
+    pids = sorted(P.participant_id.unique())
+    kolom = [("Gerak", "mu"), ("Gerak", "beta"), ("Tahan", "mu"), ("Tahan", "beta")]
+    fig, axes = plt.subplots(len(pids), len(kolom), figsize=(10, 2.6 * len(pids)))
+    for i, pid in enumerate(pids):
+        for j, (f, p) in enumerate(kolom):
+            ax = axes[i, j]
+            g = P[(P.participant_id == pid) & (P.gerakan == "Semua") & (P.fase == f)].set_index("kanal").reindex(KANAL)
+            v = np.where(g.lolos_R2.fillna(False).astype(bool), g[f"{p}_db"], np.nan)
+            ok = np.isfinite(v)
+            if ok.sum() >= 4:
+                inf = mne.pick_info(info, np.where(ok)[0])
+                im, _ = mne.viz.plot_topomap(v[ok], inf, axes=ax, show=False, cmap=cmap, vlim=(-vlim, vlim),
+                                             contours=0, sensors=True)
+            if i == 0:
+                ax.set_title(f"{p} · {f}", fontsize=9.5)
+            if j == 0:
+                ax.set_ylabel(_label_pid(pid, grup), fontsize=9)
+    cb = fig.colorbar(im, ax=axes, shrink=0.5, pad=0.02)
+    cb.set_label("dB vs Istirahat (biru = ERD, merah = ERS)", color=INK2)
+    cb.outline.set_visible(False)
+    fig.suptitle("PILOT — topografi (referensi A2: nilai relatif rata-rata belahan; deskriptif)", x=0.01, ha="left",
+                 fontsize=11, y=1.0)
+    fig.savefig(path, dpi=120, bbox_inches="tight")
+    plt.close(fig)

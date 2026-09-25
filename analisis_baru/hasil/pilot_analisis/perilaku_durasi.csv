@@ -1,0 +1,5 @@
+participant_id,grup,n_repetisi,durasi_Gerak_median,durasi_Gerak_cv,durasi_Tahan_median,durasi_Tahan_cv,durasi_Naik_median,durasi_Naik_cv,durasi_Berdiri_median,durasi_Berdiri_cv
+P08,penari,12,2.414,0.293,5.602,0.112,1.681,0.179,6.534,0.076
+P09,penari,12,3.212,0.211,4.098,0.166,2.716,0.204,6.135,0.074
+P31,non-penari,10,2.792,0.231,4.25,0.363,1.601,0.309,7.06,0.274
+P32,non-penari,12,1.914,0.409,3.253,0.341,2.442,0.232,7.994,0.118

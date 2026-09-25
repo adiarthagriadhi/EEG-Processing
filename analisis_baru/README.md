@@ -45,6 +45,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | 4 | Lonjakan artefak gerak: ASR k 20/10/5 · ambang adaptif per partisipan · hanya ditandai | **Selesai → ASR k = 20** |
 | – | **Rencana beku + verifikasi kohort** (`RENCANA_BEKU.md`, `jalankan.py verifikasi semua`) | **Beku 2026-09-25**; menunggu data semua partisipan |
 | – | **Rencana analisis gelombang EEG** (`RENCANA_ANALISIS.md`) | **Draf**; dibekukan sesudah Tahap 5–6 beku, sebelum analisis dijalankan |
+| – | **Pilot analisis** pada 4 partisipan (`jalankan.py pilot`) | Selesai (deskriptif; bukan hasil penelitian) |
 | 5 | Mata & otot: ICA (aturan MNE) · BSS-CCA (otot) · regresi kedipan Fp1/Fp2 | **Sementara → usul tanpa koreksi tambahan** (dikonfirmasi pada set penyetelan yang lebih besar) |
 | 6 | Aturan pakai: R1 cakupan jendela bersih per repetisi · R2 repetisi minimum per sel; dataset bersih | **Sementara → cakupan ≥ 75% & ≥ 3 repetisi** (dikonfirmasi pada set penyetelan yang lebih besar) |
 
@@ -513,3 +514,54 @@ Naik tidak pernah punya 6 jendela dalam rentang TE, sehingga kedua fase akan hil
 - `repetisi_perilaku.csv`: onset dan durasi fase per repetisi (dari timestamp).
 
 ![tahap 6](hasil/tahap6_aturan/tahap6_aturan.png)
+
+---
+
+## PILOT analisis gelombang EEG (n = 4, set penyetelan): BUKAN HASIL PENELITIAN
+Perintah: `jalankan.py pilot`. Hasil: `hasil/pilot_analisis/`. Dijalankan atas permintaan pengguna sebelum rencana
+analisis dibekukan (dicatat di log RENCANA_ANALISIS.md). Dengan 2 penari vs 2 non-penari tidak ada inferensi grup.
+Semua uji di bawah adalah uji **di dalam partisipan** antar-repetisi (n = 8–12 repetisi).
+
+### Ukuran utama U1–U5 (per partisipan)
+| | grup | U1 beta Gerak | U2 mu Gerak | U3 beta Tahan | U4 mu Tahan | U5 CV Tahan |
+|---|---|---|---|---|---|---|
+| P08 | penari | −0,13 | +2,18 | +1,10 | +1,95 | 0,11 |
+| P09 | penari | −0,80 | −1,27 | +0,84 | +1,72 | 0,17 |
+| P31 | non-penari | +1,76 | +2,19 | −0,57 | −1,02 | 0,36 |
+| P32 | non-penari | +2,52 | +2,84 | +4,96 | +3,71 | 0,34 |
+
+(dB sentral C3/C4 relatif Istirahat; < 0 = ERD.)
+
+### Temuan
+1. **ERD sentral tidak muncul secara andal (uji validitas S1 gagal).** Dari 32 kombinasi partisipan × fase × pita, hanya
+   6 yang IK 95%-nya tidak memuat 0, dan keenamnya **positif** (ERS/kenaikan power): P31 dan P32 saat inisiasi Gerak,
+   P32 saat Tahan. Tidak ada ERD yang signifikan. Topografi P32 merah hampir di semua kanal, artinya power naik
+   menyeluruh terhadap Istirahat; kemungkinan sisa artefak gerak/otot atau Istirahat P32 sangat tenang.
+   - **Diagnostik K-ref (referensi telinga):** nilai sentral lebih negatif pada beberapa sel (P09 Gerak −1,6/−2,0 dB;
+     P31/P32 Tahan −1,7…−3,5 dB), tetapi juga tidak ada ERD yang signifikan (`diagnostik_S1_referensi_telinga.csv`).
+     Jadi lemahnya ERD bukan semata akibat referensi A2.
+2. **Lateralisasi saat Tahan konsisten pada keempat partisipan (S2).** LI mu (kontralateral − ipsilateral) negatif
+   pada semua: P08 −8,2; P09 −4,4 (IK −7,2…−1,7); P31 −3,0 (IK −5,1…−1,0); P32 −4,2 dB. Artinya C3 lebih rendah daripada
+   C4 saat menahan Agem Kanan, dan sebaliknya untuk Agem Kiri. Ini pola ERD kontralateral yang diharapkan secara
+   fisiologis, dan satu-satunya tanda kortikal motorik yang konsisten di pilot. Referensi A2 mempertahankan informasi
+   lateral ini. Saat inisiasi Gerak LI ≈ 0.
+3. **Perilaku (U5) searah dengan analisis repo (H7):** CV durasi Tahan penari 0,11/0,17 vs non-penari 0,36/0,34. CV
+   Berdiri juga lebih kecil pada penari kecuali P32.
+4. **Romberg: efek Berger tidak memenuhi syarat validitas.** Alpha oksipital naik saat Tutup Mata hanya pada P31
+   (+7,2 dB, IK 4,9…9,3). Pada P08 turun (−5,9 dB) bersama semua pita dan area, jadi perubahannya menyeluruh (Buka
+   Mata P08 +3,3 dB di atas Istirahat pada semua pita, kemungkinan goyang/sisa gerak). P32 sedikit turun (−1,5 dB).
+   P09 tanpa Tutup Mata. Alpha relatif (alpha − rata-rata theta & beta) juga tidak naik kecuali P31
+   (`diagnostik_berger_alpha_relatif.csv`). Sesuai rencana, **Paper D hanya deskriptif** bila pola ini bertahan pada
+   kohort.
+
+### Implikasi untuk rencana (belum diubah; menunggu kohort & keputusan pengguna)
+- Bila ERD sentral tetap tidak andal pada kohort, U1–U4 (level sentral) sulit ditafsirkan. **Lateralisasi saat Tahan
+  (S2)** tampak sebagai ukuran kortikal yang lebih kuat. Menaikkannya menjadi ukuran utama adalah perubahan rencana
+  yang harus dicatat sebagai keputusan sesudah pilot, bukan ditetapkan diam-diam.
+- Kenaikan power menyeluruh saat gerak (P32) perlu dicek dengan K-otot (kovariat otot) pada kohort.
+- Romberg: kemungkinan perlu acuan dan segmen yang lebih bersih; ditinjau sesudah kohort.
+
+![profil](hasil/pilot_analisis/profil_ERD_sentral.png)
+![perilaku](hasil/pilot_analisis/perilaku_durasi.png)
+![romberg](hasil/pilot_analisis/romberg_berger.png)
+![topografi](hasil/pilot_analisis/topografi_gerak_tahan.png)

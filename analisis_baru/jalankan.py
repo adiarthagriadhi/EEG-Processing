@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
-                      aturan, mata_otot, posisi, referensi, verifikasi)
+                      analisis, aturan, mata_otot, posisi, referensi, verifikasi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -455,6 +455,46 @@ def tahap6(pids):
     print(ring.to_string())
 
 
+def pilot(pids):
+    """PILOT analisis gelombang EEG pada set penyetelan (RENCANA_ANALISIS.md), deskriptif per partisipan."""
+    import os
+    import pickle
+    ds = HASIL / "tahap6_aturan" / "dataset"
+    out = HASIL / "pilot_analisis"
+    out.mkdir(parents=True, exist_ok=True)
+    nr = pd.read_csv(ds / "nilai_repetisi.csv")
+    P = pd.read_csv(ds / "nilai_partisipan.csv")
+    perilaku = pd.read_csv(ds / "repetisi_perilaku.csv")
+    peserta = pd.read_csv(data.ROOT / "hasil_analisis" / "participants.csv")
+    grup = dict(zip(peserta.participant_id, peserta.group))
+    nr, P, perilaku = (d[d.participant_id.isin(pids)] for d in (nr, P, perilaku))
+    cache = os.environ.get("GERAKEEG_CACHE")
+    if cache and Path(cache).exists():
+        est, _ = pickle.loads(Path(cache).read_bytes())
+    else:
+        est = pd.concat([aturan.proses(p)[0] for p in pids])
+    est = est[est.participant_id.isin(pids)]
+    U, S1 = analisis.ukuran_utama(nr, perilaku)
+    LI = analisis.lateralisasi(nr)
+    PR = analisis.perilaku_ringkas(perilaku)
+    RB = analisis.romberg(est)
+    for d in (U, S1, LI, PR, RB):
+        d.insert(1, "grup", d.participant_id.map(grup))
+    U.round(3).to_csv(out / "U1-U5_per_partisipan.csv", index=False)
+    S1.round(4).to_csv(out / "S1_ERD_sentral_per_fase.csv", index=False)
+    LI.round(4).to_csv(out / "S2_lateralisasi_agem.csv", index=False)
+    PR.round(3).to_csv(out / "perilaku_durasi.csv", index=False)
+    RB.round(3).to_csv(out / "romberg_tutup_minus_buka.csv", index=False)
+    grafik.pilot_profil(S1, grup, out / "profil_ERD_sentral.png")
+    grafik.pilot_perilaku(perilaku, grup, out / "perilaku_durasi.png")
+    grafik.pilot_romberg(RB, grup, out / "romberg_berger.png")
+    grafik.pilot_topografi(P, grup, out / "topografi_gerak_tahan.png")
+    pd.set_option("display.width", 250)
+    for nama, d in (("U1–U5", U), ("S1", S1), ("S2 LI", LI), ("perilaku", PR), ("Romberg", RB)):
+        print(f"--- {nama}")
+        print(d.round(2).to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5, "tahap6": tahap6}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5, "tahap6": tahap6, "pilot": pilot}[cmd](pids or ["P08", "P09", "P31", "P32"])
