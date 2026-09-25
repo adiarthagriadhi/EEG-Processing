@@ -36,15 +36,13 @@ EXTREME, HIGH, FLAT = 150.0, 100.0, 0.10
 
 
 def segment_list(tl, reps, cfg):
-    po = cfg["erd"]["post_window"]
+    """Jendela fase sama persis dengan tahap `segmen` (segments.phase_windows; timestamp manual:
+    tiap fase dimulai manual_timestamps.pre_onset_sec sebelum onsetnya)."""
     S = []
     for _, m in reps.iterrows():
-        w = {"PRA": (m.act_turun - 2.0, m.act_turun), "TURUN": (m.act_turun, m.act_tahan),
-             "TAHAN": (m.act_tahan, m.act_naik), "NAIK": (m.act_naik, m.act_end),
-             "POST": (m.act_end + po[0], m.act_end + po[1])}
-        for ph, (a, b) in w.items():
-            if np.isfinite([a, b]).all() and b > a:
-                S.append(dict(kind="gerak", task=m.task, rep=m.rep, phase=ph, a=a, b=b))
+        for ph, w in segments.phase_windows(m, cfg).items():
+            if w is not None:
+                S.append(dict(kind="gerak", task=m.task, rep=m.rep, phase=ph, a=w[0], b=w[1]))
     for _, r in tl[tl.task.isin(REF + ["BERDIRI MATA TERTUTUP"])].iterrows():
         S.append(dict(kind="acuan" if r.task in REF else "romberg", task=r.task, rep=np.nan,
                       phase="ACUAN" if r.task in REF else "EC", a=r.start, b=r.end))

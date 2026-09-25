@@ -26,9 +26,9 @@
   "noise_floor_db": 2.07,
   "n_segments": 50,
   "valid_frac_C3C4": {
-    "NAIK": 0.95,
+    "NAIK": 1.0,
     "POST": 0.95,
-    "PRA": 1.0,
+    "PRA": 0.95,
     "TAHAN": 1.0,
     "TURUN": 1.0
   },

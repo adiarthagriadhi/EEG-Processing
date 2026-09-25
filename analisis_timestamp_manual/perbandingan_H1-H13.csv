@@ -1,15 +1,15 @@
 hipotesis,endpoint,effect_video38,p_fdr_video38,effect_4manual,p_fdr_4manual
-H1,mu_periodic_contra_abs_TAHAN,0.044,0.596,-0.12,0.391
-H2,global_offset_TAHAN,-0.517,0.089,-0.436,0.151
+H1,mu_periodic_contra_abs_TAHAN,0.044,0.596,-0.078,0.441
+H2,global_offset_TAHAN,-0.517,0.089,-0.436,0.15
 H3,hold_agem_sec,1.529,0.0,0.983,0.014
-H4,mu_relative_FCP_left_TURUN,0.368,0.176,0.399,0.168
-H5,mu_relative_right_minus_left_TAHAN,-0.13,0.41,-0.262,0.26
+H4,mu_relative_FCP_left_TURUN,0.368,0.176,0.423,0.15
+H5,mu_relative_right_minus_left_TAHAN,-0.13,0.41,-0.333,0.216
 H6,dur_turun_sec,1.069,0.008,0.618,0.106
-H7,cv_tahan,-0.984,0.008,-1.041,0.01
-H8,dur_naik_sec,-0.586,0.089,-0.463,0.151
-H9,mu_periodic_central_TURUN,-0.37,0.869,-0.496,0.928
-H10a,offset_central_TURUN,-0.507,0.089,-0.449,0.151
-H10b,offset_central_TAHAN,-0.632,0.081,-0.559,0.119
-H11,mu_periodic_posterior_TAHAN,-0.598,0.081,-0.601,0.106
-H12,demand_minus_naik_offset_central,-1.24,0.001,-1.054,0.01
-H13,offset_central_TAHAN ~ cv_tahan,0.265,0.089,0.169,0.201
+H7,cv_tahan,-0.984,0.008,-1.041,0.011
+H8,dur_naik_sec,-0.586,0.089,-0.463,0.15
+H9,mu_periodic_central_TURUN,-0.37,0.869,-0.436,0.902
+H10a,offset_central_TURUN,-0.507,0.089,-0.472,0.15
+H10b,offset_central_TAHAN,-0.632,0.081,-0.54,0.132
+H11,mu_periodic_posterior_TAHAN,-0.598,0.081,-0.587,0.106
+H12,demand_minus_naik_offset_central,-1.24,0.001,-1.025,0.011
+H13,offset_central_TAHAN ~ cv_tahan,0.265,0.089,0.148,0.223

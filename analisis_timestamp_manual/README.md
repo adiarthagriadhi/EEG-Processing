@@ -9,6 +9,9 @@ Hasil di sini tidak menggantikan `hasil_analisis/v2/`.
 - Pipeline: `python -m eegpipe run PXX` (jalur timestamp manual, lihat `docs/MANUAL_TIMESTAMPS.md`).
   Preprocessing, deteksi sinyal datar, tahap `segmen` dan `hypotheses-v2` memakai model dan parameter yang sama
   dengan jalur video.
+- Jendela observasi (keputusan pengguna 2026-09-25): tiap fase dimulai 0,5 dtk SEBELUM timestamp onsetnya
+  dan berakhir di timestamp fase berikut, tanpa pemangkasan (`manual_timestamps.pre_onset_sec`, `trim_sec`).
+  PRA = [turun − 2,5, turun − 0,5]; POST = [B + 0,5, B + 2]. Durasi fase tetap dihitung dari timestamp.
 - Baseline.EDF dan video tidak diunggah → tahap `baseline` dilewati.
 - Keputusan per partisipan (kanal buruk, ICA, offset) di `per_partisipan/PXX/keputusan.yaml`.
 
@@ -40,11 +43,12 @@ Sinyal datar dan cakupan EC sama dengan hasil jalur video sebelumnya → EDF dan
 Definisi awal/akhir fase manual berbeda sistematis dari definisi pose.
 
 ### Dampak pada H1–H13 (`perbandingan_H1-H13.csv`)
-38 partisipan dengan model v2; hanya P08, P09, P31, P32 diganti ke timestamp manual:
+38 partisipan dengan model v2; hanya P08, P09, P31, P32 diganti ke timestamp manual (jendela −0,5 dtk):
 - H3 durasi tahan agem: g 1,53 → 0,98 (p_FDR < 0,001 → 0,014)
 - H6 durasi TURUN: g 1,07 → 0,62 (p_FDR 0,008 → 0,106)
-- H7 CV TAHAN: g −0,98 → −1,04 (bertahan); H12: g −1,24 → −1,05 (bertahan)
-- Lainnya berubah kecil; tidak ada yang berubah arah secara bermakna.
+- H7 CV TAHAN: g −0,98 → −1,04 (bertahan); H12: g −1,24 → −1,03 (bertahan)
+- Lainnya berubah kecil; tidak ada yang berubah arah secara bermakna. Memajukan jendela 0,5 dtk hampir tidak
+  mengubah endpoint EEG dibanding jendela tanpa pemajuan.
 
 **Kesimpulan:** jangan mencampur sumber fase (manual vs pose) dalam satu uji grup. Pilihan: timestamp manual untuk
 seluruh 38 partisipan, atau timestamp manual hanya sebagai validasi pelacak pose.

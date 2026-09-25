@@ -64,14 +64,20 @@ def phase_windows(m, cfg):
     sc = cfg["segments"]
     arm = m.act_arm if np.isfinite(m.get("act_arm", np.nan)) else m.act_turun
     pw, po = cfg["erd"]["pre_window"], cfg["erd"]["post_window"]
-    W = {"PRA": (arm + pw[0], arm + pw[1], pw[1] - pw[0]) if np.isfinite(arm) else None}
+    # timestamp manual: jendela observasi tiap fase dimulai `pre_onset_sec` SEBELUM timestamp onsetnya
+    # (akhir = timestamp fase berikut), tanpa pemangkasan batas; PRA ikut mundur agar tidak tumpang tindih
+    lead, trim = 0.0, sc["trim_sec"]
+    if m.get("phase_source") == "manual_timestamp":
+        mt = cfg.get("manual_timestamps", {})
+        lead, trim = float(mt.get("pre_onset_sec", 0.0)), float(mt.get("trim_sec", 0.0))
+    W = {"PRA": (arm + pw[0] - lead, arm + pw[1] - lead, pw[1] - pw[0]) if np.isfinite(arm) else None}
     for ph, (c0, c1) in PHASE_COLS.items():
         a, b = m[c0], m[c1]
         if not np.isfinite([a, b]).all() or b <= a:
             W[ph] = None
             continue
-        tr = min(sc["trim_sec"], sc["trim_max_frac"] * (b - a))
-        W[ph] = (a + tr, b - tr, b - a) if (b - a - 2 * tr) >= sc["min_win_sec"] else None
+        tr = min(trim, sc["trim_max_frac"] * (b - a))
+        W[ph] = (a - lead + tr, b - tr, b - a) if (b - a + lead - 2 * tr) >= sc["min_win_sec"] else None
     W["POST"] = ((m.act_end + po[0], m.act_end + po[1], po[1] - po[0])
                  if np.isfinite(m.act_end) else None)
     return {ph: W[ph] for ph in sc["phases"]}

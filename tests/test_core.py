@@ -233,3 +233,17 @@ def test_manual_timestamps_incomplete_rep_flagged():
     seq = [("N", 5), ("T", 7), ("N", 10), ("AKA", 20), ("T", 22), ("N", 25), ("B", 26)]
     tl, reps, info = manual_ts.build(manual_ts.load_df(_ts(seq)), load_config())
     assert reps.compliance.tolist() == ["incomplete", "ok"] and len(info["problems"]) == 1
+
+
+def test_phase_windows_manual_pre_onset():
+    from eegpipe.segments import phase_windows
+    cfg = load_config()
+    cfg["manual_timestamps"]["pre_onset_sec"] = 0.5
+    m = pd.Series(dict(act_arm=10.0, act_turun=10.0, act_tahan=12.0, act_naik=15.0, act_end=16.5,
+                       phase_source="manual_timestamp"))
+    W = phase_windows(m, cfg)
+    assert W["PRA"][:2] == (7.5, 9.5)
+    assert W["TURUN"][:2] == (9.5, 12.0) and W["TAHAN"][:2] == (11.5, 15.0) and W["NAIK"][:2] == (14.5, 16.5)
+    assert W["TURUN"][2] == 2.0                       # durasi fase tetap dari timestamp
+    m["phase_source"] = "video"                       # jalur video tidak berubah
+    assert phase_windows(m, cfg)["TURUN"][:2] == (10.25, 11.75)

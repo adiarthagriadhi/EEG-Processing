@@ -26,10 +26,10 @@
   "noise_floor_db": 1.8,
   "n_segments": 60,
   "valid_frac_C3C4": {
-    "NAIK": 0.75,
+    "NAIK": 0.71,
     "POST": 0.79,
     "PRA": 0.67,
-    "TAHAN": 0.71,
+    "TAHAN": 0.75,
     "TURUN": 0.79
   },
   "flat_pct_total": {

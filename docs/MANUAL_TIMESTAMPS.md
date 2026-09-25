@@ -17,6 +17,11 @@ Video tidak dibutuhkan. Tahap `preprocess`, `erd`, `spectral`, `romberg`, `basel
 Spasi di label diabaikan. Urutan yang menyimpang dicatat di `decisions/PXX.yaml → manual_timestamp_problems`
 dan di laporan QC; repetisi tak lengkap = `compliance: incomplete`.
 
+## Jendela observasi
+Tiap fase TURUN/TAHAN/NAIK dianalisis dari `pre_onset_sec` (baku 0,5 dtk) SEBELUM timestamp onsetnya sampai
+timestamp fase berikut, tanpa pemangkasan batas (`manual_timestamps.trim_sec: 0`). PRA ikut mundur:
+[turun − 2,5, turun − 0,5]. POST tetap [B + 0,5, B + 2]. Durasi perilaku tetap dari timestamp.
+
 ## Sinkronisasi
 `t_EEG = t_timestamp + manual_timestamps.offset_sec` (baku 0). Tidak ada estimasi/alarm offset.
 
