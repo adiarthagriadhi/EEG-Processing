@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gerakeeg import data, epoch, grafik, jendela, kanal, kualitas, pembanding, posisi, referensi   # noqa: E402
+from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
+                      posisi, referensi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -212,6 +213,52 @@ def tahap3(pids):
     print(KB[["participant_id", "kanal_buruk_rekaman"]].to_string(index=False))
 
 
+def tahap4(pids):
+    """Tahap 4: lonjakan artefak gerak (ASR / ambang adaptif / tandai) di atas TE + A2."""
+    out = HASIL / "tahap4_lonjakan"
+    out.mkdir(parents=True, exist_ok=True)
+    rujuk = kanal.robust
+    R, REP, INFO, DIST = [], [], [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rep, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rep, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        eTE = epoch.potong_TE(W, xf.shape[1] / sf)
+        Wr = W[W.fase.isin(epoch.FASE_REPETISI)]
+        ref0, _ = epoch.acuan(xf, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, rujuk)
+        for v in lonjakan.VARIAN:
+            x, amb, info = xf, None, {}
+            if v.startswith("T4_ASR"):
+                x, info = lonjakan.asr(xf, datar, sf, W, int(v[6:]))
+            elif v == "T4_adaptif":
+                amb = lonjakan.ambang_adaptif(xf, datar, sf, W, rujuk)
+                info = {f"ambang_{c}": round(float(a), 1) for c, a in zip(kanal.KANAL, amb)}
+            ref, _ = epoch.acuan(x, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, rujuk, amb)
+            est = epoch.estimasi(x, datar, sf, eTE, ref, "TE", rujuk, amb)
+            rp = epoch.per_repetisi(est)
+            R.append(epoch.ringkas(pid, Wr, {"TE": eTE}, est, rp).assign(varian=v))
+            REP.append(rp.assign(participant_id=pid, varian=v))
+            INFO.append(dict(participant_id=pid, varian=v, **info))
+            # distorsi: perubahan power acuan Istirahat (potongan bersih) terhadap tanpa koreksi, dB
+            DIST.append(dict(participant_id=pid, varian=v, **{
+                f"istirahat_{b}_db": round(float(np.nanmedian(10 * np.log10(ref[b] / ref0[b]))), 2)
+                for b in ("theta", "mu", "beta", "otot")}))
+        print(f"[{pid}] selesai; kalibrasi ASR {INFO[-4]}")
+    R = pd.concat(R)
+    R.to_csv(out / "ringkasan_varian_fase.csv", index=False)
+    pd.DataFrame(INFO).to_csv(out / "info_varian.csv", index=False)
+    pd.DataFrame(DIST).to_csv(out / "distorsi_istirahat.csv", index=False)
+    pd.concat(REP).round(3).to_csv(out / "estimasi_per_repetisi.csv", index=False)
+    grafik.tahap_varian(R, out / "tahap4_lonjakan.png", grafik.T4_WARNA,
+                        "Tahap 4 — lonjakan artefak gerak (epoch TE, referensi A2)")
+    pd.set_option("display.width", 250)
+    kol = ["pct_kanal_epoch_bersih", "otot_db_median", "detik_bersih_median_kanal", "pct_kanal_rep_valid_ge3",
+           "se_db_median", "reliabilitas_belah_dua"]
+    print(R.groupby(["fase", "varian"], sort=False)[kol].median().round(2).to_string())
+    print(pd.DataFrame(DIST).to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4}[cmd](pids or ["P08", "P09", "P31", "P32"])

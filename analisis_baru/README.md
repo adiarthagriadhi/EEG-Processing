@@ -37,8 +37,8 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | 1 | Inventaris kualitas sinyal per fase (tanpa mengubah data) | **Selesai** |
 | – | Epoching: B / T / TE / E | **Selesai → TE dipakai** (keputusan pengguna 2026-09-25) |
 | 2 | Referensi: A rata-rata per belahan · B rata-rata 16 kanal · C bipolar tetangga · D telinga A1/A2 (asli) | **Selesai → A dipakai** (keputusan pengguna) |
-| 3 | Kanal buruk & sinyal datar: per rekaman · per jendela (robust) · referensi median · interpolasi | **Selesai → usul A2 robust** (menunggu persetujuan) |
-| 4 | Lonjakan artefak gerak: A ASR (kalibrasi Istirahat) · B tolak per potongan, ambang per partisipan · C hanya ditandai | Menunggu |
+| 3 | Kanal buruk & sinyal datar: per rekaman · per jendela (robust) · referensi median · interpolasi | **Selesai → A2 robust dipakai** (keputusan pengguna) |
+| 4 | Lonjakan artefak gerak: ASR k 20/10/5 · ambang adaptif per partisipan · hanya ditandai | **Selesai → usul ASR k = 20** (menunggu persetujuan) |
 | 5 | Mata & otot: A ICA + ICLabel · B BSS-CCA (otot) · C regresi kedipan Fp1/Fp2 | Menunggu |
 | 6 | Aturan pakai jendela & uji sensitivitas | Menunggu |
 
@@ -346,3 +346,46 @@ maksimum 1,05–1,68), sehingga A1 identik dengan A0.
 **Usul: A2 robust sebagai baku**, A4 hanya untuk topografi (ditandai).
 
 ![tahap 3](hasil/tahap3_kanal/tahap3_kanal.png)
+
+---
+
+## Tahap 4: lonjakan artefak gerak (epoch TE, referensi A2)
+Kode: `gerakeeg/lonjakan.py`. Perintah: `jalankan.py tahap4`. Hasil: `hasil/tahap4_lonjakan/`.
+
+| Varian | Isi |
+|---|---|
+| tandai | Tanpa koreksi; potongan > 150 µV hanya ditandai tidak bersih (hasil Tahap 3) |
+| ASR k = 20 / 10 / 5 | Artifact Subspace Reconstruction pada sinyal kontinu, per belahan, sebelum referensi A2. Dikalibrasi dari potongan Istirahat yang kedelapan kanalnya bersih (20–118 dtk per belahan). k kecil = lebih agresif |
+| ambang adaptif | Tanpa koreksi; ambang tolak per partisipan × kanal = median + 3 MAD log-ptp Istirahat (50–300 µV) |
+
+**ASR ditulis sendiri** (`asr_kalibrasi`, `asr_proses`, mengikuti algoritme Kothe & Mullen tanpa filter pembobot
+spektral). ASR dari pustaka meegkit 0.2 ditolak karena mengubah data kalibrasi yang bersih (r 0,54–0,91 dengan
+aslinya) dan hasilnya tidak berubah dengan k pada data 100 Hz. Verifikasi implementasi sendiri (uji sintetis):
+data bersih utuh (r = 1,000), artefak besar tersisa 3–16% energinya, artefak kecil dibiarkan.
+
+Median 4 partisipan, Gerak / Tahan / Naik / Berdiri:
+
+| | tandai | **ASR 20** | ASR 10 | ASR 5 | adaptif |
+|---|---|---|---|---|---|
+| % kanal-jendela bersih | 56 / 59 / 52 / 64 | 65 / 65 / 56 / 69 | 70 / 69 / 64 / 71 | 72 / 73 / 69 / 75 | 47 / 57 / 52 / 63 |
+| Otot 20–34 Hz (dB) | 0,82 / 1,00 / 1,86 / 0,18 | 0,72 / 0,72 / 1,84 / 0,13 | 0,56 / 0,34 / 1,22 / −0,01 | 0,16 / −0,14 / 0,34 / **−0,86** | 0,75 / 0,86 / 1,78 / 0,14 |
+| Galat baku (dB) | 1,40 / 1,35 / 1,61 / 1,06 | 1,36 / 1,27 / 1,54 / 1,04 | 1,25 / 1,21 / 1,42 / 1,02 | 1,20 / 1,06 / 1,32 / 0,92 | 1,32 / 1,32 / 1,48 / 1,05 |
+| Reliabilitas belah-dua | 0,77 / 0,78 / 0,76 / 0,86 | 0,78 / 0,79 / **0,80** / 0,86 | 0,80 / 0,84 / 0,68 / 0,86 | 0,80 / 0,81 / 0,63 / 0,86 | 0,70 / 0,76 / 0,55 / 0,78 |
+| % waktu direkonstruksi (per belahan) | – | 5–32 | 10–40 | 21–54 | – |
+| Perubahan power Istirahat (dB) | 0 | 0,00 | ≤ 0,02 | −0,25…−0,02 | ≤ 0,11 |
+
+- **ASR 20 (konservatif)** menambah data bersih +4…+9 poin tanpa menyentuh Istirahat (0,00 dB). Semua reliabilitas
+  tetap atau naik, termasuk Naik 0,76 → 0,80.
+- **ASR 10** membersihkan lebih banyak (otot Tahan 1,00 → 0,34 dB) dan Istirahat tetap utuh, tetapi reliabilitas
+  Naik turun (0,76 → 0,68) dan 10–40% waktu direkonstruksi.
+- **ASR 5 terlalu agresif.** Otot Berdiri turun di bawah Istirahat (−0,86 dB), Istirahat ikut berubah, Naik 0,63, dan
+  sampai 54% waktu direkonstruksi. Kemungkinan besar ikut membuang aktivitas otak.
+- **Ambang adaptif lebih buruk.** Ambang Istirahat P08 hanya ±77 µV, sehingga lebih banyak data terbuang tanpa
+  peningkatan kualitas.
+- Risiko ASR pada tugas gerak: perubahan EEG yang besar dan wajar (mis. *rebound* beta sesudah gerak) juga
+  "bervarians tinggi" dibanding Istirahat dan dapat ikut direkonstruksi. Makin kecil k, makin besar risikonya.
+  Karena itu dipilih k konservatif.
+
+**Usul: ASR k = 20 sebagai baku, ASR k = 10 sebagai uji sensitivitas.**
+
+![tahap 4](hasil/tahap4_lonjakan/tahap4_lonjakan.png)

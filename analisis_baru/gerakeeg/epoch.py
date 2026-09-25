@@ -43,7 +43,7 @@ def _bersih(xf, datar, i0, i1):
     return (datar[:, i0:i1].mean(axis=1) < DATAR_BATAS) & (np.ptp(xf[:, i0:i1], axis=1) <= EKSTREM_UV)
 
 
-def _potong(xf, datar, i0, i1, skema):
+def _potong(xf, datar, i0, i1, skema, ambang=None):
     """Potongan [i0, i1) dengan skema referensi (None = asli). → (x, tidak_datar, bersih)."""
     x, fd = xf[:, i0:i1], datar[:, i0:i1].mean(axis=1)
     if callable(skema):                                   # Tahap 3: fungsi (x, fd) → (x', fd')
@@ -52,7 +52,7 @@ def _potong(xf, datar, i0, i1, skema):
         from .referensi import terapkan
         x, fd = terapkan(skema, x, fd)
     nd = fd < DATAR_BATAS
-    return x, nd, nd & (np.ptp(x, axis=1) <= EKSTREM_UV)
+    return x, nd, nd & (np.ptp(x, axis=1) <= (EKSTREM_UV if ambang is None else ambang))
 
 
 def potong_B(W):
@@ -110,7 +110,7 @@ def potong_E(W, T):
     return pd.DataFrame(out)
 
 
-def acuan(xf, datar, sf, W, panjang, geser, skema=None):
+def acuan(xf, datar, sf, W, panjang, geser, skema=None, ambang=None):
     """Power acuan per kanal (rata-rata potongan bersih Istirahat)."""
     ist = W[W.fase == ISTIRAHAT]
     P = {b: [] for b in list(PITA) + ["otot"]}
@@ -120,7 +120,7 @@ def acuan(xf, datar, sf, W, panjang, geser, skema=None):
             i0, i1 = int(round(s * sf)), int(round((s + panjang) * sf))
             if i1 > xf.shape[1]:
                 break
-            x, _, ok = _potong(xf, datar, i0, i1, skema)
+            x, _, ok = _potong(xf, datar, i0, i1, skema, ambang)
             pw = _power(x, sf)
             for b in P:
                 P[b].append(np.where(ok, pw[b], np.nan))
@@ -128,14 +128,14 @@ def acuan(xf, datar, sf, W, panjang, geser, skema=None):
     return {b: np.nanmean(np.array(v), axis=0) for b, v in P.items()}, np.array(M).mean(axis=0)
 
 
-def estimasi(xf, datar, sf, epochs, ref, metode, skema=None):
+def estimasi(xf, datar, sf, epochs, ref, metode, skema=None, ambang=None):
     """Per epoch/jendela: bersih per kanal + power dB relatif acuan. → baris panjang (repetisi × fase × kanal)."""
     rows = []
     for e in epochs.itertuples():
         i0, i1 = int(round(e.mulai * sf)), int(round(e.selesai * sf))
         if i0 < 0 or i1 > xf.shape[1]:
             continue
-        x, nd, ok = _potong(xf, datar, i0, i1, skema)
+        x, nd, ok = _potong(xf, datar, i0, i1, skema, ambang)
         pw = _power(x, sf)
         from .referensi import nama
         for k, c in enumerate(nama(skema) if skema else KANAL):

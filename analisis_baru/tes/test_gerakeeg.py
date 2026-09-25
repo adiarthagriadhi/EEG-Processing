@@ -115,3 +115,16 @@ def test_kanal_robust_dan_interpolasi():
     assert np.ptp(y2[0]) < 0.5 * np.ptp(y0[0])                               # Fp1 tak lagi tercemar C3
     y4, fd4 = kanal.robust_interp(x, fd)
     assert fd4[2] == kanal.TANDA_INTERP and np.isfinite(y4[2]).all() and np.ptp(y4[2]) < 100
+
+
+def test_asr_sendiri():
+    from gerakeeg.lonjakan import asr_kalibrasi, asr_proses
+    rng = np.random.default_rng(0)
+    A = rng.normal(size=(8, 8))
+    cal, x = A @ rng.normal(0, 5, (8, 6000)), A @ rng.normal(0, 5, (8, 20000))
+    art = np.zeros_like(x)
+    art[:, 5000:5100] = np.outer(rng.normal(size=8), 100 * np.hanning(100) * np.sin(np.arange(100) / 3))
+    M, T = asr_kalibrasi(cal, 100.0, 20)
+    y, _ = asr_proses(x + art, 100.0, M, T)
+    assert np.mean([np.corrcoef(x[i, 6000:], y[i, 6000:])[0, 1] for i in range(8)]) > 0.999   # bersih utuh
+    assert np.sum((y - x)[:, 4900:5200] ** 2) < 0.25 * np.sum(art ** 2)                         # artefak besar turun
