@@ -7,14 +7,17 @@
    repetisi agem; bias sudut kamera berbeda per partisipan). Repetisi di kelompok sisi lawan dengan jarak ke
    ambang ≥ margin → `kandidat_salah_sisi`. Uji visual (P04, P07, P24, P31, P32, P36): 3 dari 4 kandidat
    satu-repetisi KELIRU (titik pergelangan meleset saat tangan dekat wajah/terhalang) → kandidat hanya
-   diterapkan bila dikonfirmasi visual di `data/decisions/PXX.yaml`:
-       reclass_sisi: [{task: AGEM KANAN, rep: 1, jadi: AGEM KIRI, basis: "visual …"}]
-   Repetisi yang dipindah: `reclass = salah_sisi`, rep + 10 (kunci unik), label asli di `task_hud`/`rep_hud`.
-2. TANPA TURUN: repetisi `incomplete` dengan kedalaman < min_depth_px → `reclass = tanpa_turun` (deskriptif;
+   diterapkan bila dikonfirmasi visual oleh peneliti (lembar tinjauan → scripts/terapkan_tinjauan.py) di
+   `data/decisions/PXX.yaml`:  reclass_manual: [{task, rep, jadi: NGEED | AGEM KANAN | AGEM KIRI, basis}]
+   Repetisi yang dipindah: `reclass = salah_sisi` (kanan↔kiri) atau `gerak_lain` (mis. NGEED saat instruksi
+   AGEM), rep + 10 (kunci unik), label asli di `task_hud`/`rep_hud`; kategori tinjauan di kolom `tinjauan`.
+2. TANPA TURUN: repetisi `incomplete` dengan kedalaman < min_depth_px, atau dinilai peneliti tidak_turun/berdiri
+   → `reclass = tanpa_turun` (deskriptif;
    tidak ada sub-fase gerak, tidak dipakai sebagai acuan diam)."""
 import numpy as np
 
 AGEM = ("AGEM KANAN", "AGEM KIRI")
+TASKS = ("NGEED",) + AGEM
 
 
 def side_feature(reps, pose):
@@ -66,16 +69,26 @@ def reclassify(reps, pose, cfg, decisions=None):
             info["side"] = "ok"
         else:
             info["side"] = "tidak_terpisah"
+    dec = decisions or {}
     other = {"AGEM KANAN": "AGEM KIRI", "AGEM KIRI": "AGEM KANAN"}
-    for d in (decisions or {}).get("reclass_sisi", []) or []:
+    manual = list(dec.get("reclass_manual", []) or []) + [
+        {**d, "jadi": d.get("jadi", other.get(d["task"]))} for d in dec.get("reclass_sisi", []) or []]
+    for d in manual:                                  # hanya dari tinjauan visual (keputusan peneliti)
         k = df.index[(df.task_hud == d["task"]) & (df.rep_hud == int(d["rep"]))]
-        if len(k) and d.get("jadi", other.get(d["task"])) in AGEM:
+        if len(k) and d.get("jadi") in TASKS and d["jadi"] != d["task"]:
             i = k[0]
-            df.at[i, "task"], df.at[i, "rep"] = d.get("jadi", other[d["task"]]), int(d["rep"]) + 10
-            df.at[i, "reclass"] = "salah_sisi"
-    nod = (df.compliance == "incomplete") & (df.depth_px < cfg["phases"]["min_depth_px"])
+            df.at[i, "task"], df.at[i, "rep"] = d["jadi"], int(d["rep"]) + 10
+            df.at[i, "reclass"] = "salah_sisi" if d["jadi"] in AGEM and d["task"] in AGEM else "gerak_lain"
+    df["tinjauan"] = ""
+    for d in dec.get("tinjauan", []) or []:
+        k = df.index[(df.task_hud == d["task"]) & (df.rep_hud == int(d["rep"]))]
+        if len(k):
+            df.at[k[0], "tinjauan"] = d.get("kategori", "")
+    nod = ((df.compliance == "incomplete") & (df.depth_px < cfg["phases"]["min_depth_px"])) | \
+        df.tinjauan.isin(["tidak_turun", "berdiri"])
     df.loc[nod & (df.reclass == ""), "reclass"] = "tanpa_turun"
     info.update(n_kandidat=int(df.kandidat_salah_sisi.sum()),
                 n_salah_sisi=int((df.reclass == "salah_sisi").sum()),
+                n_gerak_lain=int((df.reclass == "gerak_lain").sum()),
                 n_tanpa_turun=int((df.reclass == "tanpa_turun").sum()))
     return df, info

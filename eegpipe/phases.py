@@ -96,7 +96,7 @@ def compliance(row, late_sec=1.5, short_hold_sec=1.0):
     return "ok"
 
 
-def detect_reps(timeline, pose_t, pose_y, cfg, wrists=None):
+def detect_reps(timeline, pose_t, pose_y, cfg, wrists=None, confirmed=()):
     """Satu baris per repetisi gerakan: onset HUD, fase aktual, kepatuhan.
     Waktu dalam detik VIDEO (dikonversi ke EEG di tahap epoching)."""
     pc = cfg["phases"]
@@ -124,6 +124,19 @@ def detect_reps(timeline, pose_t, pose_y, cfg, wrists=None):
                    track_noise_px=track_noise,
                    pose_valid_frac=float(np.isfinite(pose_y[m]).mean()) if m.any() else 0.0)
         row["compliance"] = compliance(row, pc["late_sec"], pc["short_hold_sec"])
+        row["phase_source"] = "video"
+        # Percobaan ulang (2026-09-25): repetisi incomplete → ambang lo/hi longgar + jendela diperpanjang;
+        # batas kedalaman diturunkan hanya untuk repetisi yang dikonfirmasi peneliti "turun" (tinjauan manual).
+        rx = pc.get("relaxed")
+        if rx and row["compliance"] == "incomplete":
+            m2 = (pose_t >= w0) & (pose_t <= hud_end + rx["search_after_sec"])
+            dmin = rx["min_depth_px_confirmed"] if (task, int(rep)) in confirmed else pc["min_depth_px"]
+            seg2 = segment_phases(pose_t[m2], pose_y[m2], lo=rx["lo"], hi=rx["hi"], min_depth_px=dmin,
+                                  stand_until=hud_turun)
+            r2 = {**row, **seg2}
+            c2 = compliance(r2, pc["late_sec"], pc["short_hold_sec"])
+            if c2 != "incomplete" and np.isfinite(seg2["depth_px"]):
+                row.update(seg2, compliance=c2, phase_source="video_longgar")
         # gerak lengan pertama: 8 dtk sebelum instruksi s.d. onset batang tubuh
         a = arm_onset(pose_t, wrists, hud_turun - pc["arm_search_sec"],
                       row["act_turun"] if np.isfinite(row["act_turun"]) else hud_turun + 3)
@@ -153,7 +166,8 @@ def hud_fallback(df, pc):
     duduk tepat di belakang partisipan → MediaPipe menggabungkan dua orang saat agem)
     diberi fase dari PROTOKOL HUD digeser latensi median partisipan (dari repetisi yang
     bersih). Ditandai phase_source='hud_fallback' agar bisa dikecualikan di analisis."""
-    df["phase_source"] = "video"
+    if "phase_source" not in df:
+        df["phase_source"] = "video"
     good = df.compliance.isin(["ok", "late"]) & (df.track_noise_px <= pc["max_track_noise_px"])
     lat = float((df.act_turun - df.hud_turun)[good].median()) if good.any() else pc["default_latency_sec"]
     bad = df.track_noise_px > pc["max_track_noise_px"]

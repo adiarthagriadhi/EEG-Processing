@@ -75,6 +75,11 @@ phases:
   min_depth_px: 15
   max_track_noise_px: 3.0    # median |Δy| antar frame; di atas ini pose dianggap tidak andal
   default_latency_sec: 1.2
+  relaxed:                    # percobaan ulang repetisi incomplete (2026-09-25); ditandai phase_source=video_longgar
+    lo: 0.2
+    hi: 0.8
+    search_after_sec: 6.0
+    min_depth_px_confirmed: 8 # hanya repetisi yang dikonfirmasi "turun" pada tinjauan manual
   arm_search_sec: 8.0         # cari gerak lengan mulai 8 dtk sebelum instruksi TURUN
 
 erd:

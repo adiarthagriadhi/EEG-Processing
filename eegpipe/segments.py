@@ -183,6 +183,8 @@ def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):
     for _, m in reps.iterrows():
         if m.get("phase_source") == "hud_fallback" and not sc["include_hud_fallback"]:
             continue
+        if m.get("reclass", "") == "tanpa_turun":         # tidak turun/berdiri (otomatis atau tinjauan peneliti)
+            continue
         for ph, w in phase_windows(m, cfg).items():
             if w is None:
                 continue
