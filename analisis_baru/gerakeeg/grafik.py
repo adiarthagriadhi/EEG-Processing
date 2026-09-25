@@ -118,3 +118,40 @@ def banding(rb, path, judul):
     fig.suptitle(judul, x=0.01, y=1.14, ha="left", fontsize=11)
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
+
+
+def epoch_banding(R, path):
+    """Empat ukuran per fase, B vs E; titik = partisipan, garis penghubung per partisipan."""
+    from .istilah import FASE_REPETISI
+    ukuran = [("detik_bersih_median_kanal", "Detik data bersih\nper kanal (median)", None),
+              ("cakupan_fase_median", "Cakupan jendela\nobservasi (median)", (0, 1.05)),
+              ("se_db_median", "Galat baku estimasi\npower (dB; kecil = presisi)", None),
+              ("reliabilitas_belah_dua", "Reliabilitas belah-dua\n(pola kanal × pita)", (-0.5, 1.05))]
+    fig, axes = plt.subplots(1, 4, figsize=(13, 3.4))
+    x = np.arange(len(FASE_REPETISI))
+    for ax, (col, lab, lim) in zip(axes, ukuran):
+        for pid, g in R.groupby("participant_id"):
+            b = g[g.metode == "B"].set_index("fase").reindex(FASE_REPETISI)[col].values
+            e = g[g.metode == "E"].set_index("fase").reindex(FASE_REPETISI)[col].values
+            for i in range(len(x)):
+                ax.plot([x[i] - 0.15, x[i] + 0.15], [b[i], e[i]], color=GRID, lw=1.2, zorder=1)
+            ax.scatter(x - 0.15, b, s=34, facecolor=SURFACE, edgecolor=REPO, linewidth=1.8, zorder=2)
+            ax.scatter(x + 0.15, e, s=26, color=BARU, edgecolor=SURFACE, linewidth=1, zorder=3)
+        ax.set_xticks(x, FASE_REPETISI)
+        ax.set_title(lab, fontsize=9, loc="left", color=INK)
+        if lim:
+            ax.set_ylim(*lim)
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    h = [plt.Line2D([], [], marker="o", ls="", markerfacecolor=SURFACE, markeredgecolor=REPO, markeredgewidth=2,
+                    markersize=8),
+         plt.Line2D([], [], marker="o", ls="", color=BARU, markersize=6)]
+    fig.legend(h, ["B: epoch tetap 1,5 dtk dari onset − 0,5", "E: jendela geser 1 dtk berlabel fase"],
+               loc="upper left", ncol=2, frameon=False, bbox_to_anchor=(0.01, 1.08), fontsize=8.5)
+    fig.text(0.01, -0.04, "Titik hilang = tidak dapat dihitung (kurang dari 3 repetisi bersih; B pada P32 Gerak/Tahan/Berdiri).", fontsize=7.5, color=INK2)
+    fig.suptitle("Epoching B vs E — per fase, 4 partisipan (titik), sebelum koreksi artefak", x=0.01, y=1.17,
+                 ha="left", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)

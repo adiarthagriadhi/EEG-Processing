@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gerakeeg import data, grafik, jendela, kualitas, pembanding   # noqa: E402
+from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding   # noqa: E402
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -65,6 +65,35 @@ def tahap1(pids):
     print(sel.drop(columns=["gerakan", "rep"]).groupby("participant_id").median().round(2).to_string())
 
 
+def epoch_BE(pids):
+    """Bandingkan epoching B (tetap 1,5 dtk dari onset − 0,5) dan E (jendela geser 1 dtk berlabel fase)."""
+    out = HASIL / "epoch_B_vs_E"
+    out.mkdir(parents=True, exist_ok=True)
+    R, EST, REP = [], [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rep, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rep, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        T = xf.shape[1] / sf
+        eB, eE = epoch.potong_B(W), epoch.potong_E(W, T)
+        refB, _ = epoch.acuan(xf, datar, sf, W, epoch.B_PANJANG, epoch.B_PANJANG)
+        refE, _ = epoch.acuan(xf, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER)
+        est = pd.concat([epoch.estimasi(xf, datar, sf, eB, refB, "B"),
+                         epoch.estimasi(xf, datar, sf, eE, refE, "E")])
+        rp = epoch.per_repetisi(est)
+        R.append(epoch.ringkas(pid, W[W.fase.isin(epoch.FASE_REPETISI)], eB, eE, est, rp))
+        EST.append(est.assign(participant_id=pid))
+        REP.append(rp.assign(participant_id=pid))
+        print(f"[{pid}] B {len(eB)} epoch ({(~eB.muat).sum()} fase < 1 dtk); E {len(eE)} jendela")
+    R = pd.concat(R)
+    R.to_csv(out / "ringkasan_B_vs_E.csv", index=False)
+    pd.concat(REP).round(3).to_csv(out / "estimasi_per_repetisi.csv", index=False)
+    grafik.epoch_banding(R, out / "epoch_B_vs_E.png")
+    pd.set_option("display.width", 250)
+    print(R.to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_BE}[cmd](pids or ["P08", "P09", "P31", "P32"])

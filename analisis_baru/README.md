@@ -127,3 +127,44 @@ batas dipangkas 0,25 dtk. Pemetaannya: TURUN ↔ Gerak, TAHAN ↔ Tahan, NAIK �
 - `jendela.csv`: per jendela: cakupan EDF dan korelasi antar-kanal dalam/antar belahan.
 - `ringkasan_fase.csv` (baru + repo), `ringkasan_gerakan_fase.csv`, `ringkasan_kanal_pct_ok.csv`.
 - `pembanding_repo_vs_baru.csv`, `pembanding_selisih_onset.csv`, `masalah_timestamp.csv`.
+
+---
+
+## Perbandingan epoching B vs E
+Kode: `gerakeeg/epoch.py`. Perintah: `jalankan.py epoch`. Hasil: `hasil/epoch_B_vs_E/`. Dinilai **sebelum koreksi
+artefak**, dengan aturan bersih yang sama per kanal: datar < 10% dan peak-to-peak ≤ 150 µV.
+
+- **B**: satu epoch tetap 1,5 dtk per fase, [onset − 0,5, onset + 1,0]. Fase lebih pendek dari 1 dtk tidak dipakai
+  (2 dari 184 fase).
+- **E**: jendela 1 dtk bergeser 0,25 dtk sepanjang rekaman. Jendela diberi label fase bila seluruhnya berada di
+  dalam jendela observasi fase itu; jendela yang melintasi batas fase dibuang. Nilai per repetisi = rata-rata
+  power jendela yang bersih.
+- Power theta/mu/beta dalam dB relatif Istirahat, yang dipotong dengan cara yang sama. Unit independen tetap
+  repetisi: jendela E yang tumpang tindih tidak dihitung sebagai sampel terpisah.
+
+| Ukuran (rentang 4 partisipan) | Fase | B | E |
+|---|---|---|---|
+| Detik data bersih per kanal (median) | Gerak | 1,5–9 | 2,5–18 |
+| | Tahan | 0–6 | 8,5–45 |
+| | Naik | 1,5–6 | 3,8–10 |
+| | Berdiri | 0–3 | 32–64 |
+| Bagian jendela observasi yang terpakai | semua | 0,18–0,71 | 0,87–0,97 |
+| Repetisi valid per kanal (median) | Tahan | 0–4 | 4–12 |
+| % kanal dengan ≥ 3 repetisi valid | Gerak / Tahan | 0–88 / 0–81 | 38–100 / 81–100 |
+| Galat baku power (dB, median) | Tahan | 1,5–2,0 (P32: tak terhitung) | 0,9–1,7 |
+| Reliabilitas belah-dua pola kanal × pita | Gerak / Tahan | 0,45–0,69 / −0,29–0,71 | 0,65–0,94 / 0,57–0,97 |
+
+- **E unggul di hampir semua ukuran.** E menghasilkan 2–10× lebih banyak data bersih dan memakai hampir seluruh
+  fase (87–97%, B hanya 18–71%). E juga lebih presisi dan polanya lebih konsisten antar-repetisi. Pada P32 (sinyal
+  paling buruk), B praktis tidak menghasilkan estimasi untuk Gerak, Tahan dan Berdiri; E masih menghasilkan.
+- **Naik tetap lemah di kedua cara.** Datanya sedikit (3,8–10 dtk bersih) dan reliabilitasnya tidak stabil
+  (−0,40…0,83). Fase ini paling pendek dan paling berartefak.
+- **Kelemahan E yang perlu diingat:**
+  1. E hanya memakai bagian fase yang bersih. Bila bagian bersih cenderung jatuh di sub-periode tertentu (mis. akhir
+     Tahan yang lebih stabil), estimasinya mewakili "bagian tenang" fase itu, bukan seluruh fase.
+  2. Aturan ≤ 150 µV diterapkan pada 1 dtk (E) vs 1,5 dtk (B), sehingga B sedikit lebih ketat.
+  3. Resolusi frekuensi 1 Hz (jendela 1 dtk) cukup untuk mu/beta; theta 4–8 Hz hanya berisi 4 titik frekuensi.
+- Perbandingan ini dibuat sebelum koreksi artefak dan perlu diulang sesudah Tahap 2–5. Bila koreksi berhasil,
+  keunggulan jumlah data E akan mengecil, tetapi cakupan fase E tetap lebih besar.
+
+![B vs E](hasil/epoch_B_vs_E/epoch_B_vs_E.png)

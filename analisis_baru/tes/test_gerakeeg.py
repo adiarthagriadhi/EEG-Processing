@@ -55,3 +55,16 @@ def test_penanda_datar():
     x[0, 200:400] = 0.05
     m = kualitas.penanda_datar(x, 100.0)
     assert m[0, 220:380].all() and not m[1].any() and m[0, :180].sum() == 0
+
+
+def test_epoch_B_dan_E():
+    from gerakeeg import epoch
+    seq = _satu_rep("AKA", 5) + _satu_rep("AKA", 21) + [("TT", 400)]
+    rep, tt, _ = jendela.repetisi(_ts(seq))
+    W = jendela.jendela(rep, tt)
+    B = epoch.potong_B(W).set_index(["rep", "fase"])
+    assert tuple(B.loc[(1, "Gerak"), ["mulai", "selesai"]]) == (4.5, 6.0) and B.muat.all()
+    E = epoch.potong_E(W, 500.0)
+    g = E[(E.rep == 1) & (E.fase == "Naik")]          # jendela observasi Naik 10,5 … 12,5 → awal 10,5 … 11,5
+    assert np.allclose(g.mulai.values, [10.5, 10.75, 11.0, 11.25, 11.5])
+    assert ((E.selesai - E.mulai) == 1.0).all()
