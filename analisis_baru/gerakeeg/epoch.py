@@ -1,7 +1,15 @@
 """Perbandingan cara epoching (belum ada koreksi artefak; dinilai pada sinyal 1–35 Hz apa adanya).
 
+T  epoch TERARAH 1,5 dtk di bagian fase yang paling informatif (hasil analisis bagian fase):
+   Gerak & Naik = inisiasi [onset − 0,5, onset + 1,0] (sama dengan B); Tahan = 1,5 dtk di TENGAH fase
+   (butuh Tahan ≥ 1,5 dtk); Berdiri = [akhir − 2,0, akhir − 0,5] dengan akhir = Gerak berikutnya atau B + 8
+   (butuh Berdiri ≥ 2,0 dtk).
+
 B  epoch tetap 1,5 dtk per fase: [onset − 0,5, onset + 1,0]. Fase < 1,0 dtk → epoch akan melewati batas fase
    → tidak dipakai (dicatat).
+TE jendela geser E yang dibatasi pada bagian informatif (gabungan T + E): Gerak & Naik [onset − 0,5,
+   onset + maks(1,0; durasi/3)]; Tahan [onset + durasi/3, onset berikut] (tengah + akhir); Berdiri
+   [onset + durasi/3, akhir − 0,5] (tengah + akhir, sebelum pra-onset Gerak berikutnya).
 E  jendela geser 1,0 dtk, geser 0,25 dtk, sepanjang rekaman. Jendela diberi label fase bila seluruhnya berada di
    dalam jendela observasi fase itu ([onset − 0,5, onset berikut]); jendela yang melintasi batas fase dibuang.
    Estimasi per repetisi × fase = rata-rata power jendela bersih di dalamnya.
@@ -20,6 +28,7 @@ from .istilah import FASE_REPETISI, ISTIRAHAT, KANAL
 from .kualitas import DATAR_BATAS, EKSTREM_UV
 
 PITA = {"theta": (4, 8), "mu": (8, 13), "beta": (13, 30)}
+OTOT = (20, 34)                      # indeks kontaminasi otot (semua potongan tidak datar)
 B_PRA, B_PANJANG = 0.5, 1.5
 E_PANJANG, E_GESER = 1.0, 0.25
 
@@ -27,7 +36,7 @@ E_PANJANG, E_GESER = 1.0, 0.25
 def _power(x, sf):
     """x kanal × sampel → dict pita → power (kanal)."""
     f, p = welch(x, sf, nperseg=int(sf), noverlap=int(sf) // 2)
-    return {b: p[:, (f >= lo) & (f < hi)].mean(axis=1) for b, (lo, hi) in PITA.items()}
+    return {b: p[:, (f >= lo) & (f < hi)].mean(axis=1) for b, (lo, hi) in {**PITA, "otot": OTOT}.items()}
 
 
 def _bersih(xf, datar, i0, i1):
@@ -41,6 +50,40 @@ def potong_B(W):
         a = w.onset - B_PRA
         out.append(dict(gerakan=w.gerakan, rep=w.rep, fase=w.fase, mulai=a, selesai=a + B_PANJANG,
                         muat=w.durasi_fase >= B_PANJANG - B_PRA))
+    return pd.DataFrame(out)
+
+
+def potong_T(W):
+    """Epoch terarah (lihat docstring modul)."""
+    out = []
+    for w in W[W.fase.isin(FASE_REPETISI)].itertuples():
+        d = w.durasi_fase
+        if w.fase in ("Gerak", "Naik"):
+            a, muat = w.onset - B_PRA, d >= B_PANJANG - B_PRA
+        elif w.fase == "Tahan":
+            a, muat = w.onset + d / 2 - B_PANJANG / 2, d >= B_PANJANG
+        else:                                   # Berdiri: berakhir 0,5 dtk sebelum Gerak berikutnya / B + 8
+            a, muat = w.selesai - 0.5 - B_PANJANG, d >= B_PANJANG + 0.5
+        out.append(dict(gerakan=w.gerakan, rep=w.rep, fase=w.fase, mulai=a, selesai=a + B_PANJANG, muat=muat))
+    return pd.DataFrame(out)
+
+
+def rentang_terarah(w):
+    d = w.durasi_fase
+    if w.fase in ("Gerak", "Naik"):
+        return w.onset - B_PRA, w.onset + max(1.0, d / 3)
+    if w.fase == "Tahan":
+        return w.onset + d / 3, w.selesai
+    return w.onset + d / 3, w.selesai - 0.5
+
+
+def potong_TE(W, T):
+    t = np.arange(0, T - E_PANJANG + 1e-9, E_GESER)
+    out = []
+    for w in W[W.fase.isin(FASE_REPETISI)].itertuples():
+        a, b = rentang_terarah(w)
+        k = t[(t >= a - 1e-9) & (t + E_PANJANG <= b + 1e-9)]
+        out += [dict(gerakan=w.gerakan, rep=w.rep, fase=w.fase, mulai=x, selesai=x + E_PANJANG) for x in k]
     return pd.DataFrame(out)
 
 
@@ -58,7 +101,7 @@ def potong_E(W, T):
 def acuan(xf, datar, sf, W, panjang, geser):
     """Power acuan per kanal (rata-rata potongan bersih Istirahat)."""
     ist = W[W.fase == ISTIRAHAT]
-    P = {b: [] for b in PITA}
+    P = {b: [] for b in list(PITA) + ["otot"]}
     M = []
     for w in ist.itertuples():
         for s in np.arange(w.mulai, w.selesai - panjang + 1e-9, geser):
@@ -67,10 +110,10 @@ def acuan(xf, datar, sf, W, panjang, geser):
                 break
             ok = _bersih(xf, datar, i0, i1)
             pw = _power(xf[:, i0:i1], sf)
-            for b in PITA:
+            for b in P:
                 P[b].append(np.where(ok, pw[b], np.nan))
             M.append(ok)
-    return {b: np.nanmean(np.array(P[b]), axis=0) for b in PITA}, np.array(M).mean(axis=0)
+    return {b: np.nanmean(np.array(v), axis=0) for b, v in P.items()}, np.array(M).mean(axis=0)
 
 
 def estimasi(xf, datar, sf, epochs, ref, metode):
@@ -81,10 +124,12 @@ def estimasi(xf, datar, sf, epochs, ref, metode):
         if i0 < 0 or i1 > xf.shape[1]:
             continue
         ok = _bersih(xf, datar, i0, i1)
+        nd = datar[:, i0:i1].mean(axis=1) < DATAR_BATAS
         pw = _power(xf[:, i0:i1], sf)
         for k, c in enumerate(KANAL):
             r = dict(metode=metode, gerakan=e.gerakan, rep=e.rep, fase=e.fase, mulai=e.mulai, kanal=c,
-                     bersih=bool(ok[k]), muat=getattr(e, "muat", True))
+                     bersih=bool(ok[k]), muat=getattr(e, "muat", True),
+                     otot_db=10 * np.log10(pw["otot"][k] / ref["otot"][k]) if nd[k] else np.nan)
             for b in PITA:
                 r[f"{b}_db"] = 10 * np.log10(pw[b][k] / ref[b][k]) if ok[k] else np.nan
             rows.append(r)
@@ -101,17 +146,18 @@ def per_repetisi(est):
     return out.reset_index()
 
 
-def ringkas(pid, W, epochs_B, epochs_E, est, rep):
-    """Ukuran per fase: hasil (yield), cakupan fase, presisi, reliabilitas belah-dua."""
+def ringkas(pid, W, epochs, est, rep):
+    """Ukuran per metode × fase: hasil (yield), cakupan fase, kontaminasi otot, presisi, reliabilitas belah-dua.
+    epochs: {"B": df, "T": df, "E": df} (B/T = epoch tetap 1,5 dtk; E = jendela geser)."""
     rows = []
-    for m, ep in (("B", epochs_B), ("E", epochs_E)):
+    for m, ep in epochs.items():
         for f in FASE_REPETISI:
             e = est[(est.metode == m) & (est.fase == f)]
             r = rep[(rep.metode == m) & (rep.fase == f)]
             wf = W[W.fase == f]
             n_rep = len(wf)
             obs = (wf.selesai - wf.mulai).values
-            if m == "B":
+            if m not in ("E", "TE"):
                 muat = ep[ep.fase == f].muat.mean() * 100
                 cak = np.median(np.minimum(B_PANJANG / obs, 1.0))
                 detik_bersih = e[e.muat].groupby("kanal").bersih.sum().median() * B_PANJANG
@@ -120,27 +166,26 @@ def ringkas(pid, W, epochs_B, epochs_E, est, rep):
                 muat = 100 * g.ngroups / max(n_rep, 1)
                 span = (g.selesai.max() - g.mulai.min()).reindex(pd.MultiIndex.from_frame(wf[["gerakan", "rep"]]))
                 cak = np.median(np.nan_to_num(span.values / obs))
-                # detik unik tercakup jendela bersih, median antar-kanal
                 det = []
-                for c, g in e[e.bersih].groupby("kanal"):
-                    s = np.sort(g.mulai.values)
+                for c, gg in e[e.bersih].groupby("kanal"):
                     tot, end = 0.0, -np.inf
-                    for a in s:
+                    for a in np.sort(gg.mulai.values):
                         tot += (a + E_PANJANG) - max(a, end)
                         end = a + E_PANJANG
                     det.append(tot)
                 detik_bersih = np.median(det + [0.0] * (len(KANAL) - len(det)))
             n_valid = r.groupby("kanal").size().reindex(KANAL, fill_value=0)
             se = []
-            for (c,), g in r.groupby(["kanal"]):
+            for (c,), g2 in r.groupby(["kanal"]):
                 for b in PITA:
-                    v = g[f"{b}_db"].dropna()
+                    v = g2[f"{b}_db"].dropna()
                     if len(v) >= 3:
                         se.append(v.std(ddof=1) / np.sqrt(len(v)))
             rows.append(dict(participant_id=pid, metode=m, fase=f, n_repetisi=n_rep,
                              pct_repetisi_terpakai=round(muat, 1),
                              cakupan_fase_median=round(float(cak), 2),
                              pct_kanal_epoch_bersih=round(100 * e[e.muat].bersih.mean(), 1) if len(e) else np.nan,
+                             otot_db_median=round(float(e[e.muat].otot_db.median()), 2) if len(e) else np.nan,
                              detik_bersih_median_kanal=round(detik_bersih, 1),
                              n_rep_valid_median_kanal=float(n_valid.median()),
                              pct_kanal_rep_valid_ge3=round(100 * (n_valid >= 3).mean(), 1),

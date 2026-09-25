@@ -68,3 +68,17 @@ def test_epoch_B_dan_E():
     g = E[(E.rep == 1) & (E.fase == "Naik")]          # jendela observasi Naik 10,5 … 12,5 → awal 10,5 … 11,5
     assert np.allclose(g.mulai.values, [10.5, 10.75, 11.0, 11.25, 11.5])
     assert ((E.selesai - E.mulai) == 1.0).all()
+
+
+def test_epoch_terarah_T_dan_TE():
+    from gerakeeg import epoch
+    seq = _satu_rep("AKA", 5) + _satu_rep("AKA", 21) + [("TT", 400)]
+    rep, tt, _ = jendela.repetisi(_ts(seq))
+    W = jendela.jendela(rep, tt)
+    T = epoch.potong_T(W).set_index(["rep", "fase"])
+    assert tuple(T.loc[(1, "Gerak"), ["mulai", "selesai"]]) == (4.5, 6.0)           # inisiasi
+    assert tuple(T.loc[(1, "Tahan"), ["mulai", "selesai"]]) == (8.25, 9.75)         # tengah Tahan 7…11
+    assert tuple(T.loc[(1, "Berdiri"), ["mulai", "selesai"]]) == (18.5, 20.0)       # akhir = B + 8 = 20,5 → 2,0…0,5 dtk sebelumnya
+    TE = epoch.potong_TE(W, 500.0)
+    g = TE[(TE.rep == 1) & (TE.fase == "Tahan")]                                   # tengah + akhir: 8,33 … 11
+    assert g.mulai.min() >= 7 + 4 / 3 - 1e-9 and g.selesai.max() <= 11 + 1e-9

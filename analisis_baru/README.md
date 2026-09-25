@@ -131,7 +131,7 @@ batas dipangkas 0,25 dtk. Pemetaannya: TURUN ↔ Gerak, TAHAN ↔ Tahan, NAIK �
 ---
 
 ## Perbandingan epoching B vs E
-Kode: `gerakeeg/epoch.py`. Perintah: `jalankan.py epoch`. Hasil: `hasil/epoch_B_vs_E/`. Dinilai **sebelum koreksi
+Kode: `gerakeeg/epoch.py`. Perintah: `jalankan.py epoch`. Hasil: `hasil/epoch_banding/` (kini juga berisi T dan TE, lihat bagian berikut). Dinilai **sebelum koreksi
 artefak**, dengan aturan bersih yang sama per kanal: datar < 10% dan peak-to-peak ≤ 150 µV.
 
 - **B**: satu epoch tetap 1,5 dtk per fase, [onset − 0,5, onset + 1,0]. Fase lebih pendek dari 1 dtk tidak dipakai
@@ -167,7 +167,6 @@ artefak**, dengan aturan bersih yang sama per kanal: datar < 10% dan peak-to-pea
 - Perbandingan ini dibuat sebelum koreksi artefak dan perlu diulang sesudah Tahap 2–5. Bila koreksi berhasil,
   keunggulan jumlah data E akan mengecil, tetapi cakupan fase E tetap lebih besar.
 
-![B vs E](hasil/epoch_B_vs_E/epoch_B_vs_E.png)
 
 ---
 
@@ -207,3 +206,47 @@ bervariasi. P32 menunjukkan nilai sangat negatif karena acuan Istirahat-nya send
 ini harus diuji ulang sesudah koreksi artefak; pola kualitasnya sudah jelas sekarang.
 
 ![profil](hasil/bagian_fase/profil_bagian_fase.png)
+
+---
+
+## Perbandingan epoching: B vs T (terarah) vs TE vs E
+Kode: `gerakeeg/epoch.py`. Perintah: `jalankan.py epoch`. Hasil: `hasil/epoch_banding/`. Aturan bersih dan acuan
+Istirahat sama untuk semua metode; sebelum koreksi artefak.
+
+| Metode | Gerak | Tahan | Naik | Berdiri |
+|---|---|---|---|---|
+| **B** tetap 1,5 dtk | onset − 0,5 … + 1,0 | onset − 0,5 … + 1,0 | onset − 0,5 … + 1,0 | onset − 0,5 … + 1,0 |
+| **T** terarah 1,5 dtk | = B (inisiasi) | 1,5 dtk di tengah fase | = B (inisiasi) | 2,0 … 0,5 dtk sebelum Gerak berikut |
+| **TE** jendela geser 1 dtk di bagian informatif | onset − 0,5 … onset + maks(1; durasi/3) | tengah + akhir | seperti Gerak | tengah + akhir (sampai 0,5 dtk sebelum Gerak berikut) |
+| **E** jendela geser 1 dtk | seluruh fase | seluruh fase | seluruh fase | seluruh fase |
+
+Median 4 partisipan (`ringkasan_epoch.csv`):
+
+| Ukuran | Fase | B | T | TE | E |
+|---|---|---|---|---|---|
+| % kanal-epoch bersih | Gerak | 25 | 25 | **36** | 26 |
+| | Tahan | 19 | 35 | **42** | 37 |
+| | Naik | 24 | 24 | **32** | 22 |
+| | Berdiri | 10 | **51** | **51** | 40 |
+| Otot 20–34 Hz (dB vs Istirahat) | Gerak | 3,4 | 3,4 | **1,7** | 4,8 |
+| | Tahan | 7,0 | 2,7 | **2,1** | 3,0 |
+| | Naik | 4,2 | 4,2 | **3,1** | 4,9 |
+| | Berdiri | 8,7 | **0,5** | 1,1 | 2,3 |
+| Detik data bersih per kanal | Gerak / Tahan / Naik / Berdiri | 3 / 2 / 4 / 2 | 3 / 6 / 4 / 10 | 6 / 14 / 5 / 25 | **12 / 23 / 8 / 39** |
+| % kanal ≥ 3 repetisi bersih | Gerak / Tahan / Naik / Berdiri | 47 / 44 / 59 / 13 | 47 / 66 / 59 / 94 | 81 / **100** / 88 / **100** | 84 / **100** / **100** / **100** |
+| Galat baku power (dB) | Gerak / Tahan / Naik / Berdiri | 1,7 / 1,5 / 1,4 / 1,5 | 1,7 / 1,6 / 1,4 / 1,3 | 1,8 / 1,5 / 1,5 / 1,1 | 1,4 / 1,2 / 1,6 / 1,0 |
+| Reliabilitas belah-dua | Gerak / Tahan / Naik / Berdiri | 0,6 / 0,2 / 0,6 / 0,2 | 0,6 / 0,0 / 0,6 / 0,6 | **0,8** / 0,6 / 0,4 / 0,8 | **0,8** / **0,8** / 0,3 / **0,9** |
+
+- **T** memperbaiki B dengan jelas pada fase yang bergeser: Tahan (otot 7,0 → 2,7 dB) dan Berdiri (8,7 → 0,5 dB; kanal
+  bersih 10 → 51%). Tetapi hanya satu epoch 1,5 dtk per repetisi, sehingga datanya sedikit dan reliabilitas Tahan
+  rendah (median 0,0).
+- **TE paling bersih dan paling seragam** di hampir semua fase: kanal bersih tertinggi dan kontaminasi otot terendah
+  pada Gerak, Tahan dan Naik. Datanya 2–5× lebih banyak dari T. Reliabilitasnya mendekati E (Gerak 0,8; Berdiri 0,8),
+  kecuali Tahan (0,6 vs 0,8).
+- **E** tetap menang pada jumlah data dan galat baku, tetapi kontaminasi ototnya lebih tinggi dan isinya mencampur
+  bagian fase yang berbeda (lihat bagian sebelumnya).
+- **Naik** tetap fase terlemah di semua metode (reliabilitas 0,3–0,6).
+- Usulan: **TE sebagai epoching utama**, E dan T sebagai uji sensitivitas. Perbandingan diulang sesudah koreksi
+  artefak (Tahap 2–5).
+
+![epoch banding](hasil/epoch_banding/epoch_banding.png)

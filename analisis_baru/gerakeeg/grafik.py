@@ -120,38 +120,49 @@ def banding(rb, path, judul):
     plt.close(fig)
 
 
+METODE = {"B": ("#2a78d6", "B: tetap 1,5 dtk dari onset − 0,5"),
+          "T": ("#1baf7a", "T: terarah 1,5 dtk di bagian informatif"),
+          "TE": ("#4a3aa7", "TE: jendela geser di bagian informatif"),
+          "E": ("#eb6834", "E: jendela geser 1 dtk berlabel fase")}
+
+
 def epoch_banding(R, path):
-    """Empat ukuran per fase, B vs E; titik = partisipan, garis penghubung per partisipan."""
+    """Lima ukuran per fase untuk tiap metode; titik = partisipan, garis tipis menghubungkan metode per partisipan."""
     from .istilah import FASE_REPETISI
     ukuran = [("detik_bersih_median_kanal", "Detik data bersih\nper kanal (median)", None),
-              ("cakupan_fase_median", "Cakupan jendela\nobservasi (median)", (0, 1.05)),
-              ("se_db_median", "Galat baku estimasi\npower (dB; kecil = presisi)", None),
-              ("reliabilitas_belah_dua", "Reliabilitas belah-dua\n(pola kanal × pita)", (-0.5, 1.05))]
-    fig, axes = plt.subplots(1, 4, figsize=(13, 3.4))
+              ("otot_db_median", "Kontaminasi otot 20–34 Hz\n(dB vs Istirahat; kecil = baik)", None),
+              ("pct_kanal_rep_valid_ge3", "% kanal dengan ≥ 3\nrepetisi bersih", (-5, 105)),
+              ("se_db_median", "Galat baku power\n(dB; kecil = presisi)", None),
+              ("reliabilitas_belah_dua", "Reliabilitas belah-dua\n(pola kanal × pita)", (-0.8, 1.05))]
+    met = [m for m in METODE if m in set(R.metode)]
+    off = dict(zip(met, np.linspace(-0.22, 0.22, len(met))))
+    fig, axes = plt.subplots(1, len(ukuran), figsize=(16, 3.6))
     x = np.arange(len(FASE_REPETISI))
     for ax, (col, lab, lim) in zip(axes, ukuran):
         for pid, g in R.groupby("participant_id"):
-            b = g[g.metode == "B"].set_index("fase").reindex(FASE_REPETISI)[col].values
-            e = g[g.metode == "E"].set_index("fase").reindex(FASE_REPETISI)[col].values
+            V = {m: g[g.metode == m].set_index("fase").reindex(FASE_REPETISI)[col].values for m in met}
             for i in range(len(x)):
-                ax.plot([x[i] - 0.15, x[i] + 0.15], [b[i], e[i]], color=GRID, lw=1.2, zorder=1)
-            ax.scatter(x - 0.15, b, s=34, facecolor=SURFACE, edgecolor=REPO, linewidth=1.8, zorder=2)
-            ax.scatter(x + 0.15, e, s=26, color=BARU, edgecolor=SURFACE, linewidth=1, zorder=3)
-        ax.set_xticks(x, FASE_REPETISI)
+                ax.plot([x[i] + off[m] for m in met], [V[m][i] for m in met], color=GRID, lw=1, zorder=1)
+            for m in met:
+                ax.scatter(x + off[m], V[m], s=26, color=METODE[m][0], edgecolor=SURFACE, linewidth=1, zorder=3)
+        for m in met:                                            # median antar-partisipan
+            md = R[R.metode == m].groupby("fase")[col].median().reindex(FASE_REPETISI).values
+            ax.scatter(x + off[m], md, s=120, marker="_", color=INK, linewidth=2, zorder=4)
+        ax.set_xticks(x, FASE_REPETISI, fontsize=8)
         ax.set_title(lab, fontsize=9, loc="left", color=INK)
         if lim:
             ax.set_ylim(*lim)
         ax.grid(axis="y", color=GRID, lw=0.6)
         ax.set_axisbelow(True)
         _rapikan(ax)
-    h = [plt.Line2D([], [], marker="o", ls="", markerfacecolor=SURFACE, markeredgecolor=REPO, markeredgewidth=2,
-                    markersize=8),
-         plt.Line2D([], [], marker="o", ls="", color=BARU, markersize=6)]
-    fig.legend(h, ["B: epoch tetap 1,5 dtk dari onset − 0,5", "E: jendela geser 1 dtk berlabel fase"],
-               loc="upper left", ncol=2, frameon=False, bbox_to_anchor=(0.01, 1.08), fontsize=8.5)
-    fig.text(0.01, -0.04, "Titik hilang = tidak dapat dihitung (kurang dari 3 repetisi bersih; B pada P32 Gerak/Tahan/Berdiri).", fontsize=7.5, color=INK2)
-    fig.suptitle("Epoching B vs E — per fase, 4 partisipan (titik), sebelum koreksi artefak", x=0.01, y=1.17,
-                 ha="left", fontsize=11)
+    h = [plt.Line2D([], [], marker="o", ls="", color=METODE[m][0], markersize=6) for m in met]
+    h.append(plt.Line2D([], [], marker="_", ls="", color=INK, markersize=12, markeredgewidth=2))
+    fig.legend(h, [METODE[m][1] for m in met] + ["median 4 partisipan"], loc="upper left", ncol=5, frameon=False,
+               bbox_to_anchor=(0.01, 1.07), fontsize=8)
+    fig.suptitle("Epoching B vs T vs TE vs E — per fase, 4 partisipan, sebelum koreksi artefak", x=0.01,
+                 y=1.15, ha="left", fontsize=11)
+    fig.text(0.01, -0.04, "Gerak dan Naik: B dan T identik (keduanya inisiasi). Titik hilang = < 3 repetisi bersih.",
+             fontsize=7.5, color=INK2)
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
