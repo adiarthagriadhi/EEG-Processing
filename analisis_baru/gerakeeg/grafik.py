@@ -432,3 +432,49 @@ def gelombang(pid, tahapan, datar, sf, W, TE, gerakan, rep, path, jarak_uv=120.0
 T5_WARNA = {"T5_dasar": ("#2a78d6", "dasar (ASR + A2)"), "T5_ICA_mata": ("#eb6834", "ICA mata"),
             "T5_ICA_mata_otot": ("#1baf7a", "ICA mata + otot"), "T5_CCA_otot": ("#eda100", "CCA otot"),
             "T5_regresi_mata": ("#e87ba4", "regresi mata (Fp)"), "T5_ICAmata_CCAotot": ("#4a3aa7", "ICA mata + CCA otot")}
+
+
+def tahap6(pres, sdr, hasil, path):
+    """Kiri: galat nilai repetisi vs jumlah jendela bersih (per fase) + garis setengah SD antar-repetisi.
+    Kanan: % sel partisipan × fase × kanal lolos R2 vs n_min, untuk r_min 2/3/4 (median fase)."""
+    from .istilah import FASE_REPETISI
+    fig, axes = plt.subplots(1, 2, figsize=(12, 3.9))
+    ax = axes[0]
+    for f in FASE_REPETISI:
+        g = pres[pres.fase == f]
+        if g.empty:
+            continue
+        ax.plot(g.n, g.semua, marker="o", color=FASE_WARNA[f], lw=2, markersize=5)
+        ax.annotate(f, (g.n.iloc[-1], g.semua.iloc[-1]), xytext=(6, 0), textcoords="offset points", va="center",
+                    fontsize=8, color=INK2)
+    half = 0.5 * sdr.semua.median()
+    ax.axhline(half, color=INK2, lw=1, ls=(0, (4, 3)))
+    ax.text(pres.n.max(), half, f"½ SD antar-repetisi ({half:.1f} dB)", ha="right", va="bottom", fontsize=8, color=INK2)
+    ax.set_xlabel("jumlah jendela bersih (1 dtk, geser 0,25 dtk)")
+    ax.set_ylabel("galat RMS nilai repetisi (dB)")
+    ax.set_title("R1: presisi nilai repetisi", fontsize=10, loc="left")
+    ax.set_xticks(sorted(pres.n.unique()))
+    ax.grid(axis="y", color=GRID, lw=0.6)
+    _rapikan(ax)
+    ax = axes[1]
+    warna = {2: "#2a78d6", 3: "#eb6834", 4: "#1baf7a"}
+    for r, g in hasil.groupby("r_min"):
+        m = g.groupby("c_min").pct_sel_lolos_R2.median()
+        m.index = (100 * m.index).astype(int)
+        ax.plot(m.index, m.values, marker="o", lw=2, markersize=5, color=warna.get(r, INK))
+        ax.annotate(f"≥ {r} repetisi", (m.index[-1], m.values[-1]), xytext=(6, 0), textcoords="offset points",
+                    va="center", fontsize=8, color=INK2)
+    ax.set_xlabel("R1: cakupan minimum rentang TE oleh jendela bersih (%)")
+    ax.set_ylabel("% sel partisipan × fase × kanal lolos R2")
+    ax.set_title("R2: data yang tersisa (median 4 fase)", fontsize=10, loc="left")
+    ax.set_xticks(sorted((100 * hasil.c_min.unique()).astype(int)))
+    ax.axhline(75, color=INK2, lw=1, ls=(0, (4, 3)))
+    ax.text(0, 72, "batas pemilihan 75%", fontsize=8, color=INK2, va="top")
+    ax.set_ylim(0, 105)
+    ax.grid(axis="y", color=GRID, lw=0.6)
+    _rapikan(ax)
+    fig.suptitle("Tahap 6 — aturan pakai (cakupan, presisi & jumlah data; tanpa melihat nilai ERD)", x=0.01, ha="left",
+                 fontsize=11.5, y=1.03)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    plt.close(fig)

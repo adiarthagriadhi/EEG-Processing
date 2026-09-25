@@ -156,3 +156,20 @@ def test_cca_otot_buang_komponen_bising():
     r = lambda a, b: abs(np.corrcoef(a, b)[0, 1])
     assert np.mean([r(y[i] - (A @ lambat * 10)[i], otot) for i in range(8)]) < \
         np.mean([r(x[i] - (A @ lambat * 10)[i], otot) for i in range(8)])         # porsi otot berkurang
+
+
+def test_aturan_cakupan_dan_pilihan():
+    import pandas as pd
+    from gerakeeg import aturan
+    # satu repetisi Gerak, rentang 4 jendela (0; 0,25; 0,5; 0,75 → 1,75 dtk); 2 jendela bersih di awal
+    est = pd.DataFrame(dict(participant_id="P99", gerakan="Ngeed", rep=1, fase="Gerak", kanal="C3",
+                            mulai=[0.0, 0.25, 0.5, 0.75], bersih=[True, True, False, False],
+                            theta_db=[1.0, 1.0, np.nan, np.nan], mu_db=[0.0, 0.0, np.nan, np.nan],
+                            beta_db=[0.0, 0.0, np.nan, np.nan], otot_db=[0.0, 0.0, np.nan, np.nan]))
+    nr = aturan.nilai_repetisi(est)
+    r = nr.iloc[0]
+    assert r.n_bersih == 2 and np.isclose(r.detik_bersih, 1.25) and np.isclose(r.rentang_detik, 1.75)
+    assert np.isclose(r.cakupan, 1.25 / 1.75)
+    assert bool(aturan._lolos_R1(nr, 0.5).iloc[0]) and not bool(aturan._lolos_R1(nr, 0.75).iloc[0])
+    h = pd.DataFrame(dict(c_min=[0.0, 0.5, 0.75], r_min=3, fase="Gerak", pct_sel_lolos_R2=[100, 80, 60]))
+    assert aturan.pilih_c(h) == 0.5

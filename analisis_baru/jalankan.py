@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
-                      mata_otot, posisi, referensi, verifikasi)
+                      aturan, mata_otot, posisi, referensi, verifikasi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -409,6 +409,52 @@ def tahap5(pids):
     print(INFO.to_string(index=False))
 
 
+def tahap6(pids):
+    """Tahap 6: aturan pakai (R1 jendela per repetisi, R2 repetisi per sel) + dataset bersih. Belum analisis ERD."""
+    out = HASIL / "tahap6_aturan"
+    out.mkdir(parents=True, exist_ok=True)
+    import os
+    import pickle
+    cache = os.environ.get("GERAKEEG_CACHE")          # opsional: berkas pickle untuk menghindari hitung ulang
+    if cache and Path(cache).exists():
+        est, REP = pickle.loads(Path(cache).read_bytes())
+    else:
+        EST, REP = [], []
+        for pid in pids:
+            e, rp, info = aturan.proses(pid)
+            EST.append(e)
+            REP.append(rp)
+            print(f"[{pid}] {e.mulai.nunique()} jendela; ASR {info}")
+        est = pd.concat(EST)
+        if cache:
+            Path(cache).write_bytes(pickle.dumps((est, REP)))
+    nr = aturan.nilai_repetisi(est)
+    pres = aturan.presisi_vs_n(est)
+    sdr = aturan.sd_antar_repetisi(nr)
+    has = aturan.hasil_vs_aturan(nr)
+    pres.round(3).to_csv(out / "R1_presisi_vs_n.csv", index=False)
+    sdr.round(3).to_csv(out / "sd_antar_repetisi.csv", index=False)
+    has.to_csv(out / "R1_R2_hasil_vs_aturan.csv", index=False)
+    grafik.tahap6(pres, sdr, has, out / "tahap6_aturan.png")
+    c_min, r_min = aturan.pilih_c(has), 3
+    nr2, P = aturan.dataset(nr, c_min, r_min)
+    dset = out / "dataset"
+    dset.mkdir(exist_ok=True)
+    nr2.round(3).to_csv(dset / "nilai_repetisi.csv", index=False)
+    P.round(3).to_csv(dset / "nilai_partisipan.csv", index=False)
+    pd.concat(REP).to_csv(dset / "repetisi_perilaku.csv", index=False)
+    ring = (P[P.gerakan == "Semua"].groupby(["participant_id", "fase"]).lolos_R2.mean().mul(100).round(0)
+            .unstack())
+    ring.to_csv(out / "pct_kanal_lolos_R2.csv")
+    pd.set_option("display.width", 250)
+    print(pres.round(2).to_string(index=False))
+    print(sdr.round(2).to_string(index=False))
+    print(has[has.r_min == 3].pivot(index="c_min", columns="fase", values="pct_sel_lolos_R2"))
+    print(has[has.r_min == 3].pivot(index="c_min", columns="fase", values="pct_repetisi_lolos_R1"))
+    print(f"aturan terpilih: cakupan ≥ {c_min:.0%} rentang TE (R1), ≥ {r_min} repetisi (R2)")
+    print(ring.to_string())
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang, "tahap5": tahap5, "tahap6": tahap6}[cmd](pids or ["P08", "P09", "P31", "P32"])

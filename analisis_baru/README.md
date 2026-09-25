@@ -41,7 +41,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | 4 | Lonjakan artefak gerak: ASR k 20/10/5 · ambang adaptif per partisipan · hanya ditandai | **Selesai → ASR k = 20** |
 | – | **Rencana beku + verifikasi kohort** (`RENCANA_BEKU.md`, `jalankan.py verifikasi semua`) | **Beku 2026-09-25**; menunggu data semua partisipan |
 | 5 | Mata & otot: ICA (aturan MNE) · BSS-CCA (otot) · regresi kedipan Fp1/Fp2 | **Sementara → usul tanpa koreksi tambahan** (dikonfirmasi pada set penyetelan yang lebih besar) |
-| 6 | Aturan pakai jendela & uji sensitivitas | Menunggu |
+| 6 | Aturan pakai: R1 cakupan jendela bersih per repetisi · R2 repetisi minimum per sel; dataset bersih | **Sementara → cakupan ≥ 75% & ≥ 3 repetisi** (dikonfirmasi pada set penyetelan yang lebih besar) |
 
 Setiap tahap diukur ulang dengan inventaris Tahap 1. Tahap berikutnya dimulai setelah hasil disetujui.
 
@@ -455,3 +455,53 @@ relatifnya naik walaupun otot saat tugas juga turun.
   Kanal frontopolar dan frontotemporal (Fp, F7/F8, T3/T4) tetap ditandai rawan artefak saat penafsiran.
 
 ![tahap 5](hasil/tahap5_mata_otot/tahap5_mata_otot.png)
+
+---
+
+## Tahap 6 (SEMENTARA): aturan pakai & dataset bersih
+Kode: `gerakeeg/aturan.py`. Perintah: `jalankan.py tahap6`. Hasil: `hasil/tahap6_aturan/`. Ini masih **persiapan data**:
+nilai dB di dataset belum ditafsirkan dan belum dibandingkan antar-fase atau antar-grup.
+
+**Aturan:**
+- **R1 (nilai repetisi × fase × kanal):** rata-rata power (linear) jendela TE bersih dipakai bila jendela bersih
+  menutupi ≥ c_min dari rentang TE fase itu. Dipakai aturan cakupan, bukan jumlah jendela tetap, karena rentang TE
+  Gerak/Naik hanya ±1,5–1,8 dtk (3–4 jendela), sedangkan Tahan/Berdiri 3–6 dtk. Aturan cakupan juga menjamin nilai
+  mewakili bagian fase yang ditargetkan, bukan satu potongan kecil.
+- **R2 (nilai partisipan × fase × kanal):** dipakai bila ≥ r_min repetisi lolos R1. Nilai = rata-rata dB antar-repetisi
+  dan SE antar-repetisi, untuk semua gerakan gabungan dan per gerakan.
+- **Tutup Mata:** jendela 1 dtk (TT + 1 … TT + 30, dalam EDF); nilai kanal dipakai bila ≥ 8 jendela bersih.
+- **Pemilihan (ditetapkan sebelum melihat hasil):** c_min terbesar dari {0, 25, 50, 75%} yang masih menyisakan
+  ≥ 75% sel lolos R2 (median 4 fase) dengan r_min = 3.
+
+**Hasil:**
+
+| % sel partisipan × fase × kanal dengan ≥ 3 repetisi | Gerak | Tahan | Naik | Berdiri |
+|---|---|---|---|---|
+| cakupan ≥ 0% (≥ 1 jendela) | 94 | 100 | 100 | 100 |
+| cakupan ≥ 50% | 94 | 100 | 100 | 100 |
+| **cakupan ≥ 75% (terpilih)** | 94 | 97 | 100 | 95 |
+
+| Per partisipan, % kanal lolos (terpilih) | Gerak | Tahan | Naik | Berdiri | Tutup Mata |
+|---|---|---|---|---|---|
+| P08 | 100 | 100 | 100 | 100 | 100 |
+| P09 | 100 | 100 | 100 | 94 | – (EDF hanya mencakup 14%) |
+| P31 | 100 | 100 | 100 | 100 | 100 |
+| P32 | 80 | 88 | 100 | 88 | 100 |
+
+**Presisi nilai repetisi** (`R1_presisi_vs_n.csv`): galat RMS nilai repetisi terhadap nilai dari semua jendela bersih
+turun dari ±3,5 dB (1 jendela) ke ±1,4–1,7 dB (6 jendela; Tahan/Berdiri). SD antar-repetisi ±3,2–3,9 dB per fase. Jadi
+variasi antar-repetisi lebih besar daripada galat pengambilan jendela, dan jumlah repetisi (R2) lebih menentukan
+presisi nilai partisipan daripada jumlah jendela per repetisi. Kurva hanya dapat dihitung untuk Tahan dan Berdiri
+(butuh sel dengan ≥ 8 jendela bersih).
+
+Percobaan pertama memakai "≥ n jendela bersih" dengan n dari kurva presisi (n = 6). Aturan itu ditolak karena Gerak dan
+Naik tidak pernah punya 6 jendela dalam rentang TE, sehingga kedua fase akan hilang seluruhnya.
+
+**Dataset bersih** (`hasil/tahap6_aturan/dataset/`):
+- `nilai_repetisi.csv`: partisipan × gerakan × repetisi × fase × kanal: n jendela, n bersih, detik bersih, rentang,
+  cakupan, theta/mu/beta/otot dB (relatif Istirahat), `lolos_R1`.
+- `nilai_partisipan.csv`: partisipan × fase × kanal × gerakan (Semua / Ngeed / Agem Kanan / Agem Kiri): n repetisi,
+  rata-rata dB dan SE per pita, `lolos_R2`.
+- `repetisi_perilaku.csv`: onset dan durasi fase per repetisi (dari timestamp).
+
+![tahap 6](hasil/tahap6_aturan/tahap6_aturan.png)
