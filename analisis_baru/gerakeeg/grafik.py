@@ -155,3 +155,54 @@ def epoch_banding(R, path):
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
+
+
+PESERTA = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
+
+
+def profil_bagian(R, path):
+    """Profil per bagian fase (pra-onset/awal/tengah/akhir): baris = ukuran, kolom = fase; garis per partisipan
+    (label langsung) + median (tinta tebal)."""
+    from .istilah import FASE_REPETISI
+    from .posisi import BAGIAN
+    uk = [("pct_bersih_05dtk", "% potongan 0,5 dtk bersih", None),
+          ("otot_db", "Otot 20–34 Hz (dB vs Istirahat)", None),
+          ("mu_sm_db", "Mu C3/C4 (dB vs Istirahat;\n< 0 = ERD)", None),
+          ("beta_sm_db", "Beta C3/C4 (dB vs Istirahat;\n< 0 = ERD)", None)]
+    pids = sorted(R.participant_id.unique())
+    fig, axes = plt.subplots(len(uk), len(FASE_REPETISI), figsize=(12.5, 10), sharey="row")
+    x = np.arange(len(BAGIAN))
+    for i, (col, lab, _) in enumerate(uk):
+        for j, f in enumerate(FASE_REPETISI):
+            ax = axes[i, j]
+            g = R[R.fase == f]
+            for c, pid in zip(PESERTA, pids):
+                v = g[g.participant_id == pid].set_index("bagian").reindex(BAGIAN)[col].values
+                ax.plot(x, v, color=c, lw=1.6, marker="o", markersize=4.5, markeredgecolor=SURFACE, zorder=2)
+                if j == len(FASE_REPETISI) - 1 and np.isfinite(v[-1]):
+                    ax.annotate(pid, (x[-1], v[-1]), xytext=(6, 0), textcoords="offset points", va="center",
+                                fontsize=7, color=INK2)
+            med = g.groupby("bagian", observed=False)[col].median().reindex(BAGIAN).values
+            ax.plot(x, med, color=INK, lw=2.6, zorder=3)
+            if col != "pct_bersih_05dtk":
+                ax.axhline(0, color=INK2, lw=0.8, ls=(0, (3, 3)), zorder=1)
+            ax.set_xticks(x, BAGIAN if i == len(uk) - 1 else [""] * len(BAGIAN), fontsize=8, rotation=0)
+            if i == 0:
+                ax.set_title(f, fontsize=10.5, loc="left", color=INK)
+            if j == 0:
+                ax.set_ylabel(lab, fontsize=8.5)
+            ax.grid(axis="y", color=GRID, lw=0.6)
+            ax.set_axisbelow(True)
+            _rapikan(ax)
+    h = [plt.Line2D([], [], color=c, lw=1.6, marker="o", markersize=4.5) for c in PESERTA[:len(pids)]]
+    h.append(plt.Line2D([], [], color=INK, lw=2.6))
+    fig.legend(h, pids + ["median"], loc="upper left", ncol=5, frameon=False, bbox_to_anchor=(0.01, 1.035),
+               fontsize=8.5)
+    fig.suptitle("Bagian fase mana yang paling informatif? (sebelum koreksi artefak)", x=0.01, y=1.06, ha="left",
+                 fontsize=11.5)
+    fig.text(0.01, -0.015, "pra-onset = 0,5 dtk sebelum timestamp; awal/tengah/akhir = sepertiga fase. Jendela 1 dtk "
+             "(otot, mu, beta) dimasukkan menurut pusatnya, jadi bagian bertetangga pada fase pendek bercampur.",
+             fontsize=7.5, color=INK2)
+    fig.tight_layout()
+    fig.savefig(path, dpi=125, bbox_inches="tight")
+    plt.close(fig)

@@ -168,3 +168,42 @@ artefak**, dengan aturan bersih yang sama per kanal: datar < 10% dan peak-to-pea
   keunggulan jumlah data E akan mengecil, tetapi cakupan fase E tetap lebih besar.
 
 ![B vs E](hasil/epoch_B_vs_E/epoch_B_vs_E.png)
+
+---
+
+## Bagian fase mana yang paling informatif: pra-onset, awal, tengah, akhir
+Kode: `gerakeeg/posisi.py`. Perintah: `jalankan.py bagian`. Hasil: `hasil/bagian_fase/`.
+
+Tiap fase dibagi menjadi pra-onset (0,5 dtk sebelum timestamp) dan tiga sepertiga sama panjang (awal, tengah,
+akhir). Diukur sebelum koreksi artefak:
+
+| Median 4 partisipan | Gerak pra / awal / tengah / akhir | Tahan | Naik | Berdiri |
+|---|---|---|---|---|
+| % potongan 0,5 dtk bersih | **63 / 49** / 28 / 29 | 31 / 40 / **51 / 54** | **51 / 42** / 29 / 23 | 23 / 33 / **55 / 67** |
+| Otot 20–34 Hz (dB vs Istirahat) | **−0,1 / 2,2** / 6,4 / 6,9 | 6,7 / 4,7 / **2,0 / 1,9** | **2,2 / 3,6** / 7,8 / 8,5 | 8,7 / 5,2 / **1,9 / −0,2** |
+| Delta 1–4 Hz (dB) | **1,8 / 7,7** / 15,0 / 13,9 | 12,1 / 10,7 / **4,4 / 3,7** | **4,1 / 5,4** / 10,6 / 17,1 | 15,6 / 12,8 / **5,3 / 0,9** |
+| Mu C3/C4 (dB) | −0,8 / 0,2 / 2,4 / 0,1 | −0,5 / −0,4 / −1,1 / −0,7 | −1,3 / 0,6 / 1,7 / 0,7 | 0,1 / 0,6 / −0,1 / −0,8 |
+| Beta C3/C4 (dB) | −1,1 / −0,8 / 0,8 / −0,2 | −1,3 / −1,2 / −0,5 / −1,1 | −1,6 / −1,2 / 0,1 / −0,3 | −0,1 / −0,4 / 0,2 / −0,7 |
+
+(Pra-onset Tahan = akhir Gerak; pra-onset Naik = akhir Tahan; pra-onset Berdiri = akhir Naik.)
+
+**Pola kualitas sangat konsisten di keempat partisipan** (`profil_bagian_fase.png`): kontaminasi otot dan gerak
+lambat naik tajam begitu tubuh bergerak (tengah-akhir Gerak dan Naik), lalu turun lagi selama Tahan dan Berdiri.
+
+| Fase | Bagian terbaik | Alasan |
+|---|---|---|
+| Gerak | **pra-onset + awal** | Paling bersih (63/49%). Otot ≈ 0–2 dB. Beta sensorimotor sudah turun (−1,1 dB) → ERD persiapan/inisiasi gerak. Tengah-akhir didominasi artefak (otot +6–7 dB, delta +14–15 dB). |
+| Tahan | **tengah + akhir** | Awal masih membawa artefak dari Gerak (otot +4,7 dB). Tengah-akhir paling stabil (51–54% bersih, otot ≈ 2 dB); mu −1,1 dB dan beta −1,1 dB = ERD selama menahan. |
+| Naik | **pra-onset + awal** | Sama dengan Gerak: inisiasi paling bersih (51/42%); sesudahnya artefak naik tajam. |
+| Berdiri | **akhir** (dan tengah) | Awal masih penuh artefak dari Naik (otot +5–9 dB), jadi *beta rebound* sesudah gerak tidak dapat dinilai. Akhir hampir setara Istirahat (67% bersih, otot ≈ 0 dB). |
+
+**Konsekuensi untuk metode E:** jendela bersih E tidak tersebar merata. Pada Gerak, 63% jendela bersih berasal dari
+bagian awal, padahal bagian awal hanya 45% dari waktu. Pada Naik 65% vs 49%. Pada Berdiri 80% berasal dari tengah-
+akhir. Jadi E diam-diam menjadi "awal Gerak", "awal Naik" dan "akhir Berdiri", dengan porsi yang berbeda per repetisi
+dan per orang. Gambaran fasenya tidak lagi seragam.
+
+**Batasan:** nilai mu/beta masih kecil dan belum konsisten antar-repetisi (|t| < 1,5). Arah per partisipan juga
+bervariasi. P32 menunjukkan nilai sangat negatif karena acuan Istirahat-nya sendiri berartefak. Pola sinyal EEG
+ini harus diuji ulang sesudah koreksi artefak; pola kualitasnya sudah jelas sekarang.
+
+![profil](hasil/bagian_fase/profil_bagian_fase.png)

@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding   # noqa: E402
+from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding, posisi   # noqa: E402
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -94,6 +94,32 @@ def epoch_BE(pids):
     print(R.to_string(index=False))
 
 
+def bagian(pids):
+    """Profil kualitas & sinyal per bagian fase (pra-onset/awal/tengah/akhir)."""
+    out = HASIL / "bagian_fase"
+    out.mkdir(parents=True, exist_ok=True)
+    Q, S = [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rep, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rep, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        q, s = posisi.profil(pid, xf, datar, sf, W)
+        Q.append(q), S.append(s)
+        print(f"[{pid}] {len(q)} jendela kualitas, {len(s)} jendela spektrum")
+    Q, S = pd.concat(Q), pd.concat(S)
+    S.round(3).to_csv(out / "jendela_1dtk_per_bagian.csv", index=False)
+    R = posisi.ringkas(Q, S)
+    R.round(2).to_csv(out / "ringkasan_bagian_fase.csv", index=False)
+    grafik.profil_bagian(R, out / "profil_bagian_fase.png")
+    M = R.groupby(["fase", "bagian"], observed=True)[
+        ["pct_bersih_05dtk", "delta_db", "otot_db", "mu_sm_db", "mu_sm_t", "beta_sm_db", "beta_sm_t",
+         "porsi_E_semua", "porsi_E_bersih"]].median()
+    M.round(2).to_csv(out / "median_4_partisipan.csv")
+    pd.set_option("display.width", 250)
+    print(M.round(2).to_string())
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_BE}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_BE, "bagian": bagian}[cmd](pids or ["P08", "P09", "P31", "P32"])
