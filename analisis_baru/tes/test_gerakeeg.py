@@ -128,3 +128,17 @@ def test_asr_sendiri():
     y, _ = asr_proses(x + art, 100.0, M, T)
     assert np.mean([np.corrcoef(x[i, 6000:], y[i, 6000:])[0, 1] for i in range(8)]) > 0.999   # bersih utuh
     assert np.sum((y - x)[:, 4900:5200] ** 2) < 0.25 * np.sum(art ** 2)                         # artefak besar turun
+
+
+def test_kohort_ambang_75():
+    import pandas as pd
+    from gerakeeg import verifikasi
+    P = pd.DataFrame(dict(participant_id=[f"P{i:02d}" for i in range(8)], K0_data=[True] * 7 + [False]))
+    for k in verifikasi.KRITERIA[1:]:
+        P[k] = True
+    P.loc[[0, 1], "K4_ASR20"] = False            # 5/7 = 0,71 < 0,75 → TINJAU
+    P.loc[[0], "K3_A2"] = False                  # 6/7 = 0,86 → dipertahankan
+    K = verifikasi.kohort(P).set_index("kriteria")
+    assert K.loc["K4_ASR20", "keputusan"].startswith("TINJAU") and K.loc["K4_ASR20", "n"] == 7
+    assert K.loc["K3_A2", "keputusan"] == "dipertahankan"
+    assert K.loc["K0_data", "lolos"] == 7

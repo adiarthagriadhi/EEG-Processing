@@ -1,0 +1,5 @@
+participant_id,hari_rekaman,n_rep,n_rep_lengkap,masalah_timestamp,durasi_edf,akhir_repetisi,pct_datar_total,cakupan_tutup_mata,K0_data,K1_n_fase,K1_TE,K2a_n_fase,r_dalam_belahan_gerak,K2a_A_lebih_bersih,K2b_mekanisme_telinga,K3_n_fase,pct_dikeluarkan_A2,K3_A2,kalibrasi_min_dtk,rekonstruksi_maks_pct,distorsi_istirahat_median_db,distorsi_istirahat_maks_db,K4_n_fase_reliabilitas,K4_ASR20,K5_Gerak_layak,detik_bersih_Gerak,K5_Tahan_layak,detik_bersih_Tahan,K5_Naik_layak,detik_bersih_Naik,K5_Berdiri_layak,detik_bersih_Berdiri,K5_semua_fase_layak
+P08,2026-09-10,12,12,,426.0,369.4,16.8,0.46,True,4,True,4,0.63,True,True,4,1.7,True,24.0,14.8,0.0,0.0,4,True,True,10.0,True,29.5,True,9.9,True,36.5,True
+P09,2026-09-10,12,12,,416.0,368.9,11.9,0.12,True,4,True,4,0.52,True,True,4,4.7,True,20.0,22.2,0.02,0.784,3,True,True,11.4,True,21.1,True,8.8,True,30.8,True
+P31,2026-09-14,10,10,,443.0,368.2,14.2,1.0,True,4,True,4,0.48,True,True,4,3.5,True,69.0,31.9,0.005,0.663,4,True,True,10.2,True,20.1,True,8.1,True,29.4,True
+P32,2026-09-14,12,12,,444.0,367.0,13.8,1.0,True,4,True,4,0.6,True,True,4,3.9,True,31.0,28.8,0.192,0.788,4,True,True,6.4,True,11.6,True,8.9,True,33.6,True

@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerakeeg import (data, epoch, grafik, jendela, kanal, kualitas, lonjakan, pembanding,  # noqa: E402
-                      posisi, referensi)
+                      posisi, referensi, verifikasi)
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -259,6 +259,51 @@ def tahap4(pids):
     print(pd.DataFrame(DIST).to_string(index=False))
 
 
+def semua_pid():
+    """Partisipan yang punya EDF Trial DAN timestamp manual."""
+    ts = {p.name.split("_")[0] for p in data.TIMESTAMP.glob("P*_timestamps.csv")}
+    edf = {p.name for p in data.RAW.glob("P*") if list(p.glob("*Trial*.[Ee][Dd][Ff]"))}
+    return sorted(ts & edf), sorted(ts ^ edf)
+
+
+def verifikasi_beku(pids):
+    """Verifikasi rencana beku (RENCANA_BEKU.md): lolos/gagal K0–K5 per partisipan + ringkasan kohort."""
+    out = HASIL / "verifikasi"
+    out.mkdir(parents=True, exist_ok=True)
+    if not pids or pids == ["semua"]:
+        pids, tak_lengkap = semua_pid()
+        if tak_lengkap:
+            print(f"hanya punya EDF atau timestamp saja (dilewati): {tak_lengkap}")
+    rows, H = [], []
+    for pid in pids:
+        try:
+            r, h = verifikasi.evaluasi(pid)
+        except Exception as e:                      # dicatat, tidak menghentikan kohort
+            r, h = dict(participant_id=pid, K0_data=False, masalah_timestamp=f"GALAT: {e}"), None
+        rows.append(r)
+        if h is not None:
+            H.append(h)
+        print(f"[{pid}] " + " ".join(f"{k.split('_')[0]}={'ya' if r.get(k) else 'TIDAK'}"
+                                    for k in verifikasi.KRITERIA))
+    P = pd.DataFrame(rows)
+    for k in verifikasi.KRITERIA:
+        P[k] = P.get(k, False)
+        P[k] = P[k].fillna(False).astype(bool)
+    peserta = None
+    for f in (data.ROOT / "data" / "participants.csv", data.ROOT / "hasil_analisis" / "participants.csv"):
+        if f.exists():
+            peserta = pd.read_csv(f)
+            break
+    K = verifikasi.kohort(P, peserta)
+    P.to_csv(out / "lolos_gagal_per_partisipan.csv", index=False)
+    K.to_csv(out / "ringkasan_kohort.csv", index=False)
+    if H:
+        pd.concat(H).to_csv(out / "ukuran_per_varian_fase.csv", index=False)
+    verifikasi.laporan(P, K, out / "LAPORAN.md")
+    pd.set_option("display.width", 250)
+    print(K.to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku}[cmd](pids or ["P08", "P09", "P31", "P32"])
