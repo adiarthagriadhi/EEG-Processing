@@ -304,6 +304,37 @@ def verifikasi_beku(pids):
     print(K.to_string(index=False))
 
 
+def gelombang(pids, gerakan="Agem Kanan", rep=1):
+    """Gambar gelombang satu repetisi: asli (telinga) → + ASR k 20 → + ASR + referensi A2 (pipeline beku)."""
+    out = HASIL / "gelombang"
+    out.mkdir(parents=True, exist_ok=True)
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rp, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rp, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        TE = epoch.potong_TE(W, xf.shape[1] / sf)
+        xa, _ = lonjakan.asr(xf, datar, sf, W, 20)
+        # A2 per blok 1 dtk (sama dengan jendela analisis); penanda datar per blok
+        n = int(sf)
+        y = np.full_like(xa, np.nan)
+        fdb = np.ones_like(xa)
+        fd0 = np.zeros_like(xa)
+        for a in range(0, xa.shape[1] - n + 1, n):
+            f0 = datar[:, a:a + n].mean(axis=1)
+            y[:, a:a + n], f1 = kanal.robust(xa[:, a:a + n], f0)
+            fdb[:, a:a + n] = f1[:, None]
+            fd0[:, a:a + n] = f0[:, None]
+        g = gerakan if (gerakan in set(rp.gerakan)) and rep in set(rp[rp.gerakan == gerakan].rep) else rp.gerakan.iloc[0]
+        r = rep if g == gerakan else int(rp[rp.gerakan == g].rep.iloc[0])
+        tahapan = [("1. Asli: referensi telinga A1/A2, bandpass 1–35 Hz", xf, datar.astype(float)),
+                   ("2. + ASR k = 20 (per belahan)", xa, datar.astype(float)),
+                   ("3. + referensi A2 (rata-rata belahan, robust) = masukan analisis", y, fdb)]
+        f = out / f"{pid}_{g.replace(' ', '_')}_rep{r}.png"
+        grafik.gelombang(pid, tahapan, datar, sf, W, TE, g, r, f)
+        print(f"[{pid}] {f.name}")
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3, "tahap4": tahap4, "verifikasi": verifikasi_beku, "gelombang": gelombang}[cmd](pids or ["P08", "P09", "P31", "P32"])

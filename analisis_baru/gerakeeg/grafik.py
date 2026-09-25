@@ -362,3 +362,68 @@ def tahap_varian(R, path, warna, judul):
     fig.tight_layout()
     fig.savefig(path, dpi=125, bbox_inches="tight")
     plt.close(fig)
+
+
+FASE_WARNA = {"Gerak": "#2a78d6", "Tahan": "#1baf7a", "Naik": "#eb6834", "Berdiri": "#eda100"}
+MERAH = "#d03b3b"
+
+
+def gelombang(pid, tahapan, datar, sf, W, TE, gerakan, rep, path, jarak_uv=120.0):
+    """Gelombang 16 kanal satu repetisi (Gerak − 3 dtk … Gerak berikutnya + 1 dtk) untuk beberapa tahap proses.
+    tahapan: [(judul, x kanal × sampel µV, fd kanal × sampel (≥ 0,1 = hilang))]. Potongan 1 dtk (grid 0,5 dtk) yang
+    gagal aturan bersih (> 150 µV) digambar merah; bagian hilang tidak digambar."""
+    from .istilah import FASE_REPETISI, KANAL
+    w = W[(W.gerakan == gerakan) & (W.rep == rep)].set_index("fase")
+    t0 = w.loc["Gerak", "onset"] - 3.0
+    t1 = w.loc["Berdiri", "selesai"] + 1.0 if "Berdiri" in w.index else w.loc["Naik", "selesai"] + 3
+    i0, i1 = int(t0 * sf), int(t1 * sf)
+    t = np.arange(i0, i1) / sf
+    n = len(tahapan)
+    fig, axes = plt.subplots(n, 1, figsize=(13, 4.3 * n), sharex=True)
+    axes = np.atleast_1d(axes)
+    for ax, (judul, x, fd) in zip(axes, tahapan):
+        for f in FASE_REPETISI:
+            if f in w.index:
+                a, b = max(w.loc[f, "onset"], t0), min(w.loc[f, "selesai"], t1)
+                ax.axvspan(a, b, color=FASE_WARNA[f], alpha=0.10, lw=0)
+                if ax is axes[0]:
+                    ax.text((a + b) / 2, len(KANAL) * jarak_uv + 70, f, ha="center", va="bottom", fontsize=9,
+                            color=INK)
+        te = TE[(TE.gerakan == gerakan) & (TE.rep == rep)]
+        for f, g in te.groupby("fase"):
+            ax.plot([g.mulai.min(), g.selesai.max()], [len(KANAL) * jarak_uv + 25] * 2, color=FASE_WARNA[f], lw=4,
+                    solid_capstyle="butt")
+        for k, c in enumerate(KANAL):
+            off = (len(KANAL) - 1 - k) * jarak_uv
+            y = x[k, i0:i1].astype(float).copy()
+            hil = fd[k, i0:i1] >= 0.1
+            y[hil] = np.nan
+            # tanda merah per potongan 1 dtk bergeser 0,5 dtk yang > 150 µV
+            buruk = np.zeros(len(y), bool)
+            for s in range(0, len(y) - int(sf) + 1, int(sf / 2)):
+                seg = y[s:s + int(sf)]
+                if np.isfinite(seg).sum() > sf / 2 and np.nanmax(seg) - np.nanmin(seg) > 150:
+                    buruk[s:s + int(sf)] = True
+            yk = np.clip(y, -jarak_uv * 0.9, jarak_uv * 0.9) + off
+            ax.plot(t, np.where(buruk, np.nan, yk), color=INK, lw=0.55)
+            ax.plot(t, np.where(buruk, yk, np.nan), color=MERAH, lw=0.55)
+            ax.plot(t, np.where(hil, off, np.nan), color="#a9a8a2", lw=2.5, solid_capstyle="butt")
+        ax.set_yticks([(len(KANAL) - 1 - k) * jarak_uv for k in range(len(KANAL))], KANAL, fontsize=7.5)
+        ax.axhline((len(KANAL) / 2 - 0.5) * jarak_uv, color=GRID, lw=1.5)
+        ax.set_ylim(-jarak_uv, len(KANAL) * jarak_uv + 120)
+        ax.set_title(judul, fontsize=10, loc="left", color=INK)
+        ax.plot([t1 - 0.3] * 2, [-0.8 * jarak_uv, -0.8 * jarak_uv + 100], color=INK, lw=2)
+        ax.text(t1 - 0.4, -0.8 * jarak_uv + 50, "100 µV", ha="right", va="center", fontsize=7.5, color=INK2)
+        for s in ("top", "right", "left"):
+            ax.spines[s].set_visible(False)
+        ax.tick_params(length=0)
+    axes[-1].set_xlabel("waktu EEG (dtk)")
+    fig.suptitle(f"{pid} — {gerakan} repetisi {rep}: gelombang EEG per tahap proses", x=0.01, ha="left",
+                 fontsize=11.5, y=1.0)
+    fig.text(0.01, -0.02, "Latar = fase (timestamp manual). Batang di atas = rentang epoch TE yang dianalisis. Hitam = "
+             "potongan 1 dtk ≤ 150 µV; merah = > 150 µV (tidak bersih); abu-abu tebal = sinyal datar/kanal hilang. "
+             "Kanal dipotong ±108 µV untuk tampilan. Garis horizontal memisahkan belahan kiri (A1) dan kanan (A2).",
+             fontsize=7.5, color=INK2, wrap=True)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120, bbox_inches="tight")
+    plt.close(fig)

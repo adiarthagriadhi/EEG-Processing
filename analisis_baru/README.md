@@ -390,3 +390,17 @@ Median 4 partisipan, Gerak / Tahan / Naik / Berdiri:
 **Usul: ASR k = 20 sebagai baku, ASR k = 10 sebagai uji sensitivitas.**
 
 ![tahap 4](hasil/tahap4_lonjakan/tahap4_lonjakan.png)
+
+---
+
+## Gelombang EEG per tahap proses
+Perintah: `jalankan.py gelombang` (baku: Agem Kanan repetisi 1). Hasil: `hasil/gelombang/PXX_Agem_Kanan_rep1.png`.
+
+Tiga panel per partisipan:
+1. asli (referensi telinga, 1–35 Hz);
+2. + ASR k = 20;
+3. + referensi A2, yang menjadi masukan analisis.
+
+Latar = fase; batang di atas = rentang epoch TE; hitam = potongan 1 dtk ≤ 150 µV; merah = > 150 µV; abu-abu = datar atau
+kanal hilang. Untuk tampilan, A2 diterapkan per blok 1 dtk berurutan. Dalam analisis, A2 diterapkan per jendela TE
+(geser 0,25 dtk), sehingga batas blok pada gambar bisa sedikit berbeda.
