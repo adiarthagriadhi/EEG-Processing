@@ -40,6 +40,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | 3 | Kanal buruk & sinyal datar: per rekaman · per jendela (robust) · referensi median · interpolasi | **Selesai → A2 robust dipakai** (keputusan pengguna) |
 | 4 | Lonjakan artefak gerak: ASR k 20/10/5 · ambang adaptif per partisipan · hanya ditandai | **Selesai → ASR k = 20** |
 | – | **Rencana beku + verifikasi kohort** (`RENCANA_BEKU.md`, `jalankan.py verifikasi semua`) | **Beku 2026-09-25**; menunggu data semua partisipan |
+| – | **Rencana analisis gelombang EEG** (`RENCANA_ANALISIS.md`) | **Draf**; dibekukan sesudah Tahap 5–6 beku, sebelum analisis dijalankan |
 | 5 | Mata & otot: ICA (aturan MNE) · BSS-CCA (otot) · regresi kedipan Fp1/Fp2 | **Sementara → usul tanpa koreksi tambahan** (dikonfirmasi pada set penyetelan yang lebih besar) |
 | 6 | Aturan pakai: R1 cakupan jendela bersih per repetisi · R2 repetisi minimum per sel; dataset bersih | **Sementara → cakupan ≥ 75% & ≥ 3 repetisi** (dikonfirmasi pada set penyetelan yang lebih besar) |
 
