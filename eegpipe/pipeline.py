@@ -172,6 +172,10 @@ def stage_phases(P, cfg, tl, pose, force=False):
         for k, v in fix.items():
             if k not in ("task", "rep"):
                 reps.loc[m, k] = v
+    if cfg.get("reclass", {}).get("enabled", False):
+        from .reclass import reclassify
+        reps, info = reclassify(reps, pose, cfg, P.decisions())
+        _log(P.pid, f"reklasifikasi: {info}")
     reps.to_csv(out, index=False)
     _log(P.pid, f"fase: {reps.compliance.value_counts().to_dict()}")
     return reps

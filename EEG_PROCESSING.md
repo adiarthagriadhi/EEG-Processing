@@ -1414,3 +1414,20 @@ Hasil sebelum perbaikan disimpan di `results_sebelum_perbaikan/` (lokal) dan
   untuk segmen fase dan jendela acuan diam; ditandai `salvaged=True` di `PXX_segments.csv`
   (`baseline_salvaged` di segmen_qc.json). Perkiraan: ±separuh kanal-segmen yang hilang terselamatkan.
 - Tepi sinyal datar tetap diperlebar 0,1 dtk; uji sensitivitas varian B (1,6 dtk, ekor filter HP) tetap dijalankan.
+
+### C. Pemilihan ulang pose tanpa MediaPipe & koreksi penjaga (2026-09-25)
+- `pose.npz` kini menyimpan semua kandidat per frame (`cand_xy`, `cand_vis`); `pose.select()` dapat diulang
+  dalam hitungan detik bila aturan berubah.
+- Versi pertama penjaga penonton (kaki > 40 px di atas acuan → tolak) keliru: kaki tertutup kamen diperkirakan
+  ikut naik saat jongkok → P16/P22/P23/P24/P25 kehilangan 27–76% frame gerak. Kini ditolak hanya bila kaki lebih
+  tinggi DAN batang tubuh > 50 px ke samping dari posisi partisipan (EMA). Kerangka dengan kaki diekstrapolasi
+  > 60 px di bawah area atau batang tubuh < 30 px dari tepi area (operator terpotong) diabaikan.
+- Hasil (38 partisipan, sebelum → sesudah perbaikan A+B+C): repetisi `ok` 321 → 330; segmen 2042 → 2080;
+  kanal-segmen gerak valid 79,7% → 85,9%. Membaik jelas: P06, P18, P28, P35, P38; sedikit turun: P03, P23, P27, P33.
+
+### D. Reklasifikasi repetisi (`eegpipe/reclass.py`, `reclass.enabled: true`)
+- `tanpa_turun`: incomplete dengan kedalaman < 15 px (deskriptif).
+- Salah sisi agem: kandidat otomatis (fitur tangan kiri-gambar vs kanan-gambar saat TAHAN, ambang Otsu per
+  partisipan) → DITINJAU MANUAL oleh peneliti (`scripts/lembar_tinjauan.py`: PDF + CSV) → diterapkan dari
+  `data/decisions/PXX.yaml` `reclass_sisi` (task, rep, jadi). Repetisi dipindah: rep + 10, `task_hud`/`rep_hud` asli.
+- Lembar tinjauan juga mencakup repetisi incomplete (kategori: tidak_turun / turun_tidak_terdeteksi / gerak_lain).

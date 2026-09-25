@@ -208,6 +208,7 @@ dose_response:
   min_n: 8
 
 reclass:
+  enabled: true               # kandidat ditandai otomatis; salah sisi diterapkan hanya dari decisions (reclass_sisi)
   # eegpipe/reclass.py (2026-09-24): kandidat salah sisi otomatis; penerapan hanya lewat decisions (visual)
   min_agem_reps: 6
   min_sep_px: 40
