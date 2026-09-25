@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import welch
 
-from . import data, epoch, jendela, kanal, kualitas, lonjakan
+from . import aturan, data, epoch, jendela, kanal, kualitas, lonjakan
 from .istilah import FASE_REPETISI, KANAL
 
 F = np.arange(1, 35)                      # bin 1 Hz
@@ -36,8 +36,8 @@ def _band(P, lo, hi):
     return P[..., (F >= lo) & (F < hi)].mean(axis=-1)
 
 
-def spektrum_jendela(pid):
-    """PSD 1–34 Hz per jendela × kanal (TE + Istirahat), pipeline beku. → (meta DataFrame, psd [n, 16, 34], ok [n, 16])."""
+def spektrum_jendela(pid, mata=False):
+    """PSD 1–34 Hz per jendela × kanal (TE + Istirahat; + Buka/Tutup Mata bila mata=True), pipeline beku. → (meta DataFrame, psd [n, 16, 34], ok [n, 16])."""
     raw = data.muat_edf(pid)
     rp, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
     W = jendela.jendela(rp, tt)
@@ -48,7 +48,7 @@ def spektrum_jendela(pid):
     ist = W[W.fase == "Istirahat"]
     ep_i = pd.DataFrame([dict(gerakan="-", rep=0, fase="Istirahat", mulai=s, selesai=s + 1.0)
                          for w in ist.itertuples() for s in np.arange(w.mulai, w.selesai - 1.0 + 1e-9, 0.25)])
-    ep = pd.concat([ep, ep_i], ignore_index=True)
+    ep = pd.concat([ep, ep_i] + ([aturan.potong_mata(W, T)] if mata else []), ignore_index=True)
     meta, P, OK = [], [], []
     for e in ep.itertuples():
         i0, i1 = int(round(e.mulai * sf)), int(round(e.selesai * sf))
