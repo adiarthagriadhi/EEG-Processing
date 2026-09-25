@@ -173,3 +173,19 @@ def test_aturan_cakupan_dan_pilihan():
     assert bool(aturan._lolos_R1(nr, 0.5).iloc[0]) and not bool(aturan._lolos_R1(nr, 0.75).iloc[0])
     h = pd.DataFrame(dict(c_min=[0.0, 0.5, 0.75], r_min=3, fase="Gerak", pct_sel_lolos_R2=[100, 80, 60]))
     assert aturan.pilih_c(h) == 0.5
+
+
+def test_label_buka_mata():
+    from gerakeeg import aturan
+    seq = _satu_rep("AKA", 5) + _satu_rep("AKA", 21) + [("BM", 370), ("TT", 415)]
+    rep, tt, masalah = jendela.repetisi(_ts(seq))
+    assert masalah == [] and rep.attrs["BM"] == 370 and tt == 415
+    W = jendela.jendela(rep, tt).set_index("fase")
+    assert tuple(W.loc["Buka Mata", ["mulai", "selesai"]]) == (369.5, 400)        # BM + 30 < TT
+    rep2, _, _ = jendela.repetisi(_ts(_satu_rep("AKA", 5) + [("BM", 370), ("TT", 390)]))
+    W2 = jendela.jendela(rep2, 390).set_index("fase")
+    assert W2.loc["Buka Mata", "selesai"] == 390                                  # berhenti di TT
+    M = aturan.potong_mata(jendela.jendela(rep, tt), 500.0)
+    assert set(M.fase) == {"Buka Mata", "Tutup Mata"} and M[M.fase == "Buka Mata"].mulai.min() == 371
+    _, _, m3 = jendela.repetisi(_ts(_satu_rep("AKA", 5) + [("TT", 380), ("BM", 390)]))
+    assert any("BM" in x for x in m3)                                             # urutan salah dicatat

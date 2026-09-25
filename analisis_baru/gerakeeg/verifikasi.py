@@ -65,8 +65,10 @@ def evaluasi(pid):
              masalah_timestamp="; ".join(masalah), durasi_edf=round(T, 1),
              akhir_repetisi=round(float(rep.onset_Berdiri.max()), 1),
              pct_datar_total=round(100 * float(datar.mean()), 1))
-    tm = W[W.fase == "Tutup Mata"]
-    r["cakupan_tutup_mata"] = (round(float(min(1, max(0, (T - tm.onset.iloc[0]) / 30))), 2) if len(tm) else np.nan)
+    for fase, kol in (("Buka Mata", "cakupan_buka_mata"), ("Tutup Mata", "cakupan_tutup_mata")):
+        m = W[W.fase == fase]
+        r[kol] = (round(float(min(1, max(0, (T - m.onset.iloc[0]) / (m.selesai.iloc[0] - m.onset.iloc[0])))), 2)
+                  if len(m) else np.nan)
     r["K0_data"] = bool(not masalah and r["n_rep_lengkap"] >= MIN_REP_LENGKAP and r["akhir_repetisi"] <= T)
 
     def jalankan(nama, ep, x=xf, skema=None, panjang=epoch.E_PANJANG, geser=epoch.E_GESER):

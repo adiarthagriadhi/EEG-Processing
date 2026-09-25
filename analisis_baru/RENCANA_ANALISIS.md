@@ -33,7 +33,8 @@ untuk metode baru.
    hipotesis utama.
 5. **Gerak dan Naik** hanya diwakili inisiasinya (±1,5 dtk pertama). Temuannya disebut "inisiasi gerak/naik", bukan
    seluruh fase.
-6. **Romberg:** buka mata tidak ditandai dan efek Berger tidak muncul. Lihat Bagian 7.
+6. **Romberg:** buka mata kini ditandai (`BM`). Efek Berger belum terlihat terhadap Istirahat, sehingga diuji ulang
+   terhadap Buka Mata sebagai syarat validitas (Bagian 7).
 7. **Hari rekaman bertumpang tindih dengan grup** (penari 9–11 Sep; non-penari 12–14 Sep, kecuali P10). Ditangani di
    Bagian 6.
 
@@ -99,14 +100,31 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 Temuan utama dianggap **kokoh** bila arah efek grup sama di semua sensitivitas dan IK tidak berbalik tanda pada
 K-otot, K-ref dan K-usia.
 
-## 7. Romberg / Tutup Mata (Paper D): bersyarat
-- Saat ini hanya **Tutup Mata** yang ditandai, dan cakupannya kurang pada sebagian partisipan (P09 14%).
-- Tanpa penanda **buka mata**, rasio EC/EO (Romberg quotient EEG) tidak dapat dihitung. Efek Berger (alpha oksipital
-  naik saat mata tertutup) juga tidak terlihat terhadap Istirahat.
-- **Bila penanda buka mata ditambahkan di timestamp** (usul label `BM` di awal segmen buka mata), analisis Paper D
-  mengikuti Tahap 5b CLAUDE.md: alpha oksipital EC, rasio EC/EO, mu sentral EC/EO, theta frontal EC, dan korelasi
-  parsial (dikontrol usia) dengan skor stork test.
-- **Bila tidak:** hanya deskriptif Tutup Mata vs Istirahat, tanpa klaim Romberg.
+## 7. Romberg: Buka Mata vs Tutup Mata (Paper D)
+Label `BM` ditambahkan pengguna (2026-09-25). Segmen: Buka Mata [BM + 1, min(BM + 30, TT)], Tutup Mata [TT + 1, TT + 30],
+keduanya dibatasi durasi EDF. Pipeline dan aturan bersih sama. Nilai kanal dipakai bila ≥ 8 jendela bersih.
+
+**Syarat masuk per partisipan:** kedua segmen punya nilai O1/O2 yang lolos. Partisipan dengan EDF terpotong sebelum
+Tutup Mata (mis. P09, 14% tercakup) dikeluarkan dari Paper D dan dilaporkan.
+
+**Ukuran (Tier 1, CLAUDE.md Tahap 5b):**
+| Kode | Ukuran |
+|---|---|
+| D1 | alpha (8–13 Hz) oksipital O1/O2 saat Tutup Mata |
+| D2 | reaktivitas alpha oksipital = Tutup Mata − Buka Mata (dB; "Romberg quotient" EEG) |
+| D3 | mu/alpha sentral C3/C4, Buka Mata dan Tutup Mata |
+| D4 | theta frontal F3/F4 saat Tutup Mata |
+
+Untuk Romberg, ukuran dihitung sebagai power **relatif Buka Mata** (Tutup Mata − Buka Mata, dB) dan juga relatif
+Istirahat. Kondisi mata saat Istirahat utama belum diketahui, jadi Buka Mata menjadi acuan yang lebih jelas.
+
+**Validitas lebih dulu (S-Romberg):** efek Berger (D2 > 0) diuji per partisipan dan per grup sebelum D1–D4
+dibandingkan. Bila efek Berger tidak muncul pada mayoritas partisipan, D1–D4 hanya dilaporkan deskriptif.
+Kemungkinan penyebabnya dibahas (alpha lemah, referensi A2 menghapus alpha oksipital yang merata di belahan).
+Sensitivitas: referensi telinga (D) dan bipolar P3-O1/P4-O2.
+
+**Uji:** Welch/ANCOVA (grup + usia) untuk D1–D4 (BH atas 4). Korelasi parsial Spearman (dikontrol usia) antara
+D1–D4 dan waktu stork test di seluruh sampel (BH atas 4). Semua hanya bila syarat validitas terpenuhi.
 
 ## 8. Pre-post (Paper B): bersyarat
 Semua data saat ini `timepoint = pre`. Bila data post non-penari masuk: analisis RCI dan Gap Closure sesuai CLAUDE.md,
@@ -127,3 +145,4 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | Tanggal | Revisi | Alasan |
 |---|---|---|
 | 2026-09-25 | Draf pertama | – |
+| 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |

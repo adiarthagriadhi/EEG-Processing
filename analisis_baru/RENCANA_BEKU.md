@@ -11,7 +11,7 @@ keempatnya tidak dihitung sebagai verifikasi.
 ## 1. Masukan per partisipan
 - `data/raw/PXX/PXX_Trial.EDF`: 16 kanal EEG KT88, 100 Hz.
 - `data/manual_timestamps/PXX_timestamps.csv`: kolom `urutan, waktu_detik, label`. Label N/AKA/AKI → T → N → B;
-  TT = tutup mata. Waktu = detik EEG, offset 0.
+  BM = buka mata (opsional, sebelum TT); TT = tutup mata. Waktu = detik EEG, offset 0.
 - Impor file unggahan: `.venv/bin/python analisis_baru/impor_data.py <file/folder>`.
 
 ## 2. Pipeline yang dibekukan
@@ -69,4 +69,5 @@ Keluaran: `hasil/verifikasi/lolos_gagal_per_partisipan.csv`, `ringkasan_kohort.c
 ## Log revisi
 | Tanggal | Revisi | Alasan |
 |---|---|---|
+| 2026-09-25 | Tambah label opsional `BM` (buka mata) → segmen Buka Mata [BM − 0,5, min(BM + 30, TT)]; analisis 1 dtk mulai BM + 1 dtk; aturan bersih & ≥ 8 jendela bersih sama dengan Tutup Mata. Verifikasi melaporkan cakupan Buka Mata. | Permintaan pengguna untuk Paper D (rasio EC/EO). Perluasan masukan; tidak mengubah parameter Tahap 1–4 maupun kriteria K0–K5. |
 | 2026-09-25 (sebelum beku) | K4: distorsi Istirahat didefinisikan sebagai median antar-kanal ≤ 0,25 dB DAN kanal terburuk ≤ 1,0 dB (bukan kanal terburuk ≤ 0,1 dB) | Uji skrip pada set penyetelan: kriteria kanal-terburuk ≤ 0,1 dB gagal pada P09/P31/P32 (0,66–0,79 dB di 3–5 kanal, terutama theta), padahal median ≈ 0,00–0,19 dB. Keputusan Tahap 4 didasarkan pada median. Batas baru berdasar besar efek ERD yang dicari (±1 dB) dan galat baku estimasi (±1,3 dB), bukan pada nilai data. Ditetapkan pada set penyetelan, sebelum data lain dilihat. |

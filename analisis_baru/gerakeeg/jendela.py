@@ -2,10 +2,11 @@
 
 Aturan (keputusan pengguna 2026-09-25):
 - Waktu timestamp = waktu EEG (offset 0).
-- Label berurutan per repetisi: N/AKA/AKI (Gerak) → T (Tahan) → N (Naik) → B (Berdiri). TT = Tutup Mata.
+- Label berurutan per repetisi: N/AKA/AKI (Gerak) → T (Tahan) → N (Naik) → B (Berdiri). BM = Buka Mata (Romberg mata
+  terbuka, opsional), TT = Tutup Mata.
 - Jendela observasi fase = [onset fase − 0,5 dtk, onset fase berikutnya]. Durasi fase = onset berikut − onset.
 - Berdiri berakhir pada onset Gerak berikutnya, paling lama 8 dtk sesudah B (akhir blok / sebelum Tutup Mata).
-- Tutup Mata = [TT − 0,5, TT + 30].
+- Buka Mata = [BM − 0,5, min(BM + 30, TT)]; Tutup Mata = [TT − 0,5, TT + 30].
 - Istirahat (turunan, tanpa timestamp) = jeda panjang antar-blok: [B terakhir blok 1 + 8, Gerak pertama blok 2 − 5];
   dipakai hanya sebagai acuan kualitas (power 1–4 Hz dan 20–34 Hz).
 - Repetisi dinomori per gerakan menurut blok protokol: blok 1 = rep 1–2, blok 2 = rep 3–4.
@@ -15,7 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .istilah import FASE_REPETISI, GERAKAN, ISTIRAHAT, TUTUP_MATA
+from .istilah import BUKA_MATA, FASE_REPETISI, GERAKAN, ISTIRAHAT, TUTUP_MATA
 
 
 @dataclass
@@ -32,12 +33,16 @@ BERIKUT = {"Gerak": "T", "Tahan": "N", "Naik": "B"}
 
 
 def repetisi(ts, aturan=Aturan()):
-    """→ (DataFrame repetisi: onset tiap fase, blok, rep, lengkap; onset Tutup Mata; daftar masalah)."""
-    rows, masalah, cur, tt = [], [], None, None
+    """→ (DataFrame repetisi: onset tiap fase, blok, rep, lengkap; onset Tutup Mata; daftar masalah).
+    Onset Buka Mata (label BM) disimpan di rep.attrs["BM"]."""
+    rows, masalah, cur, tt, bm = [], [], None, None, None
     for r in ts.itertuples():
         lab, t = r.label, r.waktu_detik
         if lab == "TT":
             tt = t
+            continue
+        if lab == "BM":
+            bm = t
             continue
         if cur is not None and cur["_fase"] in BERIKUT and lab == BERIKUT[cur["_fase"]]:
             nxt = {"Gerak": "Tahan", "Tahan": "Naik", "Naik": "Berdiri"}[cur["_fase"]]
@@ -63,6 +68,9 @@ def repetisi(ts, aturan=Aturan()):
     nxt = rep.onset_Gerak.shift(-1)
     same = rep.blok.shift(-1) == rep.blok
     rep["durasi_Berdiri"] = np.where(same, nxt - rep.onset_Berdiri, np.nan)   # hanya bila repetisi berikut ada di blok sama
+    if bm is not None and tt is not None and bm >= tt:
+        masalah.append(f"BM ({bm:.3f} dtk) tidak sebelum TT ({tt:.3f} dtk)")
+    rep.attrs["BM"] = bm
     return rep, tt, masalah
 
 
@@ -84,6 +92,11 @@ def jendela(rep, tt, aturan=Aturan()):
                 continue
             W.append(dict(gerakan=m.gerakan, rep=m.rep, blok=m.blok, fase=f, onset=on[i],
                           mulai=on[i] - aturan.maju_dtk, selesai=b, durasi_fase=b - on[i]))
+    bm = rep.attrs.get("BM")
+    if bm is not None:
+        akhir = bm + aturan.tutup_mata_dtk if tt is None or tt <= bm else min(bm + aturan.tutup_mata_dtk, tt)
+        W.append(dict(gerakan="-", rep=0, blok=0, fase=BUKA_MATA, onset=bm, mulai=bm - aturan.maju_dtk,
+                      selesai=akhir, durasi_fase=akhir - bm))
     if tt is not None:
         W.append(dict(gerakan="-", rep=0, blok=0, fase=TUTUP_MATA, onset=tt, mulai=tt - aturan.maju_dtk,
                       selesai=tt + aturan.tutup_mata_dtk, durasi_fase=aturan.tutup_mata_dtk))

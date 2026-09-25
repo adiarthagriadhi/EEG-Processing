@@ -3,4 +3,4 @@ menggantikan OCR + pose + sinkronisasi + deteksi fase (lihat docs/MANUAL_TIMESTA
 
 Format: `urutan,waktu_detik,waktu_hhmmss,label,nama_video`
 Label: N / AKA / AKI (mulai turun: ngeed / agem kanan / agem kiri) → T (mulai tahan) → N (mulai naik) → B (berdiri);
-TT = mulai tutup mata (Romberg EC). Waktu = detik EEG (offset 0).
+BM = mulai buka mata (Romberg EO, opsional, sebelum TT); TT = mulai tutup mata (Romberg EC). Waktu = detik EEG (offset 0).

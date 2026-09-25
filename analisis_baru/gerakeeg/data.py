@@ -44,7 +44,7 @@ def bersihkan_timestamp(df, sumber="timestamp"):
     df = df.sort_values("urutan").reset_index(drop=True)
     if not df.waktu_detik.is_monotonic_increasing:
         raise ValueError(f"{sumber}: waktu_detik tidak naik sesuai urutan")
-    tak_dikenal = set(df.label) - set(GERAKAN) - {"T", "B", "TT"}
+    tak_dikenal = set(df.label) - set(GERAKAN) - {"T", "B", "TT", "BM"}
     if tak_dikenal:
         raise ValueError(f"{sumber}: label tidak dikenal {sorted(tak_dikenal)}")
     return df[["urutan", "waktu_detik", "label"]]

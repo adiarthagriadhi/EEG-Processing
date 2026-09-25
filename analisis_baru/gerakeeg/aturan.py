@@ -10,28 +10,36 @@ Dua aturan yang ditetapkan di sini (hanya dari cakupan, presisi & jumlah data, t
   R2  nilai partisipan × fase × kanal dipakai bila ada ≥ r_min repetisi yang lolos R1.
   Pemilihan (ditetapkan sebelum melihat hasil): c_min terbesar dari {0 (≥ 1 jendela), 25, 50, 75%} yang masih
   menyisakan ≥ 75% sel lolos R2 (median 4 fase) dengan r_min = 3.
-Tutup Mata ikut disiapkan (jendela 1 dtk, geser 0,25 dtk, TT + 1 … TT + 30 dalam EDF), dengan aturan bersih yang sama.
+Buka Mata & Tutup Mata ikut disiapkan (jendela 1 dtk, geser 0,25 dtk, onset + 1 … akhir segmen dalam EDF; Buka Mata
+berakhir paling lambat di TT), dengan aturan bersih yang sama.
 """
 import numpy as np
 import pandas as pd
 
 from . import data, epoch, jendela, kanal, kualitas, lonjakan
-from .istilah import FASE_REPETISI, TUTUP_MATA
+from .istilah import BUKA_MATA, FASE_REPETISI, TUTUP_MATA
+
+MATA = (BUKA_MATA, TUTUP_MATA)
 
 PITA = list(epoch.PITA)
 N_KANDIDAT = [1, 2, 3, 4, 6]            # untuk kurva presisi
 C_KANDIDAT = [0.0, 0.25, 0.50, 0.75]     # R1: cakupan minimum rentang TE
 R_KANDIDAT = [2, 3, 4]
-TM_MIN_JENDELA = 8           # Tutup Mata: ≥ 8 jendela bersih (≈ 2,75 dtk unik) agar nilai kanal dipakai
+TM_MIN_JENDELA = 8           # Buka/Tutup Mata: ≥ 8 jendela bersih (≈ 2,75 dtk unik) agar nilai kanal dipakai
 
 
-def potong_tutup_mata(W, T):
-    tm = W[W.fase == TUTUP_MATA]
-    if tm.empty:
-        return pd.DataFrame(columns=["gerakan", "rep", "fase", "mulai", "selesai"])
-    a, b = tm.onset.iloc[0] + 1.0, min(tm.onset.iloc[0] + 30.0, T)
-    s = np.arange(a, b - epoch.E_PANJANG + 1e-9, epoch.E_GESER)
-    return pd.DataFrame(dict(gerakan="-", rep=0, fase=TUTUP_MATA, mulai=s, selesai=s + epoch.E_PANJANG))
+def potong_mata(W, T):
+    """Jendela 1 dtk (geser 0,25) untuk Buka Mata dan Tutup Mata: onset + 1 dtk … akhir segmen (dalam EDF)."""
+    out = []
+    for w in W[W.fase.isin(MATA)].itertuples():
+        a, b = w.onset + 1.0, min(w.selesai, T)
+        s = np.arange(a, b - epoch.E_PANJANG + 1e-9, epoch.E_GESER)
+        out.append(pd.DataFrame(dict(gerakan="-", rep=0, fase=w.fase, mulai=s, selesai=s + epoch.E_PANJANG)))
+    return (pd.concat(out, ignore_index=True) if out
+            else pd.DataFrame(columns=["gerakan", "rep", "fase", "mulai", "selesai"]))
+
+
+potong_tutup_mata = potong_mata          # nama lama
 
 
 def proses(pid):
@@ -43,7 +51,7 @@ def proses(pid):
     T = xf.shape[1] / sf
     xa, info = lonjakan.asr(xf, datar, sf, W, 20)
     ref, _ = epoch.acuan(xa, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, kanal.robust)
-    ep = pd.concat([epoch.potong_TE(W, T), potong_tutup_mata(W, T)], ignore_index=True)
+    ep = pd.concat([epoch.potong_TE(W, T), potong_mata(W, T)], ignore_index=True)
     est = epoch.estimasi(xa, datar, sf, ep, ref, "beku", kanal.robust)
     return est.assign(participant_id=pid), rp.assign(participant_id=pid), info
 
@@ -139,7 +147,7 @@ def dataset(nr, c_min, r_min):
     """→ (nilai repetisi berlabel lolos_R1, nilai partisipan × fase × kanal berlabel lolos_R2).
     Nilai partisipan = rata-rata dB antar-repetisi yang lolos R1 (per gerakan & gabungan 'Semua'); SE antar-repetisi."""
     nr = nr.copy()
-    nr["lolos_R1"] = np.where(nr.fase == TUTUP_MATA, nr.n_bersih >= TM_MIN_JENDELA, _lolos_R1(nr, c_min))
+    nr["lolos_R1"] = np.where(nr.fase.isin(MATA), nr.n_bersih >= TM_MIN_JENDELA, _lolos_R1(nr, c_min))
     ok = nr[nr.lolos_R1]
     parts = []
     for label, d in [("Semua", ok)] + [(g, ok[ok.gerakan == g]) for g in sorted(ok.gerakan.unique()) if g != "-"]:
@@ -152,5 +160,5 @@ def dataset(nr, c_min, r_min):
             s[f"{p}_se"] = grp[f"{p}_db"].std(ddof=1) / np.sqrt(s.n_rep)
         parts.append(s.reset_index().assign(gerakan=label))
     P = pd.concat(parts, ignore_index=True)
-    P["lolos_R2"] = np.where(P.fase == TUTUP_MATA, P.n_rep >= 1, P.n_rep >= r_min)
+    P["lolos_R2"] = np.where(P.fase.isin(MATA), P.n_rep >= 1, P.n_rep >= r_min)
     return nr, P

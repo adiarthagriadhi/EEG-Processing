@@ -19,6 +19,7 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 | **Tahan** | `T` | Tahan − 0,5 … Naik | Naik − Tahan |
 | **Naik** | `N` (sesudah `T`) | Naik − 0,5 … Berdiri | Berdiri − Naik |
 | **Berdiri** | `B` | Berdiri − 0,5 … Gerak berikutnya (maks. Berdiri + 8 dtk) | Gerak berikutnya − Berdiri |
+| **Buka Mata** | `BM` (opsional) | BM − 0,5 … min(BM + 30, TT) | ≤ 30 dtk |
 | **Tutup Mata** | `TT` | TT − 0,5 … TT + 30 | 30 dtk |
 | **Istirahat*** | (tidak ada) | Berdiri terakhir blok 1 + 8 … Gerak pertama blok 2 − 5 | ±170 dtk |
 
@@ -27,7 +28,8 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 - Setiap jendela dimulai 0,5 dtk sebelum timestamp onsetnya. Durasi fase tetap dihitung dari timestamp.
 - Repetisi dinomori per gerakan menurut blok: blok 1 = rep 1–2, blok 2 = rep 3–4. P31 tidak punya Ngeed di
   blok 1, jadi Ngeed-nya rep 3–4.
-- Buka mata (Romberg EO) tidak ditandai, sehingga belum dianalisis.
+- Buka mata (Romberg EO) ditandai dengan label `BM` (ditambahkan pengguna 2026-09-25). File tanpa `BM` tetap
+  terbaca; segmen Buka Mata saja yang tidak dibuat. `BM` harus sebelum `TT`; bila tidak, dicatat sebagai masalah.
 - Urutan label yang menyimpang dicatat di `hasil/tahap1_kualitas/masalah_timestamp.csv`. Pada keempat
   partisipan tidak ada.
 
