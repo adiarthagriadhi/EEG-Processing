@@ -36,8 +36,8 @@ Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar r
 |---|---|---|
 | 1 | Inventaris kualitas sinyal per fase (tanpa mengubah data) | **Selesai** |
 | – | Epoching: B / T / TE / E | **Selesai → TE dipakai** (keputusan pengguna 2026-09-25) |
-| 2 | Referensi: A rata-rata per belahan · B rata-rata 16 kanal · C bipolar tetangga · D telinga A1/A2 (asli) | **Selesai → usul A** (menunggu persetujuan) |
-| 3 | Kanal buruk & sinyal datar: A per rekaman · B per jendela · C interpolasi datar pendek | Menunggu |
+| 2 | Referensi: A rata-rata per belahan · B rata-rata 16 kanal · C bipolar tetangga · D telinga A1/A2 (asli) | **Selesai → A dipakai** (keputusan pengguna) |
+| 3 | Kanal buruk & sinyal datar: per rekaman · per jendela (robust) · referensi median · interpolasi | **Selesai → usul A2 robust** (menunggu persetujuan) |
 | 4 | Lonjakan artefak gerak: A ASR (kalibrasi Istirahat) · B tolak per potongan, ambang per partisipan · C hanya ditandai | Menunggu |
 | 5 | Mata & otot: A ICA + ICLabel · B BSS-CCA (otot) · C regresi kedipan Fp1/Fp2 | Menunggu |
 | 6 | Aturan pakai jendela & uji sensitivitas | Menunggu |
@@ -296,3 +296,53 @@ mata saat Istirahat tidak diketahui, bisa saja sebagian partisipan menutup mata;
 Perlu konfirmasi ke pengguna: apakah mata terbuka saat Istirahat utama?
 
 ![tahap 2](hasil/tahap2_referensi/tahap2_referensi.png)
+
+---
+
+## Tahap 3: kanal buruk & sinyal datar (referensi A, epoch TE)
+Kode: `gerakeeg/kanal.py`. Perintah: `jalankan.py tahap3`. Hasil: `hasil/tahap3_kanal/`.
+
+| Varian | Isi |
+|---|---|
+| A0 dasar | Referensi A apa adanya (Tahap 2) |
+| A1 per rekaman | Kanal dengan z robust log-SD saat Istirahat > 3, atau datar > 50% rekaman, dibuang dari seluruh rekaman |
+| A2 robust per jendela | Di tiap jendela, kanal pencilan (z robust log-ptp > 3 DAN > 2× median belahan) dikeluarkan dari referensi belahan dan ditandai hilang; iteratif |
+| A3 referensi median | Referensi = median kanal belahan (kebal pencilan tanpa membuang kanal) |
+| A4 robust + interpolasi | A2, lalu kanal yang hilang diisi spline sferis dari kanal belahan yang sama (bila ≥ 5 dari 8 baik) |
+
+**Dari mana data hilang** (`nasib_kanal_jendela.csv`, % kanal-jendela TE):
+
+| | P08 | P09 | P31 | P32 |
+|---|---|---|---|---|
+| Datar di EDF mentah (reset/putus kanal) | 25,3 | 23,2 | 17,5 | 24,1 |
+| Dikeluarkan sebagai pencilan (A2) | 1,7 | 4,7 | 3,5 | 3,9 |
+| Diisi interpolasi (A4) | 6,4 | 7,4 | 8,1 | 9,8 |
+
+Kehilangan terbesar adalah **sinyal datar**, dan ini tidak dapat dipulihkan. 69% waktu datar berasal dari rentang
+≥ 3 dtk, dan pada 14–22% waktu ada ≥ 6 kanal datar bersamaan. Tidak ada kanal yang buruk sepanjang rekaman (z
+maksimum 1,05–1,68), sehingga A1 identik dengan A0.
+
+**Median 4 partisipan, Gerak / Tahan / Naik / Berdiri:**
+
+| | A0 dasar | A1 rekaman | **A2 robust** | A3 median | A4 robust + interp |
+|---|---|---|---|---|---|
+| % kanal-jendela bersih | 56 / 60 / 51 / 65 | = A0 | 56 / 59 / 52 / 64 | 56 / 58 / 49 / 64 | 64 / 65 / 56 / 70* |
+| Otot 20–34 Hz (dB) | 0,97 / 1,23 / 2,30 / 0,40 | = A0 | **0,82 / 1,00 / 1,86 / 0,18** | 1,52 / 1,26 / 2,23 / 0,62 | 0,87 / 0,90 / 2,14 / 0,05 |
+| Galat baku (dB) | 1,30 / 1,32 / 1,62 / 1,00 | = A0 | 1,40 / 1,35 / 1,61 / 1,06 | 1,45 / 1,41 / 1,65 / 1,07 | 1,33 / 1,25 / 1,56 / 0,99 |
+| Reliabilitas belah-dua | 0,76 / 0,78 / 0,74 / 0,85 | = A0 | 0,77 / 0,78 / 0,76 / 0,86 | 0,72 / 0,78 / 0,64 / 0,90 | 0,72 / 0,80 / 0,73 / 0,89 |
+
+\* A4 menghitung kanal hasil interpolasi sebagai data; isinya turunan kanal tetangga, bukan informasi baru.
+
+- **Perbedaan antar-varian kecil.** Referensi A sudah menangani sebagian besar masalah di Tahap 2.
+- **A2 robust** menurunkan kontaminasi otot di semua fase (−0,15…−0,45 dB) dengan biaya 2–5% kanal-jendela.
+  Reliabilitas tetap atau sedikit naik. Manfaat utamanya: satu kanal yang meledak tidak lagi mencemari 7 kanal lain
+  di belahannya lewat rata-rata referensi.
+- **A3 median** lebih buruk (otot Gerak naik, reliabilitas Naik 0,64).
+- **A4 interpolasi** tampak menambah data, tetapi hanya mengisi kanal kosong dengan tiruan tetangganya. Reliabilitas
+  Gerak justru turun (0,72). Cocok hanya untuk analisis yang butuh montase lengkap (mis. topografi), dengan penanda.
+- Catatan: algoritme A2 sempat mengeluarkan kanal normal secara berlebihan (MAD sangat kecil setelah pencilan
+  pertama dibuang). Ini ditemukan lewat uji sintetis dan diperbaiki dengan syarat tambahan "> 2× median".
+
+**Usul: A2 robust sebagai baku**, A4 hanya untuk topografi (ditandai).
+
+![tahap 3](hasil/tahap3_kanal/tahap3_kanal.png)

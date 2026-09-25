@@ -46,7 +46,9 @@ def _bersih(xf, datar, i0, i1):
 def _potong(xf, datar, i0, i1, skema):
     """Potongan [i0, i1) dengan skema referensi (None = asli). → (x, tidak_datar, bersih)."""
     x, fd = xf[:, i0:i1], datar[:, i0:i1].mean(axis=1)
-    if skema is not None:
+    if callable(skema):                                   # Tahap 3: fungsi (x, fd) → (x', fd')
+        x, fd = skema(x, fd)
+    elif skema is not None:
         from .referensi import terapkan
         x, fd = terapkan(skema, x, fd)
     nd = fd < DATAR_BATAS

@@ -278,3 +278,45 @@ def tahap2(R, K, BG, path):
     fig.tight_layout()
     fig.savefig(path, dpi=125, bbox_inches="tight")
     plt.close(fig)
+
+
+VARIAN_WARNA = {"A0_dasar": ("#2a78d6", "A0 dasar (Tahap 2)"), "A1_rekaman": ("#eb6834", "A1 kanal buruk per rekaman"),
+                "A2_robust": ("#1baf7a", "A2 robust per jendela"), "A3_median": ("#eda100", "A3 referensi median"),
+                "A4_robust_int": ("#4a3aa7", "A4 robust + interpolasi")}
+
+
+def tahap3(R, path):
+    from .istilah import FASE_REPETISI
+    vs = [v for v in VARIAN_WARNA if v in set(R.varian)]
+    off = dict(zip(vs, np.linspace(-0.3, 0.3, len(vs))))
+    x = np.arange(len(FASE_REPETISI))
+    panel = [("pct_kanal_epoch_bersih", "% kanal-jendela bersih", None),
+             ("otot_db_median", "Otot 20–34 Hz (dB vs Istirahat)", None),
+             ("detik_bersih_median_kanal", "Detik data bersih per kanal", None),
+             ("se_db_median", "Galat baku power (dB)", None),
+             ("reliabilitas_belah_dua", "Reliabilitas belah-dua", (-0.8, 1.05))]
+    fig, axes = plt.subplots(1, len(panel), figsize=(17, 3.8))
+    for ax, (col, lab, lim) in zip(axes, panel):
+        for v in vs:
+            g = R[R.varian == v]
+            for pid, gp in g.groupby("participant_id"):
+                y = gp.set_index("fase").reindex(FASE_REPETISI)[col].values
+                ax.scatter(x + off[v], y, s=16, color=VARIAN_WARNA[v][0], edgecolor=SURFACE, linewidth=0.6, zorder=3)
+            md = g.groupby("fase")[col].median().reindex(FASE_REPETISI).values
+            ax.scatter(x + off[v], md, s=90, marker="_", color=INK, linewidth=2, zorder=4)
+        ax.set_xticks(x, FASE_REPETISI, fontsize=8.5)
+        ax.set_title(lab, fontsize=9.5, loc="left")
+        if lim:
+            ax.set_ylim(*lim)
+        ax.grid(axis="y", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        _rapikan(ax)
+    h = [plt.Line2D([], [], marker="o", ls="", color=VARIAN_WARNA[v][0], markersize=6) for v in vs]
+    h.append(plt.Line2D([], [], marker="_", ls="", color=INK, markersize=12, markeredgewidth=2))
+    fig.legend(h, [VARIAN_WARNA[v][1] for v in vs] + ["median 4 partisipan"], loc="upper left", ncol=6,
+               frameon=False, bbox_to_anchor=(0.01, 1.07), fontsize=8.5)
+    fig.suptitle("Tahap 3 — kanal buruk & sinyal datar (referensi A, epoch TE)", x=0.01, y=1.15, ha="left",
+                 fontsize=11.5)
+    fig.tight_layout()
+    fig.savefig(path, dpi=125, bbox_inches="tight")
+    plt.close(fig)

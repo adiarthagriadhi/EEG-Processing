@@ -101,3 +101,17 @@ def test_skema_referensi():
     yb, fb = referensi.terapkan("C_bipolar", x, fd)
     assert referensi.nama("C_bipolar")[1] == "F3-C3" and fb[1] == 0.5 and fb[2] == 0.5
     assert np.allclose(yb[0], x[KANAL.index("Fp1")] - x[KANAL.index("F3")])
+
+
+def test_kanal_robust_dan_interpolasi():
+    from gerakeeg import kanal
+    rng = np.random.default_rng(2)
+    x = rng.normal(0, 5, (16, 100))
+    x[2] += 400 * np.sin(np.linspace(0, 3, 100))              # C3 pencilan besar
+    fd = np.zeros(16)
+    y0, _ = kanal.rata_belahan(x, fd)
+    y2, fd2 = kanal.robust(x, fd)
+    assert fd2[2] >= 1.0 and (fd2[[0, 1, 3, 4, 5, 6, 7]] < 0.1).all()       # hanya C3 dikeluarkan
+    assert np.ptp(y2[0]) < 0.5 * np.ptp(y0[0])                               # Fp1 tak lagi tercemar C3
+    y4, fd4 = kanal.robust_interp(x, fd)
+    assert fd4[2] == kanal.TANDA_INTERP and np.isfinite(y4[2]).all() and np.ptp(y4[2]) < 100

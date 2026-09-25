@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gerakeeg import data, epoch, grafik, jendela, kualitas, pembanding, posisi, referensi   # noqa: E402
+from gerakeeg import data, epoch, grafik, jendela, kanal, kualitas, pembanding, posisi, referensi   # noqa: E402
 
 HASIL = Path(__file__).resolve().parent / "hasil"
 
@@ -161,6 +161,57 @@ def tahap2(pids):
     print(BG.merge(IS).round(2).to_string(index=False))
 
 
+def tahap3(pids):
+    """Tahap 3: kanal buruk & sinyal datar di atas referensi A + epoch TE."""
+    out = HASIL / "tahap3_kanal"
+    out.mkdir(parents=True, exist_ok=True)
+    R, K, KB, REP, NASIB = [], [], [], [], []
+    for pid in pids:
+        raw = data.muat_edf(pid)
+        rep, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
+        W = jendela.jendela(rep, tt)
+        _, xf, datar, sf = kualitas.sinyal(raw)
+        eTE = epoch.potong_TE(W, xf.shape[1] / sf)
+        Wr = W[W.fase.isin(epoch.FASE_REPETISI)]
+        buruk, z = kanal.kanal_buruk_rekaman(xf, datar, sf, W)
+        KB.append(dict(participant_id=pid, kanal_buruk_rekaman=";".join(kanal.KANAL[k] for k in buruk),
+                       **{f"z_{c}": round(float(v), 2) for c, v in zip(kanal.KANAL, z)}))
+        for v in kanal.VARIAN:
+            f = kanal.pembuat(v, buruk)
+            ref, _ = epoch.acuan(xf, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, f)
+            est = epoch.estimasi(xf, datar, sf, eTE, ref, "TE", f)
+            rp = epoch.per_repetisi(est)
+            R.append(epoch.ringkas(pid, Wr, {"TE": eTE}, est, rp).assign(varian=v))
+            REP.append(rp.assign(participant_id=pid, varian=v))
+            # nasib kanal-jendela: datar asli / dikeluarkan metode / diinterpolasi
+            n = dict(datar_asli=0, dikeluarkan=0, interpolasi=0, total=0)
+            for e in eTE.itertuples():
+                i0, i1 = int(round(e.mulai * sf)), int(round(e.selesai * sf))
+                if i1 > xf.shape[1]:
+                    continue
+                fd0 = datar[:, i0:i1].mean(axis=1)
+                _, fd1 = f(xf[:, i0:i1], fd0)
+                n["total"] += len(fd0)
+                n["datar_asli"] += int((fd0 >= 0.1).sum())
+                n["dikeluarkan"] += int(((fd0 < 0.1) & (fd1 >= 0.1)).sum())
+                n["interpolasi"] += int((fd1 == kanal.TANDA_INTERP).sum())
+            NASIB.append(dict(participant_id=pid, varian=v, **{k: round(100 * n[k] / n["total"], 1)
+                                                               for k in ("datar_asli", "dikeluarkan", "interpolasi")}))
+        print(f"[{pid}] kanal buruk per rekaman: {[kanal.KANAL[k] for k in buruk]}")
+    R, KB, NASIB = pd.concat(R), pd.DataFrame(KB), pd.DataFrame(NASIB)
+    R.to_csv(out / "ringkasan_varian_fase.csv", index=False)
+    KB.to_csv(out / "kanal_buruk_rekaman.csv", index=False)
+    NASIB.to_csv(out / "nasib_kanal_jendela.csv", index=False)
+    pd.concat(REP).round(3).to_csv(out / "estimasi_per_repetisi.csv", index=False)
+    grafik.tahap3(R, out / "tahap3_kanal.png")
+    pd.set_option("display.width", 250)
+    kol = ["pct_kanal_epoch_bersih", "otot_db_median", "detik_bersih_median_kanal", "pct_kanal_rep_valid_ge3",
+           "se_db_median", "reliabilitas_belah_dua"]
+    print(R.groupby(["fase", "varian"], sort=False)[kol].median().round(2).to_string())
+    print(NASIB.to_string(index=False))
+    print(KB[["participant_id", "kanal_buruk_rekaman"]].to_string(index=False))
+
+
 if __name__ == "__main__":
     cmd, *pids = sys.argv[1:]
-    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2}[cmd](pids or ["P08", "P09", "P31", "P32"])
+    {"tahap1": tahap1, "epoch": epoch_banding, "bagian": bagian, "tahap2": tahap2, "tahap3": tahap3}[cmd](pids or ["P08", "P09", "P31", "P32"])
