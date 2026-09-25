@@ -603,3 +603,29 @@ dilaporkan.
 - ukuran **selisih** (lateralisasi) tetap memakai **M0**.
 
 ![metode](hasil/pilot_koreksi_global/perbandingan_metode.png)
+
+## Pasca-pilot: perbandingan antar-penari P08 vs P09 (keduanya gerak sesuai pakem)
+Ukuran level = M2b (relatif 4–30 Hz, acuan Istirahat); lateralisasi = M0. Uji Welch antar-repetisi di dalam
+pasangan; n = 2 partisipan, deskriptif. File: `hasil/pilot_analisis/penari_P08_vs_P09_sentral.csv`,
+`kemiripan_pola_antar_partisipan.csv`.
+
+| Fase | Pita | P08 (dB) | P09 (dB) | p |
+|---|---|---|---|---|
+| Gerak | mu | −0,87 | −0,60 | 0,78 |
+| Gerak | beta | **−3,18** | −0,14 | **< 0,01** (t −3,91) |
+| Tahan | mu | +0,39 | +0,43 | 0,94 |
+| Tahan | beta | −0,46 | −0,44 | 0,97 |
+| Naik | mu / beta | −0,64 / −0,53 | +0,02 / −0,70 | 0,61 / 0,84 |
+| Berdiri | mu / beta | −0,31 / −0,14 | −1,01 / −0,71 | 0,11 / 0,31 |
+
+- Tahan hampir identik; beda nyata hanya beta saat Gerak: P08 ERD kuat di ketiga gerakan (−3,0…−3,4 dB),
+  P09 tidak (Agem Kanan +1,40, Agem Kiri −0,73, Ngeed −0,37).
+- LI mu Tahan (M0) negatif pada keduanya: P08 Agem Kanan −8,18 (n 2); P09 Agem Kanan −2,83 (n 3), Agem Kiri −6,78 (n 2).
+- Kemiripan pola 16 kanal × 3 pita (korelasi): P08–P09 −0,27…+0,03 (terendah dari semua pasangan); P31–P32
+  0,36–0,70; pasangan lintas grup −0,69…+0,59.
+- Perilaku: P08 lebih cepat (Gerak 2,0–2,6 vs 2,7–3,5 dtk; Naik 1,3–1,9 vs 2,3–2,8 dtk) dan menahan lebih lama
+  (Tahan 5,4–5,7 vs 3,8–4,1 dtk).
+- Tafsiran: gerak yang sama-sama sesuai pakem tidak menjamin pola EEG yang sama. Kandidat penjelas: tempo gerak
+  (P09 lebih lambat → ERD beta saat inisiasi lebih tersebar di jendela TE), usia/pengalaman (P08 53 th/40 th menari;
+  P09 35/30), kualitas data (datar P08 17% vs P09 12%; kalibrasi ASR belahan kanan P09 hanya 20 dtk). Tidak dapat
+  dipisahkan pada n = 2.
