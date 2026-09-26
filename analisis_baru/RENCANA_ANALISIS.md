@@ -11,7 +11,7 @@ untuk metode baru.
 ---
 
 ## 1. Data masukan
-- Pipeline: timestamp manual (offset 0) → 1–35 Hz → ASR k 20 → referensi A2 → epoch TE → aturan bersih
+- Pipeline: timestamp manual (offset 0) → 1–35 Hz → ASR k 20 → referensi A2 → epoch TR (TE + Pra-Gerak, Pasca-Naik; Berdiri dipersempit) → aturan bersih
   (RENCANA_BEKU.md) → Tahap 5 (tanpa koreksi mata/otot tambahan) → Tahap 6 (R1 cakupan ≥ 75%, R2 ≥ 3 repetisi).
 - Unit analisis:
   - **nilai partisipan** × fase × kanal (`nilai_partisipan.csv`, `lolos_R2`), untuk uji tingkat partisipan;
@@ -75,7 +75,8 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | S5 | **Theta frontal** (F3/F4) Tahan: beban kognitif/kompensasi. |
 | S6 | **Perilaku lain** dari timestamp: durasi Gerak, Tahan, Naik (median per partisipan). |
 | S7 | **Per gerakan** (Ngeed / Agem Kanan / Agem Kiri) untuk U1–U4 (4 repetisi per gerakan, jadi presisi lebih rendah). |
-| S8 | **Rebound beta pasca-Naik**: beta sentral di jendela [akhir Naik + 0,5, akhir Naik + 2,5 dtk] (= awal Berdiri), relatif Istirahat; uji ≠ 0 (ERS diharapkan) lalu beda grup. Jendela Berdiri TE saat ini membuang momen ini. *Tahap 1 (segmen baru `Pasca-Naik` di `jendela.py`) → epoch 1 dtk geser 0,25 → Tahap 6 (aturan cakupan sama).* Rujukan: Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013. |
+| S8 | **Rebound beta Pasca-Naik** [B + 0,5, B + 2,5 dtk]: beta sentral relatif Istirahat; uji ≠ 0 (ERS diharapkan) lalu beda grup. Syarat tafsir: kenaikan harus khas beta (M0 beta > 0 **dan** M2b beta ≥ 0); bila hanya M0 yang naik, kenaikan bersifat menyeluruh dan tidak disebut rebound. *Diterapkan di epoch TR (`epoch.potong_TR`), aturan Tahap 6 sama.* Rujukan: Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013. |
+| S10 | **Pra-Gerak** [onset − 2, onset]: ERD mu/beta persiapan, sentral dan lateralisasi (Agem). Dilaporkan dengan M0 **dan** M2b: sebelum onset belum ada artefak gerak, sehingga M0 lebih dapat ditafsirkan di sini. *Epoch TR.* Rujukan: Pfurtscheller & Lopes da Silva 1999. |
 | S9 | **Ketepatan gerak** (bila penilaian tersedia, Bagian 6b): `dB ~ nilai + fase + (1 | partisipan)` di dalam partisipan untuk U1–U4; beda grup diulang hanya pada repetisi bernilai 2 (benar); interaksi grup × nilai. |
 
 ## 5. Dosis-respons (tujuan utama riset menurut catatan repo)
@@ -94,7 +95,7 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | K-hari | (a) tambahkan % sinyal datar partisipan sebagai kovariat; (b) ulangi hanya pada partisipan yang direkam pada hari yang juga memuat grup lain (P10, P29, P30, P34 dan hari-hari bersama), bila n cukup. |
 | K-usia | (a) tanpa kovariat usia; (b) batasi ke rentang usia tumpang-tindih kedua grup (20–57 th); (c) tanpa partisipan > 70 th. |
 | K-ref | Ulangi U1–U4 dengan referensi telinga (D). |
-| K-epoch | Ulangi U1–U4 dengan epoch T dan E. |
+| K-epoch | Ulangi U1–U4 dengan epoch T dan E; Berdiri juga dengan jendela TE (lebih panjang). |
 | K-ASR | Ulangi dengan ASR k 10. |
 | K-mata | Ulangi dengan ICA mata. |
 | K-aturan | Ulangi dengan R1 cakupan ≥ 50%. |
@@ -109,7 +110,7 @@ kembali sesudah ASR per belahan (8 kanal). Rujukan: studi ASR kanal sedikit (IEE
 ## 6b. Ketepatan gerak (penilaian per repetisi)
 Banyak non-penari hanya benar pada ⅓–½ repetisi (pengamatan pengguna). Ketepatan gerak dapat mengacaukan beda grup
 (Del Percio dkk. 2009; tinjauan efisiensi neural 2021).
-- Berkas `data/penilaian/PXX_penilaian.csv`: `gerakan, rep, nilai (0/1/2), catatan`. Skala berdasar **wiraga**:
+- Kolom `nilai` (0/1/2) di file timestamp, diisi pada baris Gerak (N/AKA/AKI) tiap repetisi (keputusan pengguna 2026-09-26; dibaca `data.bersihkan_timestamp` → `rep.nilai`). Skala berdasar **wiraga**:
   bentuk agem (badan, tangan, kaki), kedalaman turun, kestabilan saat Tahan, urutan sesuai aba-aba.
   0 = salah/tidak lengkap, 1 = sebagian benar, 2 = sesuai pakem. Rubrik tertulis ditetapkan sebelum menilai.
 - Penilai: penari ahli, dari video, **tanpa melihat hasil EEG**. Penilai kedua pada ≥ 20% repetisi (acak, seimbang
@@ -176,3 +177,4 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-25 | Buka mata = TT − 45 dtk (tetap), analisis mulai sesudah Berdiri terakhir | Konfirmasi pengguna; masih draf |
 | 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |
 | 2026-09-26 | Tambahan dari kajian literatur (RUJUKAN.md): S8 rebound beta pasca-Naik; S9 + Bagian 6b ketepatan gerak; K-minimal, K-acuan (Buka Mata), K-warp; validasi ASR semi-simulasi; D5–D6 dan tafsiran Romberg sebagai tugas keseimbangan. Tahap penerapan dicantumkan per butir. | Permintaan pengguna; ditambahkan sesudah pilot (n 4) dilihat, sehingga dicatat sebagai revisi. Tidak mengubah U1–U5. |
+| 2026-09-26 | Epoch utama TE → TR (RENCANA_BEKU log). S8 diterapkan dengan syarat tafsir khas-beta; S10 Pra-Gerak ditambahkan; nilai kualitas gerak dari kolom `nilai` di timestamp. | Permintaan pengguna (jendela berdasar rujukan, maju 2 dtk; kualitas gerak digabung ke timestamp). U1–U5 tidak berubah (Gerak dan Tahan sama dengan TE). |

@@ -45,8 +45,8 @@ def potong_mata(W, T):
 potong_tutup_mata = potong_mata          # nama lama
 
 
-def proses(pid):
-    """Pipeline beku → per jendela × kanal (TE + Tutup Mata): bersih, dB per pita."""
+def proses(pid, skema_epoch="TE"):
+    """Pipeline beku → per jendela × kanal (TE atau TR + Buka/Tutup Mata): bersih, dB per pita."""
     raw = data.muat_edf(pid)
     rp, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
     W = jendela.jendela(rp, tt)
@@ -54,7 +54,7 @@ def proses(pid):
     T = xf.shape[1] / sf
     xa, info = lonjakan.asr(xf, datar, sf, W, 20)
     ref, _ = epoch.acuan(xa, datar, sf, W, epoch.E_PANJANG, epoch.E_GESER, kanal.robust)
-    ep = pd.concat([epoch.potong_TE(W, T), potong_mata(W, T)], ignore_index=True)
+    ep = pd.concat([epoch.POTONG[skema_epoch](W, T), potong_mata(W, T)], ignore_index=True)
     est = epoch.estimasi(xa, datar, sf, ep, ref, "beku", kanal.robust)
     return est.assign(participant_id=pid), rp.assign(participant_id=pid), info
 

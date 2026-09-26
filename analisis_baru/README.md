@@ -629,3 +629,24 @@ pasangan; n = 2 partisipan, deskriptif. File: `hasil/pilot_analisis/penari_P08_v
   (P09 lebih lambat → ERD beta saat inisiasi lebih tersebar di jendela TE), usia/pengalaman (P08 53 th/40 th menari;
   P09 35/30), kualitas data (datar P08 17% vs P09 12%; kalibrasi ASR belahan kanan P09 hanya 20 dtk). Tidak dapat
   dipisahkan pada n = 2.
+
+## Jendela berdasar rujukan: epoch TR (2026-09-26)
+TR = TE + **Pra-Gerak** [onset − 2, onset] + **Pasca-Naik** [B + 0,5, B + 2,5]; Berdiri dipersempit [B + 2,5, akhir − 2].
+Gerak, Tahan, Naik tidak berubah. Dasar: RUJUKAN.md bagian B. Skrip `skrip_banding_jendela_TE_TR.py` →
+`hasil/banding_jendela_TE_TR/`. Mu/beta sentral C3/C4, dB relatif Istirahat (t antar-repetisi dalam kurung).
+
+| Fase | Ukuran | P08 | P09 | P31 | P32 |
+|---|---|---|---|---|---|
+| Pra-Gerak | mu M0 | −2,10 (−3,0) | −0,99 (−1,4) | −1,48 (−2,1) | −1,86 (−1,4) |
+| Pra-Gerak | beta M0 | −2,87 (−4,0) | +0,53 | −1,23 (−2,0) | −0,30 |
+| Pra-Gerak | mu M2b | +0,20 | −0,68 | −1,52 (−4,0) | −2,08 (−4,8) |
+| Pasca-Naik | beta M0 | +1,49 (2,6) | +0,92 | +1,10 | +6,23 (11,0) |
+| Pasca-Naik | beta M2b | −1,83 (−4,2) | −2,46 (−3,3) | −2,32 (−3,4) | −0,61 (−3,0) |
+
+- **Pra-Gerak searah teori dengan M0**: mu turun pada keempatnya, beta pada 3/4. Sebelum onset belum ada artefak gerak,
+  jadi power absolut tidak tertutup kenaikan menyeluruh (berbeda dengan Gerak, M0 positif). Dengan M2b, ERD mu
+  persiapan hanya jelas pada kedua non-penari.
+- **Pasca-Naik**: M0 naik (seperti rebound), tetapi M2b beta turun → kenaikannya menyeluruh (semua pita, terutama P32
+  +6 dB), bukan khas beta. Belum dapat disebut rebound beta; kemungkinan gerak penyesuaian sesudah Naik.
+- Jumlah data: Pra-Gerak & Pasca-Naik 40–48 jendela, 8–12 repetisi lolos R1; Berdiri turun 142→62 (P08) … 177→113 (P32).
+- n = 4, set penyetelan; bukan hasil penelitian.

@@ -202,3 +202,34 @@ def test_buka_mata_dari_tt_minus_45():
     assert bm.mulai_analisis == 287.5 + 8                              # B terakhir (287,5) + 8 dtk > BM + 1
     M = aturan.potong_mata(jendela.jendela(rep, tt), 500.0)
     assert M[M.fase == "Buka Mata"].mulai.min() == 295.5
+
+
+def test_epoch_TR_rujukan():
+    from gerakeeg import epoch
+    seq = _satu_rep("AKI", 5) + _satu_rep("AKI", 21) + _satu_rep("N", 280) + [("TT", 400)]
+    rep, tt, _ = jendela.repetisi(_ts(seq))
+    ep = epoch.potong_TR(jendela.jendela(rep, tt), 500).set_index(["gerakan", "rep", "fase"])
+    g = ep.loc[("Agem Kiri", 2, "Pra-Gerak")]
+    assert (g.mulai.min(), g.selesai.max(), g.relatif.min()) == (19, 21, -2)          # maju 2 dtk
+    assert ep.loc[("Agem Kiri", 2, "Gerak")].mulai.min() == 20.5                    # Gerak tetap −0,5
+    n = ep.loc[("Agem Kiri", 1, "Naik")]
+    assert n.mulai.min() == 10.5                                                    # Naik tetap −0,5
+    pn = ep.loc[("Agem Kiri", 1, "Pasca-Naik")]
+    assert (pn.mulai.min(), pn.selesai.max()) == (13, 15)                           # B + 0,5 … B + 2,5
+    b = ep.loc[("Agem Kiri", 1, "Berdiri")]
+    assert (b.mulai.min(), b.selesai.max()) == (15, 18.5)                           # B + 2,5 … akhir − 2
+    assert b.selesai.max() <= g.mulai.min()                                         # tanpa tumpang tindih
+
+
+def test_nilai_kualitas_gerak():
+    df = pd.DataFrame(dict(urutan=[1, 2, 3, 4, 5, 6, 7, 8], waktu_detik=[5, 7, 11, 12.5, 21, 23, 27, 28.5],
+                           label=["AKA", "T", "N", "B", "AKA", "T", "N", "B"],
+                           nilai=[2, None, None, None, 0, None, None, None]))
+    rep, _, masalah = jendela.repetisi(data.bersihkan_timestamp(df))
+    assert masalah == [] and rep.nilai.tolist() == [2, 0]
+    df.loc[0, "nilai"] = 3
+    try:
+        data.bersihkan_timestamp(df)
+        assert False
+    except ValueError:
+        pass

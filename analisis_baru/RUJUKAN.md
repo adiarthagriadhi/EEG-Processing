@@ -37,8 +37,9 @@ Kolom **Status**: ✔ sudah diterapkan · ○ direncanakan (RENCANA_ANALISIS.md)
 | | Gerak repetitif: tiap fase gerak punya modulasi osilasi sendiri; ERD berkelanjutan mencerminkan keadaan "sedang bergerak", modulasi fase terpisah. | Macerollo & Brown 2017; Seeber dkk. 2014 |
 | **Tahan** [onset + durasi/3, Naik] | Saat menahan/menggenggam, beta naik tonik (keadaan dipertahankan). Sepertiga awal dibuang karena masih transisi dari gerak. | Kilavik dkk. 2013; Engel & Fries 2010 |
 | **Naik** [onset − 0,5, onset + maks(1; durasi/3)] | Sama dengan Gerak (inisiasi gerak baru). | Pfurtscheller & Lopes da Silva 1999 |
-| **Berdiri** [onset + durasi/3, akhir − 0,5] | Mewakili berdiri sesudah gerak; sepertiga awal dibuang. | — |
-| **Pasca-Naik (rebound beta)** [akhir Naik + 0,5, akhir Naik + 2,5] | Beta naik melebihi acuan ±0,5 dtk sesudah gerak berhenti, bisa beberapa detik; butuh jeda antar-gerak panjang (Berdiri 8 dtk memenuhi). Jendela Berdiri TE saat ini membuang momen ini. | Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013; *Front. Neurosci.* 2025 (PMBR); Erbil & Ungan 2007 (rebound sesudah gerak berkelanjutan) — ○ |
+| **Berdiri** TE [onset + durasi/3, akhir − 0,5] → TR [B + 2,5, akhir − 2] | Berdiri sesudah rebound dan sebelum persiapan gerak berikutnya, tanpa tumpang tindih. | Turunan dari Pra-Gerak & Pasca-Naik |
+| **Pra-Gerak** [onset − 2, onset] (epoch TR ✔) | ERD persiapan: mu ±2 dtk, beta ±1,5 dtk sebelum onset. Fase tersendiri agar tidak mengencerkan ERD eksekusi. | Pfurtscheller & Lopes da Silva 1999 |
+| **Pasca-Naik (rebound beta)** [akhir Naik + 0,5, akhir Naik + 2,5] (epoch TR ✔) | Beta naik melebihi acuan ±0,5 dtk sesudah gerak berhenti, bisa beberapa detik; butuh jeda antar-gerak panjang (Berdiri 8 dtk memenuhi). Jendela Berdiri TE saat ini membuang momen ini. | Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013; *Front. Neurosci.* 2025 (PMBR); Erbil & Ungan 2007 (rebound sesudah gerak berkelanjutan) |
 | Alternatif: *time-warping* | Durasi fase berbeda antar-repetisi; spektrogram dapat diregangkan agar event gerak jatuh pada waktu relatif yang sama. Menjadi sensitivitas bila jendela TE dipersoalkan. | Gwin dkk. 2011 |
 
 ## C. Evaluasi kualitas gerakan

@@ -99,6 +99,51 @@ def potong_TE(W, T):
     return pd.DataFrame(out)
 
 
+# Skema TR (jendela berdasar rujukan, 2026-09-26; RUJUKAN.md bagian B):
+# - Pra-Gerak [onset − 2, onset]: ERD mu mulai ±2 dtk, beta ±1,5 dtk sebelum onset (Pfurtscheller & Lopes da Silva
+#   1999). Fase tersendiri, bukan digabung ke Gerak: pilot menunjukkan penggabungan mengencerkan ERD eksekusi.
+# - Gerak   [onset − 0,5, onset + maks(1; durasi/3)]: sama dengan TE; awal eksekusi paling informatif (Erbil &
+#   Ungan 2007). Bertumpang 0,5 dtk dengan Pra-Gerak.
+# - Tahan   [onset + durasi/3, Naik]: sama dengan TE (beta tonik saat menahan; Kilavik dkk. 2013).
+# - Naik    [onset − 0,5, onset + maks(1; durasi/3)]: sama dengan TE. Tidak dimajukan 2 dtk karena akan memakan
+#   jendela Tahan (persiapan Naik terjadi di dalam Tahan).
+# - Pasca-Naik [B + 0,5, B + 2,5]: rebound beta sesudah gerak berhenti (Kilavik dkk. 2013).
+# - Berdiri [B + 2,5, akhir − 2]: sesudah rebound dan sebelum persiapan Gerak berikutnya (tanpa tumpang tindih).
+TR_PRA_GERAK = 2.0
+TR_REBOUND = (0.5, 2.5)
+PRA_GERAK, PASCA_NAIK = "Pra-Gerak", "Pasca-Naik"
+FASE_TR = [PRA_GERAK, "Gerak", "Tahan", "Naik", PASCA_NAIK, "Berdiri"]
+
+
+def rentang_rujukan(w):
+    d = w.durasi_fase
+    if w.fase in ("Gerak", "Naik"):
+        return w.onset - B_PRA, w.onset + max(1.0, d / 3)
+    if w.fase == "Tahan":
+        return w.onset + d / 3, w.selesai
+    return w.onset + TR_REBOUND[1], w.selesai - TR_PRA_GERAK
+
+
+def potong_TR(W, T):
+    """Jendela 1 dtk geser 0,25 dtk menurut skema TR. Kolom `relatif` = awal jendela − onset fase (dtk)."""
+    t = np.arange(0, T - E_PANJANG + 1e-9, E_GESER)
+    out = []
+    for w in W[W.fase.isin(FASE_REPETISI)].itertuples():
+        bag = [(w.fase, *rentang_rujukan(w))]
+        if w.fase == "Gerak":
+            bag.append((PRA_GERAK, w.onset - TR_PRA_GERAK, w.onset))
+        if w.fase == "Berdiri":
+            bag.append((PASCA_NAIK, w.onset + TR_REBOUND[0], min(w.onset + TR_REBOUND[1], w.selesai)))
+        for f, a, b in bag:
+            k = t[(t >= a - 1e-9) & (t + E_PANJANG <= b + 1e-9)]
+            out += [dict(gerakan=w.gerakan, rep=w.rep, fase=f, mulai=x, selesai=x + E_PANJANG, relatif=x - w.onset)
+                    for x in k]
+    return pd.DataFrame(out)
+
+
+POTONG = {"TE": potong_TE, "TR": potong_TR}
+
+
 def potong_E(W, T):
     """Jendela geser E; label fase bila jendela seluruhnya di dalam satu jendela observasi."""
     F = W[W.fase.isin(FASE_REPETISI)].sort_values("mulai")

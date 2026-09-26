@@ -36,7 +36,7 @@ def _band(P, lo, hi):
     return P[..., (F >= lo) & (F < hi)].mean(axis=-1)
 
 
-def spektrum_jendela(pid, mata=False):
+def spektrum_jendela(pid, mata=False, skema_epoch="TE"):
     """PSD 1–34 Hz per jendela × kanal (TE + Istirahat; + Buka/Tutup Mata bila mata=True), pipeline beku. → (meta DataFrame, psd [n, 16, 34], ok [n, 16])."""
     raw = data.muat_edf(pid)
     rp, tt, _ = jendela.repetisi(data.muat_timestamp(pid))
@@ -44,7 +44,7 @@ def spektrum_jendela(pid, mata=False):
     _, xf, datar, sf = kualitas.sinyal(raw)
     T = xf.shape[1] / sf
     xa, _ = lonjakan.asr(xf, datar, sf, W, 20)
-    ep = epoch.potong_TE(W, T)
+    ep = epoch.POTONG[skema_epoch](W, T)
     ist = W[W.fase == "Istirahat"]
     ep_i = pd.DataFrame([dict(gerakan="-", rep=0, fase="Istirahat", mulai=s, selesai=s + 1.0)
                          for w in ist.itertuples() for s in np.arange(w.mulai, w.selesai - 1.0 + 1e-9, 0.25)])
@@ -55,7 +55,8 @@ def spektrum_jendela(pid, mata=False):
         if i0 < 0 or i1 > xa.shape[1]:
             continue
         x, _, ok = epoch._potong(xa, datar, i0, i1, kanal.robust)
-        meta.append(dict(participant_id=pid, gerakan=e.gerakan, rep=e.rep, fase=e.fase, mulai=e.mulai))
+        meta.append(dict(participant_id=pid, gerakan=e.gerakan, rep=e.rep, fase=e.fase, mulai=e.mulai,
+                         relatif=getattr(e, "relatif", np.nan)))
         P.append(_psd(x, sf))
         OK.append(ok)
     return pd.DataFrame(meta), np.array(P), np.array(OK)

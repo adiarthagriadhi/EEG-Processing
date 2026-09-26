@@ -47,4 +47,11 @@ def bersihkan_timestamp(df, sumber="timestamp"):
     tak_dikenal = set(df.label) - set(GERAKAN) - {"T", "B", "TT", "BM"}
     if tak_dikenal:
         raise ValueError(f"{sumber}: label tidak dikenal {sorted(tak_dikenal)}")
-    return df[["urutan", "waktu_detik", "label"]]
+    kol = ["urutan", "waktu_detik", "label"]
+    if "nilai" in df:                      # kualitas gerak per repetisi (0/1/2), diisi pada baris Gerak (N/AKA/AKI)
+        df["nilai"] = pd.to_numeric(df["nilai"], errors="coerce")
+        salah = df[df.nilai.notna() & ~df.nilai.isin([0, 1, 2])]
+        if len(salah):
+            raise ValueError(f"{sumber}: nilai harus 0/1/2, urutan {salah.urutan.tolist()}")
+        kol.append("nilai")
+    return df[kol]

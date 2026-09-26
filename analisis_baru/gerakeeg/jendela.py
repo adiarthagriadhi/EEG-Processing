@@ -56,7 +56,8 @@ def repetisi(ts, aturan=Aturan()):
             if cur is not None and cur["_fase"] != "Berdiri":
                 masalah.append(f"{cur['gerakan']} mulai {cur['onset_Gerak']:.3f} dtk berhenti di fase {cur['_fase']}")
             cur = dict(gerakan=GERAKAN[lab], urutan=r.urutan, onset_Gerak=t, onset_Tahan=np.nan,
-                       onset_Naik=np.nan, onset_Berdiri=np.nan, _fase="Gerak")
+                       onset_Naik=np.nan, onset_Berdiri=np.nan, _fase="Gerak",
+                       nilai=getattr(r, "nilai", np.nan))
             rows.append(cur)
             continue
         masalah.append(f"urutan {r.urutan}: label {lab} ({t:.3f} dtk) tidak sesuai urutan Gerak → T → N → B")
