@@ -748,3 +748,14 @@ U1–U4 pilot (`hasil/pilot_analisis/U1-U4_per_partisipan.csv`, M2b; sama dengan
 
 LI mu Tahan (M0): P08 −8,18, P09 −4,41, P31 −3,02, P32 −4,20. Romberg (M2b) alpha oksipital Tutup − Buka: P08 −0,29,
 P31 +1,11 (IK 0,03–2,03), P32 −0,48.
+
+## Visualisasi perubahan gelombang per tahap (P08, P31; 2026-09-26)
+`skrip_visual_tahap.py P08 P31` → `hasil/visual_tahap/`. Satu repetisi Agem Kanan rep 1 + spektrum semua repetisi.
+1. `PXX_1_gelombang_tahap0-3.png`: mentah → filter 1–35 Hz (+ datar) → ASR k 20 (merah = direkonstruksi) → referensi A2.
+2. `PXX_2_jendela_dan_pita.png`: jendela TR (bersih/dibuang) di C3/C4 → gelombang mu & beta + selubung vs Istirahat.
+3. `PXX_3_spektrum_dan_nilai.png`: spektrum per fase relatif Istirahat (M0 vs M2b) → nilai akhir M2b per fase.
+
+Catatan dari gambar: pada P31, ASR merekonstruksi C4/P4/O2 hampir sepanjang repetisi (belahan kanan beramplitudo besar
+dan lambat sejak data mentah) → belahan kanan P31 perlu diperiksa (kontak elektroda?). Pada satu repetisi, selubung
+mu/beta saat Gerak justru di atas Istirahat (artefak gerak); ERD baru tampak sesudah dinormalisasi M2b dan dirata-rata
+antar-repetisi.
