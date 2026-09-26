@@ -673,3 +673,27 @@ keunggulannya harus dikonfirmasi pada partisipan baru. Romberg: metode repo lebi
 A2 (rata-rata per belahan) ikut mengurangi alpha oksipital yang tersebar luas, dan specparam memisahkan puncak alpha
 dari kenaikan menyeluruh. Usul: Romberg dianalisis dengan specparam dan referensi telinga/bipolar (sensitivitas yang
 sudah direncanakan di RENCANA_ANALISIS Bagian 7).
+
+## Romberg: specparam × tiga referensi (2026-09-26)
+`skrip_romberg_referensi.py` → `hasil/pilot_analisis/romberg_referensi_specparam.csv`. Alpha oksipital Tutup − Buka Mata
+(dB; IK 95% bootstrap blok). M0 = power absolut 8–13 Hz; SP = puncak periodik specparam.
+
+| | A2 (per belahan) M0 / SP | Telinga asli M0 / SP | Bipolar P-O M0 / SP |
+|---|---|---|---|
+| P08 | **−4,9 / −5,3** | +0,2 / −0,8 (IK memuat 0) | **−5,0 / −5,8** |
+| P31 | **+4,1** / +1,3 | **+4,4** / +0,3 | (< 8 jendela Buka) |
+| P32 | −0,3 / +0,5 | −0,1 / −0,4 | **−2,5** / −0,8 |
+| P09 | Tutup Mata tidak terekam (7 jendela) | | |
+
+- **Referensi bukan penyebab**: efek Berger tidak muncul dengan referensi telinga maupun bipolar. P08 justru turun
+  jelas di dua referensi.
+- **Specparam menemukan puncak alpha 9–10 Hz** saat Tutup Mata pada hampir semua kombinasi → alpha ada, tetapi tidak
+  naik saat mata ditutup.
+- **"3/3" repo v2 ternyata sangat kecil**: EC − EO mu periodik oksipital +0,11 (P08), +0,48 (P31), +0,26 dB (P32) dari
+  4–17 jendela, tanpa IK; bukan efek Berger yang meyakinkan. Skor banding metode untuk Romberg sebaiknya dibaca "tidak
+  ada metode yang menunjukkan efek Berger yang jelas".
+- Tafsiran yang tersisa: berdiri dengan mata tertutup adalah tugas keseimbangan (alpha dapat tertekan; Edwards dkk.
+  2018), atau mata tidak benar-benar tertutup sepanjang segmen. Cek: video (mata tertutup?) dan Baseline.EDF.
+- Catatan waktu: TT di timestamp manual praktis sama dengan waktu HUD di **video** (P08 412,1 vs 411,7; P31 411,6 vs
+  411,5 dtk); sinkronisasi repo memperkirakan EEG = video + 0,85–0,95 dtk. Bila timestamp dibuat dari video, offset
+  ±0,9 dtk belum dikoreksi (berpengaruh pada tepi jendela −0,5 dtk, tidak pada segmen Romberg 30 dtk).
