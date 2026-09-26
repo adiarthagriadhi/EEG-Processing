@@ -9,7 +9,8 @@ sys.path.insert(0, ".")
 from gerakeeg import koreksi_global as kg
 
 PID = ["P08", "P09", "P31", "P32"]
-OUT = "hasil/banding_jendela_TE_TR"
+import os
+OUT = "hasil/banding_jendela_TE_TR" + ("_offset_repo" if os.environ.get("GERAKEEG_OFFSET") == "repo" else "")
 
 
 def sentral(d, pid, skema):

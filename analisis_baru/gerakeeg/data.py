@@ -27,12 +27,27 @@ def muat_edf(pid):
     return raw
 
 
+def offset_video_ke_eeg(pid):
+    """Offset sinkronisasi repo (EEG = video + offset, dtk) dari hasil_analisis/per_partisipan/PXX/keputusan.yaml."""
+    import yaml
+    f = ROOT / "hasil_analisis" / "per_partisipan" / pid / "keputusan.yaml"
+    return float(yaml.safe_load(f.read_text())["sync"]["offset_sec"])
+
+
 def muat_timestamp(pid_or_path):
-    """CSV timestamp (urutan, waktu_detik, label[, …]) → DataFrame bersih, berurutan waktu."""
+    """CSV timestamp (urutan, waktu_detik, label[, …]) → DataFrame bersih, berurutan waktu.
+    Timestamp dibuat dari VIDEO (konfirmasi pengguna 2026-09-26). Offset ke waktu EEG: 0 (default) atau, bila
+    GERAKEEG_OFFSET=repo, offset sinkronisasi repo per partisipan (sensitivitas)."""
+    import os
     p = Path(pid_or_path)
+    pid = None
     if not p.suffix:
-        p = TIMESTAMP / f"{pid_or_path}_timestamps.csv"
-    return bersihkan_timestamp(pd.read_csv(p), str(p))
+        pid = str(pid_or_path)
+        p = TIMESTAMP / f"{pid}_timestamps.csv"
+    df = bersihkan_timestamp(pd.read_csv(p), str(p))
+    if pid and os.environ.get("GERAKEEG_OFFSET") == "repo":
+        df["waktu_detik"] = df.waktu_detik + offset_video_ke_eeg(pid)
+    return df
 
 
 def bersihkan_timestamp(df, sumber="timestamp"):

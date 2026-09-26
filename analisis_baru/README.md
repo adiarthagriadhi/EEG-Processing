@@ -697,3 +697,26 @@ sudah direncanakan di RENCANA_ANALISIS Bagian 7).
 - Catatan waktu: TT di timestamp manual praktis sama dengan waktu HUD di **video** (P08 412,1 vs 411,7; P31 411,6 vs
   411,5 dtk); sinkronisasi repo memperkirakan EEG = video + 0,85–0,95 dtk. Bila timestamp dibuat dari video, offset
   ±0,9 dtk belum dikoreksi (berpengaruh pada tepi jendela −0,5 dtk, tidak pada segmen Romberg 30 dtk).
+
+## Timestamp = waktu video → uji offset sinkronisasi (2026-09-26)
+Pengguna: timestamp dibuat dengan melihat video (TT = saat subjek mulai menutup mata). Waktu EEG = video + offset;
+offset sinkronisasi repo (korelasi gerak video × EMG, independen dari analisis ini): P08 0,95; P09 1,70; P31 0,85;
+P32 0,85 dtk. Opsi `GERAKEEG_OFFSET=repo` menggeser timestamp dengan offset ini (`data.offset_video_ke_eeg`).
+Hasil TR: `hasil/banding_jendela_TE_TR_offset_repo/`.
+
+| Harapan teori (4 partisipan) | offset 0 | offset repo |
+|---|---|---|
+| Pra-Gerak mu turun, M2b | 3/4 | 4/4 |
+| Pra-Gerak mu turun, M0 | 4/4 | 2/4 |
+| Gerak beta / mu turun, M2b | 4/4 / 4/4 | 4/4 / 4/4 |
+| Tahan beta pulih (> Gerak), M2b | 3/4 | 3/4 |
+| Pasca-Naik rebound khas beta | 0/4 | 0/4 |
+| Kenaikan menyeluruh saat Gerak, M0 (dB) | −1,0 … +2,7 | +3,3 … +7,9 |
+
+- Dengan offset, jendela Gerak jatuh tepat pada gerak di EEG (kenaikan menyeluruh akibat gerak melonjak) → bukti
+  bahwa offset ±0,9–1,7 dtk memang ada.
+- **Hasil M2b tahan terhadap offset**; hasil M0 Pra-Gerak (4/4) **tidak** — sebagian berasal dari jendela yang
+  sebenarnya jatuh ±0,9 dtk lebih awal. Aturan "M0 untuk Pra-Gerak" tidak dipertahankan; M2b dipakai untuk semua
+  ukuran tingkat.
+- Tanda tutup mata di Fp1/Fp2 tidak konsisten (P08 −1,0; P31 −3,0 lemah; P32 +1,5 dtk) → tidak dapat dipakai
+  sebagai jangkar offset.
