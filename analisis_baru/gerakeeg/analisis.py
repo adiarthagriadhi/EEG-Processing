@@ -3,6 +3,8 @@ deskriptif per partisipan, tanpa inferensi grup.
 
 Masukan: hasil/tahap6_aturan/dataset/ (nilai_repetisi, nilai_partisipan, repetisi_perilaku) dan participants.csv.
 Sentral = rata-rata C3 & C4 (kanal yang lolos). Nilai dB relatif Istirahat; ERD < 0.
+Ukuran (keputusan pengguna 2026-09-26): semua ukuran tingkat memakai M2b (`*_m2b_db`: power pita / power 4–30 Hz,
+relatif Istirahat); lateralisasi (selisih kontra − ipsi) memakai M0 (`*_db`, power absolut relatif Istirahat).
 """
 import numpy as np
 import pandas as pd
@@ -11,6 +13,7 @@ from scipy import stats
 from .istilah import BUKA_MATA, FASE_REPETISI, TUTUP_MATA
 
 SENTRAL = ["C3", "C4"]
+UK = "_m2b_db"                  # ukuran tingkat = M2b; lateralisasi = M0 ("_db")
 PITA = ["theta", "mu", "beta"]
 
 
@@ -27,9 +30,9 @@ def _ci(v):
 
 
 def sentral_per_repetisi(nr):
-    """Nilai sentral per repetisi × fase: rata-rata C3/C4 yang lolos R1."""
-    d = nr[nr.kanal.isin(SENTRAL) & nr.lolos_R1 & nr.fase.isin(FASE_REPETISI)]
-    return d.groupby(["participant_id", "gerakan", "rep", "fase"])[[f"{p}_db" for p in PITA]].mean().reset_index()
+    """Nilai sentral (M2b) per repetisi × fase: rata-rata C3/C4 yang lolos R1."""
+    d = nr[nr.kanal.isin(SENTRAL) & nr.lolos_R1 & nr.fase.isin(FASE_REPETISI + ["Pra-Gerak", "Pasca-Naik"])]
+    return d.groupby(["participant_id", "gerakan", "rep", "fase"])[[f"{p}{UK}" for p in PITA]].mean().reset_index()
 
 
 def ukuran_utama(nr, perilaku):
@@ -38,7 +41,7 @@ def ukuran_utama(nr, perilaku):
     rows = []
     for (pid, f), g in sr.groupby(["participant_id", "fase"]):
         for p in ("mu", "beta"):
-            rows.append(dict(participant_id=pid, fase=f, pita=p, **_ci(g[f"{p}_db"])))
+            rows.append(dict(participant_id=pid, fase=f, pita=p, **_ci(g[f"{p}{UK}"])))
     S1 = pd.DataFrame(rows)
     U = []
     for pid, g in S1.groupby("participant_id"):
@@ -79,13 +82,18 @@ def perilaku_ringkas(perilaku):
     return pd.DataFrame(rows)
 
 
-def romberg(est):
+def romberg(est, m2b=True):
     """Per partisipan: alpha (mu 8–13 Hz) dB per kanal/area, Tutup − Buka Mata, dari jendela 1 dtk bersih.
+    m2b=True: per jendela power pita / power 4–30 Hz (relatif Istirahat); False: M0 (sensitivitas).
     Ketidakpastian: bootstrap blok 4 jendela (1 dtk tanpa tumpang tindih) per segmen, 2000 ulangan."""
     rng = np.random.default_rng(0)
     area = {"oksipital": ["O1", "O2"], "sentral": ["C3", "C4"], "frontal": ["F3", "F4"], "parietal": ["P3", "P4"]}
     rows = []
-    for pid, g in est[est.fase.isin([BUKA_MATA, TUTUP_MATA]) & est.bersih].groupby("participant_id"):
+    est = est[est.fase.isin([BUKA_MATA, TUTUP_MATA]) & est.bersih].copy()
+    if m2b and "total4_db" in est:
+        for p in ("mu", "theta"):
+            est[f"{p}_db"] = est[f"{p}_db"] - est["total4_db"]
+    for pid, g in est.groupby("participant_id"):
         for nama, chs in area.items():
             for pita in ("mu", "theta"):
                 seg = {}

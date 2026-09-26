@@ -421,7 +421,7 @@ def tahap6(pids):
     else:
         EST, REP = [], []
         for pid in pids:
-            e, rp, info = aturan.proses(pid)
+            e, rp, info = aturan.proses(pid, "TR")
             EST.append(e)
             REP.append(rp)
             print(f"[{pid}] {e.mulai.nunique()} jendela; ASR {info}")
@@ -472,7 +472,7 @@ def pilot(pids):
     if cache and Path(cache).exists():
         est, _ = pickle.loads(Path(cache).read_bytes())
     else:
-        est = pd.concat([aturan.proses(p)[0] for p in pids])
+        est = pd.concat([aturan.proses(p, "TR")[0] for p in pids])
     est = est[est.participant_id.isin(pids)]
     U, S1 = analisis.ukuran_utama(nr, perilaku)
     LI = analisis.lateralisasi(nr)

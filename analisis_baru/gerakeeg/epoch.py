@@ -29,6 +29,7 @@ from .kualitas import DATAR_BATAS, EKSTREM_UV
 
 PITA = {"theta": (4, 8), "mu": (8, 13), "beta": (13, 30)}
 OTOT = (20, 34)                      # indeks kontaminasi otot (semua potongan tidak datar)
+TOTAL4 = (4, 31)                     # penyebut M2b: power total 4–30 Hz (bin 1 Hz, tanpa delta)
 B_PRA, B_PANJANG = 0.5, 1.5
 E_PANJANG, E_GESER = 1.0, 0.25
 
@@ -36,7 +37,7 @@ E_PANJANG, E_GESER = 1.0, 0.25
 def _power(x, sf):
     """x kanal × sampel → dict pita → power (kanal)."""
     f, p = welch(x, sf, nperseg=int(sf), noverlap=int(sf) // 2)
-    return {b: p[:, (f >= lo) & (f < hi)].mean(axis=1) for b, (lo, hi) in {**PITA, "otot": OTOT}.items()}
+    return {b: p[:, (f >= lo) & (f < hi)].mean(axis=1) for b, (lo, hi) in {**PITA, "otot": OTOT, "total4": TOTAL4}.items()}
 
 
 def _bersih(xf, datar, i0, i1):
@@ -158,7 +159,7 @@ def potong_E(W, T):
 def acuan(xf, datar, sf, W, panjang, geser, skema=None, ambang=None):
     """Power acuan per kanal (rata-rata potongan bersih Istirahat)."""
     ist = W[W.fase == ISTIRAHAT]
-    P = {b: [] for b in list(PITA) + ["otot"]}
+    P = {b: [] for b in list(PITA) + ["otot", "total4"]}
     M = []
     for w in ist.itertuples():
         for s in np.arange(w.mulai, w.selesai - panjang + 1e-9, geser):
@@ -187,7 +188,7 @@ def estimasi(xf, datar, sf, epochs, ref, metode, skema=None, ambang=None):
             r = dict(metode=metode, gerakan=e.gerakan, rep=e.rep, fase=e.fase, mulai=e.mulai, kanal=c,
                      bersih=bool(ok[k]), muat=getattr(e, "muat", True),
                      otot_db=10 * np.log10(pw["otot"][k] / ref["otot"][k]) if nd[k] else np.nan)
-            for b in PITA:
+            for b in list(PITA) + ["total4"]:
                 r[f"{b}_db"] = 10 * np.log10(pw[b][k] / ref[b][k]) if ok[k] else np.nan
             rows.append(r)
     return pd.DataFrame(rows)

@@ -70,8 +70,13 @@ def nilai_repetisi(est):
     g = est.groupby(["participant_id", "gerakan", "rep", "fase", "kanal"])
     out = g.agg(n_jendela=("bersih", "size"), n_bersih=("bersih", "sum"))
     b = est[est.bersih].groupby(["participant_id", "gerakan", "rep", "fase", "kanal"])
-    for p in PITA + ["otot"]:
+    for p in PITA + ["otot"] + (["total4"] if "total4_db" in est else []):
         out[f"{p}_db"] = b[f"{p}_db"].apply(_lin)
+    if "total4_db" in out:
+        # M2b (keputusan pengguna 2026-09-26): (power pita / power 4–30 Hz) relatif Istirahat
+        # = rasio rata-rata power jendela bersih, sama dengan koreksi_global.M2b_relatif4
+        for p in PITA:
+            out[f"{p}_m2b_db"] = out[f"{p}_db"] - out["total4_db"]
     out["detik_bersih"] = b.mulai.apply(lambda s: _unik(np.sort(s.values)))
     out["rentang_detik"] = g.mulai.max() + 1.0 - g.mulai.min()
     out = out.reset_index()
@@ -158,9 +163,9 @@ def dataset(nr, c_min, r_min):
             d = d.assign(gerakan=label)
         grp = d.groupby(["participant_id", "fase", "kanal"])
         s = grp.size().rename("n_rep").to_frame()
-        for p in PITA + ["otot"]:
-            s[f"{p}_db"] = grp[f"{p}_db"].mean()
-            s[f"{p}_se"] = grp[f"{p}_db"].std(ddof=1) / np.sqrt(s.n_rep)
+        for c in [f"{p}_db" for p in PITA + ["otot"]] + [f"{p}_m2b_db" for p in PITA if f"{p}_m2b_db" in d]:
+            s[c] = grp[c].mean()
+            s[c.replace("_db", "_se")] = grp[c].std(ddof=1) / np.sqrt(s.n_rep)
         parts.append(s.reset_index().assign(gerakan=label))
     P = pd.concat(parts, ignore_index=True)
     P["lolos_R2"] = np.where(P.fase.isin(MATA), P.n_rep >= 1, P.n_rep >= r_min)

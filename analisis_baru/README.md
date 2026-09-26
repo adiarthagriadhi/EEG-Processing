@@ -734,3 +734,17 @@ Hasil TR: `hasil/banding_jendela_TE_TR_offset_repo/`.
 - Offset 0 dipertahankan (keputusan pengguna). Offset repo tetap tersedia sebagai sensitivitas (`GERAKEEG_OFFSET=repo`).
 - Pada P08 penutupan mata terkonfirmasi, tetapi alpha oksipital justru **turun** → tidak adanya efek Berger bukan
   karena salah waktu, melainkan kondisi tugas (berdiri dengan mata tertutup) atau karakter individu.
+
+## Keputusan ukuran (2026-09-26): M2b untuk semua ukuran tingkat, M0 untuk lateralisasi
+Diterapkan di pipeline (`*_m2b_db` di `hasil/tahap6_aturan/dataset/`), Tahap 6 & pilot memakai epoch TR.
+U1–U4 pilot (`hasil/pilot_analisis/U1-U4_per_partisipan.csv`, M2b; sama dengan `koreksi_global` → konsisten):
+
+| | U1 beta Gerak | U2 mu Gerak | U3 beta Tahan | U4 mu Tahan |
+|---|---|---|---|---|
+| P08 (penari) | −3,18 | −0,87 | −0,46 | +0,39 |
+| P09 (penari) | −0,14 | −0,60 | −0,44 | +0,43 |
+| P31 (non-penari) | −1,50 | −1,08 | −0,75 | −1,20 |
+| P32 (non-penari) | −1,55 | −1,23 | −0,14 | −1,39 |
+
+LI mu Tahan (M0): P08 −8,18, P09 −4,41, P31 −3,02, P32 −4,20. Romberg (M2b) alpha oksipital Tutup − Buka: P08 −0,29,
+P31 +1,11 (IK 0,03–2,03), P32 −0,48.

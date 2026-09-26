@@ -19,6 +19,9 @@ untuk metode baru.
   - **nilai partisipan** × fase × kanal (`nilai_partisipan.csv`, `lolos_R2`), untuk uji tingkat partisipan;
   - **nilai repetisi** (`nilai_repetisi.csv`, `lolos_R1`), untuk model campuran.
 - Ukuran EEG: power pita **theta 4–8, mu 8–13, beta 13–30 Hz** dalam dB relatif Istirahat (jeda antar-blok).
+  **Keputusan pengguna 2026-09-26:** semua ukuran tingkat (U1–U4, S1, S3–S10, Romberg D1–D6) memakai **M2b** =
+  (power pita / power 4–30 Hz) relatif Istirahat (`*_m2b_db`); **lateralisasi (S2) memakai M0** = power absolut
+  relatif Istirahat (`*_db`). M0 dan specparam dilaporkan sebagai sensitivitas.
   **ERD** = nilai < 0 (power turun dibanding Istirahat), **ERS** = nilai > 0.
 - Demografi: `participants.csv` (grup, usia, dance_years, onset_age, activity_per_month, proporsi_hidup_menari).
   Hari rekaman dari nama video di file timestamp.
@@ -199,3 +202,4 @@ dengan ukuran U1–U4. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-26 | Batasan 0: dasar kultural timestamp manual; U5 ditafsirkan bersama nilai ketepatan gerak; reliabilitas anotasi dengan anotator kedua. | Keputusan pengguna. Tidak mengubah ukuran maupun pipeline. |
 | 2026-09-26 | **Timing bukan hipotesis**: U5 (CV Tahan) dan S6 dihapus dari keluarga uji; durasi fase menjadi deskriptif (Bagian 3b) dan kovariat (K-durasi). Keluarga uji utama = U1–U4, BH atas 4. | Keputusan pengguna: variasi tempo adalah ciri kultural tari Bali; objek analisis = karakter EEG yang muncul. |
 | 2026-09-26 | Prinsip fenomena: offset 0 tetap, tanpa penyetelan per individu; tanpa analisis latensi/perambatan antar area; Pra-Gerak/Pasca-Naik ditafsirkan sebagai keadaan. | Keputusan pengguna. |
+| 2026-09-26 | **Diputuskan: M2b untuk semua ukuran tingkat, M0 untuk lateralisasi** (menggantikan usul yang menunggu persetujuan). Aturan "M0 untuk Pra-Gerak" dibatalkan (tidak tahan terhadap geseran offset). Diterapkan di `aturan.nilai_repetisi` (`*_m2b_db`), `analisis.ukuran_utama`, `analisis.romberg(m2b=True)`; Tahap 6 & pilot kini memakai epoch TR. | Keputusan pengguna. M2b tahan terhadap geseran offset ±1 dtk dan menghilangkan kenaikan power menyeluruh akibat gerak; LI adalah selisih antar-belahan sehingga kenaikan menyeluruh saling meniadakan. |
