@@ -75,6 +75,8 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | S5 | **Theta frontal** (F3/F4) Tahan: beban kognitif/kompensasi. |
 | S6 | **Perilaku lain** dari timestamp: durasi Gerak, Tahan, Naik (median per partisipan). |
 | S7 | **Per gerakan** (Ngeed / Agem Kanan / Agem Kiri) untuk U1–U4 (4 repetisi per gerakan, jadi presisi lebih rendah). |
+| S8 | **Rebound beta pasca-Naik**: beta sentral di jendela [akhir Naik + 0,5, akhir Naik + 2,5 dtk] (= awal Berdiri), relatif Istirahat; uji ≠ 0 (ERS diharapkan) lalu beda grup. Jendela Berdiri TE saat ini membuang momen ini. *Tahap 1 (segmen baru `Pasca-Naik` di `jendela.py`) → epoch 1 dtk geser 0,25 → Tahap 6 (aturan cakupan sama).* Rujukan: Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013. |
+| S9 | **Ketepatan gerak** (bila penilaian tersedia, Bagian 6b): `dB ~ nilai + fase + (1 | partisipan)` di dalam partisipan untuk U1–U4; beda grup diulang hanya pada repetisi bernilai 2 (benar); interaksi grup × nilai. |
 
 ## 5. Dosis-respons (tujuan utama riset menurut catatan repo)
 - **Di dalam penari:** `ukuran ~ activity_per_month + usia` (utama), lalu `~ dance_years + usia` dan
@@ -96,6 +98,23 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | K-ASR | Ulangi dengan ASR k 10. |
 | K-mata | Ulangi dengan ICA mata. |
 | K-aturan | Ulangi dengan R1 cakupan ≥ 50%. |
+| K-minimal | Pemrosesan minimal: tanpa ASR (Tahap 4 dilewati), hanya filter 1–35 Hz + A2. *Tahap 4.* Rujukan: Delorme 2023. |
+| K-acuan | ERD Tahan dan Gerak relatif **Buka Mata** (berdiri tenang, mata terbuka, dalam sesi yang sama), selain relatif Istirahat. *Tahap estimasi (acuan alternatif di `epoch.acuan`/`koreksi_global`).* Rujukan: Del Percio dkk. 2009 (acuan berdiri tenang untuk tugas keseimbangan). |
+| K-warp | Bila jendela TE dipersoalkan: spektrogram per repetisi diregangkan (*time-warping*) agar batas fase jatuh pada waktu relatif yang sama. *Tahap epoch.* Rujukan: Gwin dkk. 2011. |
+
+**Validasi ASR semi-simulasi (Tahap 4, dilaporkan, bukan kriteria lolos/gagal K4):** ERD buatan (−1, −2, −3 dB mu/beta
+di C3 atau C4) disuntikkan ke potongan Istirahat nyata dan diberi artefak gerak dari data Gerak; diukur berapa ERD yang
+kembali sesudah ASR per belahan (8 kanal). Rujukan: studi ASR kanal sedikit (IEEE 2022); Chang dkk. 2020.
+
+## 6b. Ketepatan gerak (penilaian per repetisi)
+Banyak non-penari hanya benar pada ⅓–½ repetisi (pengamatan pengguna). Ketepatan gerak dapat mengacaukan beda grup
+(Del Percio dkk. 2009; tinjauan efisiensi neural 2021).
+- Berkas `data/penilaian/PXX_penilaian.csv`: `gerakan, rep, nilai (0/1/2), catatan`. Skala berdasar **wiraga**:
+  bentuk agem (badan, tangan, kaki), kedalaman turun, kestabilan saat Tahan, urutan sesuai aba-aba.
+  0 = salah/tidak lengkap, 1 = sebagian benar, 2 = sesuai pakem. Rubrik tertulis ditetapkan sebelum menilai.
+- Penilai: penari ahli, dari video, **tanpa melihat hasil EEG**. Penilai kedua pada ≥ 20% repetisi (acak, seimbang
+  grup); reliabilitas = kappa berbobot kuadrat dan ICC(2,1) (Koo & Li 2016). Bila ICC < 0,75 rubrik diperbaiki dulu.
+- Dipakai di S9 dan sebagai kovariat sensitivitas (proporsi repetisi benar per partisipan).
 
 Temuan utama dianggap **kokoh** bila arah efek grup sama di semua sensitivitas dan IK tidak berbalik tanda pada
 K-otot, K-ref dan K-usia.
@@ -114,6 +133,13 @@ Tutup Mata (mis. P09, 14% tercakup) dikeluarkan dari Paper D dan dilaporkan.
 | D2 | reaktivitas alpha oksipital = Tutup Mata − Buka Mata (dB; "Romberg quotient" EEG) |
 | D3 | mu/alpha sentral C3/C4, Buka Mata dan Tutup Mata |
 | D4 | theta frontal F3/F4 saat Tutup Mata |
+| D5 | theta fronto-sentral (F3/F4 + C3/C4), Tutup Mata − Buka Mata |
+| D6 | frekuensi puncak alpha (IAF, O1/O2 dan P3/P4) Buka & Tutup Mata; NaN bila tidak ada puncak (specparam) |
+
+**Tafsiran Romberg sebagai tugas keseimbangan**, bukan istirahat: berdiri dengan mata tertutup menaikkan tuntutan
+postural yang dapat menekan alpha dan menaikkan theta (Hülsdünker dkk. 2015; Edwards dkk. 2018). Efek Berger yang lemah
+tidak otomatis berarti data buruk. Pembanding: Baseline.EDF (berdiri tenang mata tertutup, di luar sesi Trial) bila
+tersedia — bila alpha oksipital jelas di Baseline tetapi tidak di Tutup Mata, penyebabnya kondisi tugas.
 
 Untuk Romberg, ukuran dihitung sebagai power **relatif Buka Mata** (Tutup Mata − Buka Mata, dB) dan juga relatif
 Istirahat. Kondisi mata saat Istirahat utama belum diketahui, jadi Buka Mata menjadi acuan yang lebih jelas.
@@ -149,3 +175,4 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-25 | **Pilot dijalankan** pada set penyetelan (P08, P09, P31, P32) atas permintaan pengguna, sebelum rencana dibekukan. Hasil di `hasil/pilot_analisis/`. | Permintaan pengguna. Konsekuensi: rencana ini sudah "melihat" data pilot. Setiap perubahan sesudah tanggal ini wajib dicatat dengan alasan, dan keempat partisipan tidak dihitung sebagai data konfirmasi. |
 | 2026-09-25 | Buka mata = TT − 45 dtk (tetap), analisis mulai sesudah Berdiri terakhir | Konfirmasi pengguna; masih draf |
 | 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |
+| 2026-09-26 | Tambahan dari kajian literatur (RUJUKAN.md): S8 rebound beta pasca-Naik; S9 + Bagian 6b ketepatan gerak; K-minimal, K-acuan (Buka Mata), K-warp; validasi ASR semi-simulasi; D5–D6 dan tafsiran Romberg sebagai tugas keseimbangan. Tahap penerapan dicantumkan per butir. | Permintaan pengguna; ditambahkan sesudah pilot (n 4) dilihat, sehingga dicatat sebagai revisi. Tidak mengubah U1–U5. |
