@@ -10,6 +10,9 @@ fase dari video/pose) hanya dipakai sebagai **pembanding**. Paket: `gerakeeg/`. 
 
 Masukan: `data/raw/PXX/PXX_Trial.EDF` dan `data/manual_timestamps/PXX_timestamps.csv`.
 
+**Dokumen induk:** `TUJUAN_METODE.md` (tujuan penelitian + metode: diadopsi / modifikasi rujukan / baru) ·
+`RENCANA_BEKU.md` (parameter beku) · `RENCANA_ANALISIS.md` (rencana uji) · `RUJUKAN.md` (literatur per tahap).
+
 ## Istilah
 Setiap repetisi terdiri dari empat fase berurutan, ditambah dua segmen di luar repetisi.
 

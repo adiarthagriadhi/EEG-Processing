@@ -5,6 +5,8 @@ di `hasil/tahap6_aturan/dataset/` belum dibuka untuk tujuan analisis. Rencana in
 setelah Tahap 5–6 dibekukan dan **sebelum** skrip analisis dijalankan pada kohort. Setiap perubahan sesudahnya dicatat
 di **Log revisi** dan dilaporkan sebagai penyimpangan dari rencana.
 
+Tujuan penelitian dan status tiap langkah metode (adopsi / modifikasi rujukan / baru): `TUJUAN_METODE.md`.
+
 Analisis repo (`hasil_analisis/`, H1–H13) hanya menjadi **pembanding** arah temuan; hipotesis di sini dirumuskan ulang
 untuk metode baru.
 
