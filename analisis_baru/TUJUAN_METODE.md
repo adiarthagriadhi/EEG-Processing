@@ -23,6 +23,19 @@ antara penari Bali dan non-penari.
 **Yang bukan tujuan.** Timing (durasi dan variasi tempo tiap fase) bukan hipotesis: variasi tempo adalah ciri
 kultural tari Bali. Durasi dilaporkan deskriptif dan dipakai sebagai kovariat (keputusan pengguna 2026-09-26).
 
+## 1b. Prinsip: fenomena, bukan waktu (keputusan pengguna 2026-09-26)
+- **Objek analisis = karakter EEG yang muncul pada tiap fase** (tingkat power per pita/area, pola antar fase,
+  lateralisasi), bukan kapan EEG berubah.
+- **Offset adalah prasyarat teknis yang tunduk pada temuan fisiologis**: tetap 0 (timestamp = saat fenomena terlihat,
+  mis. mata mulai ditutup); dicek langsung di EEG (P08: kedipan berhenti tepat sebelum TT). **Tidak ada penyetelan
+  offset per individu untuk memperoleh pola tertentu** — itu akan sirkular dan sangat individual. Offset sinkronisasi
+  repo hanya sensitivitas; ukuran utama (M2b) terbukti tidak berubah oleh geseran ±1 dtk.
+- **Tidak dianalisis karena keterbatasan alat** (16 kanal, 100 Hz, referensi telinga, 2–4 repetisi per gerakan):
+  urutan/onset aktivasi dari satu area otak ke area lain (latensi, perambatan, konektivitas berarah), dan latensi
+  perubahan EEG sesudah gerak. Analisis repo sudah menunjukkan keduanya tidak dapat dipetakan (latensi puncak
+  antar-kanal rho 0,04; PSI/wPLI tanpa arah konsisten). Pra-Gerak dan Pasca-Naik ditafsirkan sebagai **keadaan**
+  (tingkat power dalam jendela), bukan sebagai waktu onset.
+
 ## 2. Metode: yang diadopsi, dimodifikasi, dan dikembangkan sendiri
 
 Keterangan: **Adopsi** = dipakai sesuai rujukan · **Modifikasi** = prinsip rujukan dipakai, pelaksanaannya diubah

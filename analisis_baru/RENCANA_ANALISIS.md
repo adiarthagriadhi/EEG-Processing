@@ -179,6 +179,9 @@ dengan ukuran U1–U4. Rencana Paper B ditulis terpisah sebelum data post diliha
 - Tabel sensitivitas (Bagian 6) dan pembanding arah dengan analisis repo (H7 CV Tahan, H11, H12).
 
 ## 10. Yang tidak dilakukan
+- Tidak menganalisis latensi/onset perubahan EEG, urutan aktivasi antar area, atau konektivitas berarah (keterbatasan
+  alat; TUJUAN_METODE.md 1b).
+- Tidak menyetel offset per partisipan untuk memperoleh pola; offset tetap 0, offset repo hanya sensitivitas.
 - Tidak memilih ukuran, kanal, fase atau pita berdasarkan hasil uji.
 - Tidak menambah uji utama sesudah data dilihat. Uji tambahan diberi label *post hoc*.
 - Tidak mengubah pipeline (Tahap 1–6) sesudah rencana ini dibekukan, kecuali melalui Log revisi RENCANA_BEKU.md.
@@ -195,3 +198,4 @@ dengan ukuran U1–U4. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-26 | Epoch utama TE → TR (RENCANA_BEKU log). S8 diterapkan dengan syarat tafsir khas-beta; S10 Pra-Gerak ditambahkan; nilai kualitas gerak dari kolom `nilai` di timestamp. | Permintaan pengguna (jendela berdasar rujukan, maju 2 dtk; kualitas gerak digabung ke timestamp). U1–U5 tidak berubah (Gerak dan Tahan sama dengan TE). |
 | 2026-09-26 | Batasan 0: dasar kultural timestamp manual; U5 ditafsirkan bersama nilai ketepatan gerak; reliabilitas anotasi dengan anotator kedua. | Keputusan pengguna. Tidak mengubah ukuran maupun pipeline. |
 | 2026-09-26 | **Timing bukan hipotesis**: U5 (CV Tahan) dan S6 dihapus dari keluarga uji; durasi fase menjadi deskriptif (Bagian 3b) dan kovariat (K-durasi). Keluarga uji utama = U1–U4, BH atas 4. | Keputusan pengguna: variasi tempo adalah ciri kultural tari Bali; objek analisis = karakter EEG yang muncul. |
+| 2026-09-26 | Prinsip fenomena: offset 0 tetap, tanpa penyetelan per individu; tanpa analisis latensi/perambatan antar area; Pra-Gerak/Pasca-Naik ditafsirkan sebagai keadaan. | Keputusan pengguna. |
