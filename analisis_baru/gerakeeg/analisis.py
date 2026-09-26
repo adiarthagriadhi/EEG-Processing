@@ -33,7 +33,7 @@ def sentral_per_repetisi(nr):
 
 
 def ukuran_utama(nr, perilaku):
-    """U1–U5 per partisipan + uji ERD ≠ 0 di dalam partisipan (S1) untuk semua fase × pita sentral."""
+    """U1–U4 per partisipan (+ CV Tahan, deskriptif saja; timing bukan hipotesis) + uji ERD ≠ 0 di dalam partisipan (S1) untuk semua fase × pita sentral."""
     sr = sentral_per_repetisi(nr)
     rows = []
     for (pid, f), g in sr.groupby(["participant_id", "fase"]):
@@ -46,7 +46,7 @@ def ukuran_utama(nr, perilaku):
         th = perilaku[perilaku.participant_id == pid].durasi_Tahan.dropna()
         U.append(dict(participant_id=pid, U1_beta_Gerak=get("Gerak", "beta"), U2_mu_Gerak=get("Gerak", "mu"),
                       U3_beta_Tahan=get("Tahan", "beta"), U4_mu_Tahan=get("Tahan", "mu"),
-                      U5_CV_Tahan=th.std(ddof=1) / th.mean() if len(th) > 1 else np.nan))
+                      deskriptif_CV_Tahan=th.std(ddof=1) / th.mean() if len(th) > 1 else np.nan))
     return pd.DataFrame(U), S1
 
 

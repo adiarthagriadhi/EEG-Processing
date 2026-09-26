@@ -480,7 +480,7 @@ def pilot(pids):
     RB = analisis.romberg(est)
     for d in (U, S1, LI, PR, RB):
         d.insert(1, "grup", d.participant_id.map(grup))
-    U.round(3).to_csv(out / "U1-U5_per_partisipan.csv", index=False)
+    U.round(3).to_csv(out / "U1-U4_per_partisipan.csv", index=False)
     S1.round(4).to_csv(out / "S1_ERD_sentral_per_fase.csv", index=False)
     LI.round(4).to_csv(out / "S2_lateralisasi_agem.csv", index=False)
     PR.round(3).to_csv(out / "perilaku_durasi.csv", index=False)
@@ -490,7 +490,7 @@ def pilot(pids):
     grafik.pilot_romberg(RB, grup, out / "romberg_berger.png")
     grafik.pilot_topografi(P, grup, out / "topografi_gerak_tahan.png")
     pd.set_option("display.width", 250)
-    for nama, d in (("U1–U5", U), ("S1", S1), ("S2 LI", LI), ("perilaku", PR), ("Romberg", RB)):
+    for nama, d in (("U1–U4", U), ("S1", S1), ("S2 LI", LI), ("perilaku", PR), ("Romberg", RB)):
         print(f"--- {nama}")
         print(d.round(2).to_string(index=False))
 

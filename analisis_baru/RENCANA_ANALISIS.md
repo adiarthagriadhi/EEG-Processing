@@ -26,8 +26,9 @@ untuk metode baru.
 0. **Dasar timestamp manual** (keputusan pengguna 2026-09-26): tari Bali punya ukuran gerak yang khas dan variasi
    tempo adalah ciri kulturalnya. Batas fase ditentukan oleh penari ahli per repetisi, bukan dari aba-aba HUD atau
    deteksi otomatis. Konsekuensi: (a) jendela mengikuti onset dan durasi masing-masing repetisi; (b) variasi durasi
-   fase **tidak otomatis berarti ketidakstabilan** — pada penari dapat mencerminkan tempo yang disengaja, sehingga U5
-   (CV Tahan) ditafsirkan bersama penilaian ketepatan gerak (Bagian 6b); (c) reliabilitas anotasi diukur dengan
+   fase **tidak otomatis berarti ketidakstabilan** — pada penari dapat mencerminkan tempo yang disengaja. **Timing
+   bukan hipotesis** (keputusan pengguna 2026-09-26): yang dianalisis adalah karakter EEG yang muncul di tiap fase;
+   durasi fase hanya deskriptif dan kovariat (Bagian 3b); (c) reliabilitas anotasi diukur dengan
    anotator kedua (penari ahli) pada ≥ 20% repetisi, dilaporkan sebagai selisih onset (median, IK) per label.
 1. **Referensi A2** (rata-rata per belahan): setiap kanal diukur **relatif terhadap rata-rata belahannya**. ERD yang
    merata di satu belahan tidak terlihat. Yang terukur adalah ERD **fokal** (mis. C3 lebih kuat daripada kanal kiri
@@ -54,20 +55,26 @@ hanya satu yang lolos, dipakai satu).
 | U2 | mu sentral, **inisiasi Gerak** | ERD mu awal gerak |
 | U3 | beta sentral, **Tahan** | kontrol isometrik berkelanjutan; hipotesis efisiensi neural |
 | U4 | mu sentral, **Tahan** | idem |
-| U5 | **CV durasi Tahan** (perilaku, dari timestamp) | kestabilan menahan; temuan terkuat analisis repo (H7), diuji ulang dengan waktu manual |
 
 **Arah yang diharapkan (hipotesis efisiensi neural, dua sisi diuji):** penari menunjukkan ERD sentral yang lebih lemah
-(nilai lebih mendekati 0) pada U1–U4 dan CV Tahan lebih kecil pada U5. Uji tetap **dua sisi**.
+(nilai lebih mendekati 0) pada U1–U4. Uji tetap **dua sisi**.
 
 **Uji utama:** per ukuran, ANCOVA tingkat partisipan `ukuran ~ grup + usia` dengan galat baku robust HC3. Efek grup
 dilaporkan sebagai Hedges g (dari residu usia) dengan IK 95%, serta nilai p. Koreksi Benjamini-Hochberg (q = 0,05)
-atas 5 ukuran U1–U5.
+atas 4 ukuran U1–U4.
 
 **Model campuran (sensitivitas utama):** nilai repetisi `dB ~ grup + usia + gerakan + (1 | partisipan)` untuk
 U1–U4, memakai semua repetisi yang lolos R1 (bukan hanya rata-ratanya).
 
 **Daya uji:** dengan 23 penari vs 15 non-penari, α = 0,05 dua sisi dan daya 80%, efek yang dapat dideteksi sekitar
 g ≈ 0,93. Efek yang lebih kecil tidak dapat dinyatakan "tidak ada". Hasil nol dilaporkan dengan IK 95%.
+
+## 3b. Timing: deskriptif dan kovariat, bukan hipotesis
+- Durasi Gerak, Tahan, Naik, Berdiri dan CV-nya dilaporkan **deskriptif** per grup (median, IQR), tanpa uji hipotesis
+  dan tanpa tafsiran "stabil/tidak stabil".
+- Dipakai sebagai **kovariat** untuk U1–U4 (sensitivitas K-durasi): durasi fase menentukan panjang jendela TR
+  (sepertiga durasi) dan jumlah jendela bersih, sehingga beda EEG antar grup harus dipastikan bukan akibat beda durasi.
+- Pembanding arah dengan H7 repo (CV Tahan) hanya disebut, tidak diuji ulang.
 
 ## 4. Pertanyaan SEKUNDER (eksploratif, dilaporkan terpisah)
 Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
@@ -79,7 +86,6 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | S3 | **Peta area**: 5 area non-rawan (frontal F3/F4, sentral, parietal P3/P4, oksipital O1/O2, temporo-posterior T5/T6) × 4 fase × 3 pita = 60 uji grup. |
 | S4 | **Inisiasi Naik** dan **Berdiri** (mu/beta sentral), termasuk kemungkinan ERS beta sesudah gerak pada Berdiri. |
 | S5 | **Theta frontal** (F3/F4) Tahan: beban kognitif/kompensasi. |
-| S6 | **Perilaku lain** dari timestamp: durasi Gerak, Tahan, Naik (median per partisipan). |
 | S7 | **Per gerakan** (Ngeed / Agem Kanan / Agem Kiri) untuk U1–U4 (4 repetisi per gerakan, jadi presisi lebih rendah). |
 | S8 | **Rebound beta Pasca-Naik** [B + 0,5, B + 2,5 dtk]: beta sentral relatif Istirahat; uji ≠ 0 (ERS diharapkan) lalu beda grup. Syarat tafsir: kenaikan harus khas beta (M0 beta > 0 **dan** M2b beta ≥ 0); bila hanya M0 yang naik, kenaikan bersifat menyeluruh dan tidak disebut rebound. *Diterapkan di epoch TR (`epoch.potong_TR`), aturan Tahap 6 sama.* Rujukan: Pfurtscheller & Lopes da Silva 1999; Kilavik dkk. 2013. |
 | S10 | **Pra-Gerak** [onset − 2, onset]: ERD mu/beta persiapan, sentral dan lateralisasi (Agem). Dilaporkan dengan M0 **dan** M2b: sebelum onset belum ada artefak gerak, sehingga M0 lebih dapat ditafsirkan di sini. *Epoch TR.* Rujukan: Pfurtscheller & Lopes da Silva 1999. |
@@ -87,7 +93,7 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 
 ## 5. Dosis-respons (tujuan utama riset menurut catatan repo)
 - **Di dalam penari:** `ukuran ~ activity_per_month + usia` (utama), lalu `~ dance_years + usia` dan
-  `~ proporsi_hidup_menari`, untuk U1–U5. VIF dilaporkan. Bila VIF(dance_years, usia) > 5, efek tahun menari tidak
+  `~ proporsi_hidup_menari`, untuk U1–U4. VIF dilaporkan. Bila VIF(dance_years, usia) > 5, efek tahun menari tidak
   ditafsirkan terpisah dari usia.
 - **Seluruh sampel:** `ukuran ~ grup + dance_years + usia` hanya deskriptif. Tahun menari non-penari = 0, sehingga
   tidak terpisah dari grup.
@@ -105,6 +111,7 @@ Masing-masing keluarga dikoreksi BH sendiri dan diberi label eksploratif.
 | K-ASR | Ulangi dengan ASR k 10. |
 | K-mata | Ulangi dengan ICA mata. |
 | K-aturan | Ulangi dengan R1 cakupan ≥ 50%. |
+| K-durasi | Tambahkan median durasi fase partisipan (fase yang sama) sebagai kovariat U1–U4. |
 | K-minimal | Pemrosesan minimal: tanpa ASR (Tahap 4 dilewati), hanya filter 1–35 Hz + A2. *Tahap 4.* Rujukan: Delorme 2023. |
 | K-acuan | ERD Tahan dan Gerak relatif **Buka Mata** (berdiri tenang, mata terbuka, dalam sesi yang sama), selain relatif Istirahat. *Tahap estimasi (acuan alternatif di `epoch.acuan`/`koreksi_global`).* Rujukan: Del Percio dkk. 2009 (acuan berdiri tenang untuk tugas keseimbangan). |
 | K-warp | Bila jendela TE dipersoalkan: spektrogram per repetisi diregangkan (*time-warping*) agar batas fase jatuh pada waktu relatif yang sama. *Tahap epoch.* Rujukan: Gwin dkk. 2011. |
@@ -161,10 +168,10 @@ D1–D4 dan waktu stork test di seluruh sampel (BH atas 4). Semua hanya bila sya
 
 ## 8. Pre-post (Paper B): bersyarat
 Semua data saat ini `timepoint = pre`. Bila data post non-penari masuk: analisis RCI dan Gap Closure sesuai CLAUDE.md,
-dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post dilihat.
+dengan ukuran U1–U4. Rencana Paper B ditulis terpisah sebelum data post dilihat.
 
 ## 9. Keluaran yang direncanakan
-- Tabel U1–U5: rata-rata ± SD per grup, g [IK 95%], p, p_BH, n per grup.
+- Tabel U1–U4: rata-rata ± SD per grup, g [IK 95%], p, p_BH, n per grup.
 - Gambar: profil fase (Gerak inisiasi, Tahan, Naik inisiasi, Berdiri) mu/beta sentral per grup, dengan titik per
   partisipan. Topografi 16 kanal per fase hanya deskriptif. Kanal rawan artefak diberi arsiran.
 - Tabel sensitivitas (Bagian 6) dan pembanding arah dengan analisis repo (H7 CV Tahan, H11, H12).
@@ -185,3 +192,4 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-26 | Tambahan dari kajian literatur (RUJUKAN.md): S8 rebound beta pasca-Naik; S9 + Bagian 6b ketepatan gerak; K-minimal, K-acuan (Buka Mata), K-warp; validasi ASR semi-simulasi; D5–D6 dan tafsiran Romberg sebagai tugas keseimbangan. Tahap penerapan dicantumkan per butir. | Permintaan pengguna; ditambahkan sesudah pilot (n 4) dilihat, sehingga dicatat sebagai revisi. Tidak mengubah U1–U5. |
 | 2026-09-26 | Epoch utama TE → TR (RENCANA_BEKU log). S8 diterapkan dengan syarat tafsir khas-beta; S10 Pra-Gerak ditambahkan; nilai kualitas gerak dari kolom `nilai` di timestamp. | Permintaan pengguna (jendela berdasar rujukan, maju 2 dtk; kualitas gerak digabung ke timestamp). U1–U5 tidak berubah (Gerak dan Tahan sama dengan TE). |
 | 2026-09-26 | Batasan 0: dasar kultural timestamp manual; U5 ditafsirkan bersama nilai ketepatan gerak; reliabilitas anotasi dengan anotator kedua. | Keputusan pengguna. Tidak mengubah ukuran maupun pipeline. |
+| 2026-09-26 | **Timing bukan hipotesis**: U5 (CV Tahan) dan S6 dihapus dari keluarga uji; durasi fase menjadi deskriptif (Bagian 3b) dan kovariat (K-durasi). Keluarga uji utama = U1–U4, BH atas 4. | Keputusan pengguna: variasi tempo adalah ciri kultural tari Bali; objek analisis = karakter EEG yang muncul. |
