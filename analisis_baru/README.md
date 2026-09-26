@@ -713,10 +713,24 @@ Hasil TR: `hasil/banding_jendela_TE_TR_offset_repo/`.
 | Pasca-Naik rebound khas beta | 0/4 | 0/4 |
 | Kenaikan menyeluruh saat Gerak, M0 (dB) | −1,0 … +2,7 | +3,3 … +7,9 |
 
-- Dengan offset, jendela Gerak jatuh tepat pada gerak di EEG (kenaikan menyeluruh akibat gerak melonjak) → bukti
-  bahwa offset ±0,9–1,7 dtk memang ada.
+- Dengan offset, kenaikan menyeluruh saat Gerak melonjak. Ini **belum** bukti offset: bisa juga berarti jendela
+  bergeser ke bagian gerak yang lebih kasar. Cek langsung di EEG (bagian berikut) mendukung offset 0 untuk TT.
 - **Hasil M2b tahan terhadap offset**; hasil M0 Pra-Gerak (4/4) **tidak** — sebagian berasal dari jendela yang
   sebenarnya jatuh ±0,9 dtk lebih awal. Aturan "M0 untuk Pra-Gerak" tidak dipertahankan; M2b dipakai untuk semua
   ukuran tingkat.
 - Tanda tutup mata di Fp1/Fp2 tidak konsisten (P08 −1,0; P31 −3,0 lemah; P32 +1,5 dtk) → tidak dapat dipakai
   sebagai jangkar offset.
+
+## Cek langsung tutup mata di EEG, offset 0 (2026-09-26; keputusan pengguna: offset 0 tetap)
+`skrip_cek_tutup_mata.py` → `hasil/pilot_analisis/cek_tutup_mata.{png,csv}` (referensi telinga, tanpa ASR).
+
+| | Kedipan terakhir | Kedipan sesudah TT + 2 dtk | Alpha O1/O2 sesudah vs sebelum TT | Kesimpulan |
+|---|---|---|---|---|
+| P08 | TT − 0,96 dtk | 0 | −9,5 dB | Mata tertutup ±TT → **offset 0 cocok** (tidak ada tanda EEG tertinggal 0,95 dtk) |
+| P31 | – | 0 | +14,3 dB (naik baru ±12 dtk sesudah TT) | **Tidak dapat dicek**: Fp dan O datar (reset KT88) di sekitar TT |
+| P32 | TT − 6,75 dtk | 1 (TT + 21) | −8,0 dB | Kedipan berhenti ±7 dtk sebelum TT: mata mungkin sudah tertutup lebih awal, atau sekadar tidak berkedip |
+| P09 | TT di luar EDF | | | |
+
+- Offset 0 dipertahankan (keputusan pengguna). Offset repo tetap tersedia sebagai sensitivitas (`GERAKEEG_OFFSET=repo`).
+- Pada P08 penutupan mata terkonfirmasi, tetapi alpha oksipital justru **turun** → tidak adanya efek Berger bukan
+  karena salah waktu, melainkan kondisi tugas (berdiri dengan mata tertutup) atau karakter individu.

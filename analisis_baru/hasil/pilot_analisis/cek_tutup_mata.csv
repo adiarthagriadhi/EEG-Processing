@@ -1,0 +1,4 @@
+participant_id,TT,kedip_per_mnt_sebelum,kedip_per_mnt_sesudah,kedipan_terakhir_rel_TT,kedipan_sesudah_TT_plus_2,alpha_sesudah_vs_sebelum_db,detik_EEG_sesudah_TT
+P08,412.135,4.3,0.0,-0.96,0,-9.46,13.9
+P31,411.581,0.0,0.0,,0,14.31,25.0
+P32,411.864,34.3,2.5,-6.75,1,-7.95,25.0
