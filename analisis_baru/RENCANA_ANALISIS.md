@@ -23,6 +23,12 @@ untuk metode baru.
 - Partisipan yang gagal K0 tidak dianalisis. Sel yang gagal R2 = data hilang. Tidak ada imputasi.
 
 ## 2. Batasan yang memengaruhi tafsir (ditetapkan sebelum melihat hasil)
+0. **Dasar timestamp manual** (keputusan pengguna 2026-09-26): tari Bali punya ukuran gerak yang khas dan variasi
+   tempo adalah ciri kulturalnya. Batas fase ditentukan oleh penari ahli per repetisi, bukan dari aba-aba HUD atau
+   deteksi otomatis. Konsekuensi: (a) jendela mengikuti onset dan durasi masing-masing repetisi; (b) variasi durasi
+   fase **tidak otomatis berarti ketidakstabilan** — pada penari dapat mencerminkan tempo yang disengaja, sehingga U5
+   (CV Tahan) ditafsirkan bersama penilaian ketepatan gerak (Bagian 6b); (c) reliabilitas anotasi diukur dengan
+   anotator kedua (penari ahli) pada ≥ 20% repetisi, dilaporkan sebagai selisih onset (median, IK) per label.
 1. **Referensi A2** (rata-rata per belahan): setiap kanal diukur **relatif terhadap rata-rata belahannya**. ERD yang
    merata di satu belahan tidak terlihat. Yang terukur adalah ERD **fokal** (mis. C3 lebih kuat daripada kanal kiri
    lainnya). Semua pernyataan ditulis sebagai "ERD sentral relatif belahan".
@@ -178,3 +184,4 @@ dengan ukuran U1–U5. Rencana Paper B ditulis terpisah sebelum data post diliha
 | 2026-09-25 | Bagian 7 diperinci: label `BM` tersedia → Buka Mata vs Tutup Mata, syarat validitas Berger, ukuran D1–D4 | Label ditambahkan pengguna; masih draf |
 | 2026-09-26 | Tambahan dari kajian literatur (RUJUKAN.md): S8 rebound beta pasca-Naik; S9 + Bagian 6b ketepatan gerak; K-minimal, K-acuan (Buka Mata), K-warp; validasi ASR semi-simulasi; D5–D6 dan tafsiran Romberg sebagai tugas keseimbangan. Tahap penerapan dicantumkan per butir. | Permintaan pengguna; ditambahkan sesudah pilot (n 4) dilihat, sehingga dicatat sebagai revisi. Tidak mengubah U1–U5. |
 | 2026-09-26 | Epoch utama TE → TR (RENCANA_BEKU log). S8 diterapkan dengan syarat tafsir khas-beta; S10 Pra-Gerak ditambahkan; nilai kualitas gerak dari kolom `nilai` di timestamp. | Permintaan pengguna (jendela berdasar rujukan, maju 2 dtk; kualitas gerak digabung ke timestamp). U1–U5 tidak berubah (Gerak dan Tahan sama dengan TE). |
+| 2026-09-26 | Batasan 0: dasar kultural timestamp manual; U5 ditafsirkan bersama nilai ketepatan gerak; reliabilitas anotasi dengan anotator kedua. | Keputusan pengguna. Tidak mengubah ukuran maupun pipeline. |
