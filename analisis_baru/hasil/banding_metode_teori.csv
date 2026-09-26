@@ -1,0 +1,113 @@
+metode,participant_id,harapan,searah
+A repo lama,P08,Pra-Gerak: mu turun,0.0
+A repo lama,P08,Gerak: beta turun,0.0
+A repo lama,P08,Gerak: mu turun,0.0
+A repo lama,P08,Tahan: beta pulih (> Gerak),0.0
+A repo lama,P08,Tahan: LI mu < 0,0.0
+A repo lama,P08,Pasca-Naik: rebound beta khas,
+A repo lama,P08,Romberg: alpha oksipital naik (EC > EO),0.0
+A repo lama,P09,Pra-Gerak: mu turun,0.0
+A repo lama,P09,Gerak: beta turun,0.0
+A repo lama,P09,Gerak: mu turun,0.0
+A repo lama,P09,Tahan: beta pulih (> Gerak),0.0
+A repo lama,P09,Tahan: LI mu < 0,0.0
+A repo lama,P09,Pasca-Naik: rebound beta khas,
+A repo lama,P09,Romberg: alpha oksipital naik (EC > EO),1.0
+A repo lama,P31,Pra-Gerak: mu turun,0.0
+A repo lama,P31,Gerak: beta turun,0.0
+A repo lama,P31,Gerak: mu turun,0.0
+A repo lama,P31,Tahan: beta pulih (> Gerak),0.0
+A repo lama,P31,Tahan: LI mu < 0,1.0
+A repo lama,P31,Pasca-Naik: rebound beta khas,
+A repo lama,P31,Romberg: alpha oksipital naik (EC > EO),1.0
+A repo lama,P32,Pra-Gerak: mu turun,0.0
+A repo lama,P32,Gerak: beta turun,0.0
+A repo lama,P32,Gerak: mu turun,0.0
+A repo lama,P32,Tahan: beta pulih (> Gerak),0.0
+A repo lama,P32,Tahan: LI mu < 0,0.0
+A repo lama,P32,Pasca-Naik: rebound beta khas,
+A repo lama,P32,Romberg: alpha oksipital naik (EC > EO),1.0
+B repo v2,P08,Pra-Gerak: mu turun,1.0
+B repo v2,P08,Gerak: beta turun,1.0
+B repo v2,P08,Gerak: mu turun,0.0
+B repo v2,P08,Tahan: beta pulih (> Gerak),1.0
+B repo v2,P08,Tahan: LI mu < 0,1.0
+B repo v2,P08,Pasca-Naik: rebound beta khas,1.0
+B repo v2,P08,Romberg: alpha oksipital naik (EC > EO),1.0
+B repo v2,P09,Pra-Gerak: mu turun,0.0
+B repo v2,P09,Gerak: beta turun,0.0
+B repo v2,P09,Gerak: mu turun,0.0
+B repo v2,P09,Tahan: beta pulih (> Gerak),0.0
+B repo v2,P09,Tahan: LI mu < 0,0.0
+B repo v2,P09,Pasca-Naik: rebound beta khas,0.0
+B repo v2,P09,Romberg: alpha oksipital naik (EC > EO),
+B repo v2,P31,Pra-Gerak: mu turun,1.0
+B repo v2,P31,Gerak: beta turun,0.0
+B repo v2,P31,Gerak: mu turun,1.0
+B repo v2,P31,Tahan: beta pulih (> Gerak),0.0
+B repo v2,P31,Tahan: LI mu < 0,1.0
+B repo v2,P31,Pasca-Naik: rebound beta khas,0.0
+B repo v2,P31,Romberg: alpha oksipital naik (EC > EO),1.0
+B repo v2,P32,Pra-Gerak: mu turun,1.0
+B repo v2,P32,Gerak: beta turun,0.0
+B repo v2,P32,Gerak: mu turun,0.0
+B repo v2,P32,Tahan: beta pulih (> Gerak),1.0
+B repo v2,P32,Tahan: LI mu < 0,0.0
+B repo v2,P32,Pasca-Naik: rebound beta khas,0.0
+B repo v2,P32,Romberg: alpha oksipital naik (EC > EO),1.0
+C kita lama (TE+M0),P08,Pra-Gerak: mu turun,
+C kita lama (TE+M0),P08,Gerak: beta turun,1.0
+C kita lama (TE+M0),P08,Gerak: mu turun,0.0
+C kita lama (TE+M0),P08,Tahan: beta pulih (> Gerak),1.0
+C kita lama (TE+M0),P08,Tahan: LI mu < 0,1.0
+C kita lama (TE+M0),P08,Pasca-Naik: rebound beta khas,
+C kita lama (TE+M0),P08,Romberg: alpha oksipital naik (EC > EO),0.0
+C kita lama (TE+M0),P09,Pra-Gerak: mu turun,
+C kita lama (TE+M0),P09,Gerak: beta turun,1.0
+C kita lama (TE+M0),P09,Gerak: mu turun,1.0
+C kita lama (TE+M0),P09,Tahan: beta pulih (> Gerak),1.0
+C kita lama (TE+M0),P09,Tahan: LI mu < 0,1.0
+C kita lama (TE+M0),P09,Pasca-Naik: rebound beta khas,
+C kita lama (TE+M0),P09,Romberg: alpha oksipital naik (EC > EO),
+C kita lama (TE+M0),P31,Pra-Gerak: mu turun,
+C kita lama (TE+M0),P31,Gerak: beta turun,0.0
+C kita lama (TE+M0),P31,Gerak: mu turun,0.0
+C kita lama (TE+M0),P31,Tahan: beta pulih (> Gerak),0.0
+C kita lama (TE+M0),P31,Tahan: LI mu < 0,1.0
+C kita lama (TE+M0),P31,Pasca-Naik: rebound beta khas,
+C kita lama (TE+M0),P31,Romberg: alpha oksipital naik (EC > EO),1.0
+C kita lama (TE+M0),P32,Pra-Gerak: mu turun,
+C kita lama (TE+M0),P32,Gerak: beta turun,0.0
+C kita lama (TE+M0),P32,Gerak: mu turun,0.0
+C kita lama (TE+M0),P32,Tahan: beta pulih (> Gerak),1.0
+C kita lama (TE+M0),P32,Tahan: LI mu < 0,1.0
+C kita lama (TE+M0),P32,Pasca-Naik: rebound beta khas,
+C kita lama (TE+M0),P32,Romberg: alpha oksipital naik (EC > EO),0.0
+D kita baru (TR+M2b/M0),P08,Pra-Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P08,Gerak: beta turun,1.0
+D kita baru (TR+M2b/M0),P08,Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P08,Tahan: beta pulih (> Gerak),1.0
+D kita baru (TR+M2b/M0),P08,Tahan: LI mu < 0,1.0
+D kita baru (TR+M2b/M0),P08,Pasca-Naik: rebound beta khas,0.0
+D kita baru (TR+M2b/M0),P08,Romberg: alpha oksipital naik (EC > EO),0.0
+D kita baru (TR+M2b/M0),P09,Pra-Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P09,Gerak: beta turun,1.0
+D kita baru (TR+M2b/M0),P09,Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P09,Tahan: beta pulih (> Gerak),0.0
+D kita baru (TR+M2b/M0),P09,Tahan: LI mu < 0,1.0
+D kita baru (TR+M2b/M0),P09,Pasca-Naik: rebound beta khas,0.0
+D kita baru (TR+M2b/M0),P09,Romberg: alpha oksipital naik (EC > EO),
+D kita baru (TR+M2b/M0),P31,Pra-Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P31,Gerak: beta turun,1.0
+D kita baru (TR+M2b/M0),P31,Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P31,Tahan: beta pulih (> Gerak),1.0
+D kita baru (TR+M2b/M0),P31,Tahan: LI mu < 0,1.0
+D kita baru (TR+M2b/M0),P31,Pasca-Naik: rebound beta khas,0.0
+D kita baru (TR+M2b/M0),P31,Romberg: alpha oksipital naik (EC > EO),1.0
+D kita baru (TR+M2b/M0),P32,Pra-Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P32,Gerak: beta turun,1.0
+D kita baru (TR+M2b/M0),P32,Gerak: mu turun,1.0
+D kita baru (TR+M2b/M0),P32,Tahan: beta pulih (> Gerak),1.0
+D kita baru (TR+M2b/M0),P32,Tahan: LI mu < 0,1.0
+D kita baru (TR+M2b/M0),P32,Pasca-Naik: rebound beta khas,0.0
+D kita baru (TR+M2b/M0),P32,Romberg: alpha oksipital naik (EC > EO),0.0

@@ -653,3 +653,23 @@ Gerak, Tahan, Naik tidak berubah. Dasar: RUJUKAN.md bagian B. Skrip `skrip_bandi
   +6 dB), bukan khas beta. Belum dapat disebut rebound beta; kemungkinan gerak penyesuaian sesudah Naik.
 - Jumlah data: Pra-Gerak & Pasca-Naik 40–48 jendela, 8–12 repetisi lolos R1; Berdiri turun 142→62 (P08) … 177→113 (P32).
 - n = 4, set penyetelan; bukan hasil penelitian.
+
+## Banding 4 metode terhadap teori (set penyetelan, 2026-09-26)
+`skrip_banding_metode.py` → `hasil/banding_metode_teori.csv`. Jumlah partisipan yang searah teori (P08, P09, P31, P32).
+
+| Harapan teori | A repo lama (ERD % total) | B repo v2 (specparam) | C kita lama (TE + M0) | D kita baru (TR + M2b/M0) |
+|---|---|---|---|---|
+| Pra-Gerak: mu turun | 0/4 | 3/4 | – | **4/4** |
+| Gerak: beta turun | 0/4 | 1/4 | 2/4 | **4/4** |
+| Gerak: mu turun | 0/4 | 1/4 | 1/4 | **4/4** |
+| Tahan: beta pulih (> Gerak) | 0/4 | 2/4 | 3/4 | 3/4 |
+| Tahan: LI mu < 0 | 1/4 | 2/4 | **4/4** | **4/4** |
+| Pasca-Naik: rebound beta khas | – | 1/4 | – | 0/4 |
+| Romberg: alpha oksipital EC > EO | 3/4 | **3/3** | 1/3 | 1/3 |
+| **Total** | 4/24 (17%) | 13/27 (48%) | 11/19 (58%) | **20/27 (74%)** |
+
+Catatan: D dipilih/disetel pada keempat partisipan ini (aturan M0 untuk Pra-Gerak dirumuskan sesudah melihat), jadi
+keunggulannya harus dikonfirmasi pada partisipan baru. Romberg: metode repo lebih baik — kemungkinan karena referensi
+A2 (rata-rata per belahan) ikut mengurangi alpha oksipital yang tersebar luas, dan specparam memisahkan puncak alpha
+dari kenaikan menyeluruh. Usul: Romberg dianalisis dengan specparam dan referensi telinga/bipolar (sensitivitas yang
+sudah direncanakan di RENCANA_ANALISIS Bagian 7).
