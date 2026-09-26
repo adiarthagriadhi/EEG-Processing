@@ -240,11 +240,15 @@ def write(ctx, cfg):
         off_txt = f"{offset:+.2f} dtk"
     else:
         off_txt = "per blok " + ", ".join(f"{o:+.2f} dtk (video ≥ {s:.0f} dtk)" for s, o in offset)
+    src = (f"video {ctx['pose']['t'][-1]:.1f} dtk" if ctx.get("pose") is not None
+           else "sumber waktu: timestamp manual peneliti (tanpa video)")
     parts.append(f"<h2>1. Timeline & cakupan</h2><p>Durasi EEG {raw.times[-1]:.1f} dtk; "
-                 f"video {ctx['pose']['t'][-1]:.1f} dtk; offset {off_txt} "
-                 f"(t_eeg = t_video + offset).</p>")
+                 f"{src}; offset {off_txt} (t_eeg = t_video + offset).</p>")
+    probs = P.decisions().get("manual_timestamp_problems") if ctx.get("manual") else None
+    if probs:
+        parts.append("<p class='bad'>Timestamp manual: " + html.escape("; ".join(probs)) + "</p>")
     parts.append(fig_timeline(tl, offset, raw.times[-1]))
-    if P.out("sync.json").exists():
+    if P.out("sync.json").exists() and not ctx.get("manual"):
         import json
         res = json.loads(P.out("sync.json").read_text())
         parts.append("<h2>2. Sinkronisasi</h2>")
@@ -261,7 +265,8 @@ def write(ctx, cfg):
     if "reps" in ctx:
         reps = ctx["reps"]
         parts.append("<h2>3. Fase gerak aktual</h2>")
-        parts.append(fig_reps(reps, ctx["pose"]))
+        if ctx.get("pose") is not None:
+            parts.append(fig_reps(reps, ctx["pose"]))
         cols = ["task", "rep", "compliance", "hud_turun", "act_turun", "act_tahan", "act_naik",
                 "act_end", "depth_px", "track_noise_px", "phase_source", "baseline_range_frac",
                 "baseline_still", "pose_valid_frac",

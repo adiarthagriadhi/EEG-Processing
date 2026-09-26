@@ -64,14 +64,20 @@ def phase_windows(m, cfg):
     sc = cfg["segments"]
     arm = m.act_arm if np.isfinite(m.get("act_arm", np.nan)) else m.act_turun
     pw, po = cfg["erd"]["pre_window"], cfg["erd"]["post_window"]
-    W = {"PRA": (arm + pw[0], arm + pw[1], pw[1] - pw[0]) if np.isfinite(arm) else None}
+    # timestamp manual: jendela observasi tiap fase dimulai `pre_onset_sec` SEBELUM timestamp onsetnya
+    # (akhir = timestamp fase berikut), tanpa pemangkasan batas; PRA ikut mundur agar tidak tumpang tindih
+    lead, trim = 0.0, sc["trim_sec"]
+    if m.get("phase_source") == "manual_timestamp":
+        mt = cfg.get("manual_timestamps", {})
+        lead, trim = float(mt.get("pre_onset_sec", 0.0)), float(mt.get("trim_sec", 0.0))
+    W = {"PRA": (arm + pw[0] - lead, arm + pw[1] - lead, pw[1] - pw[0]) if np.isfinite(arm) else None}
     for ph, (c0, c1) in PHASE_COLS.items():
         a, b = m[c0], m[c1]
         if not np.isfinite([a, b]).all() or b <= a:
             W[ph] = None
             continue
-        tr = min(sc["trim_sec"], sc["trim_max_frac"] * (b - a))
-        W[ph] = (a + tr, b - tr, b - a) if (b - a - 2 * tr) >= sc["min_win_sec"] else None
+        tr = min(trim, sc["trim_max_frac"] * (b - a))
+        W[ph] = (a - lead + tr, b - tr, b - a) if (b - a + lead - 2 * tr) >= sc["min_win_sec"] else None
     W["POST"] = ((m.act_end + po[0], m.act_end + po[1], po[1] - po[0])
                  if np.isfinite(m.act_end) else None)
     return {ph: W[ph] for ph in sc["phases"]}
@@ -130,8 +136,17 @@ def body_motion(pose):
 
 
 def quiet_windows(tl, pose, offset, T, cfg):
-    """Awal jendela acuan (detik EEG) paling diam + ringkasan QC."""
+    """Awal jendela acuan (detik EEG) paling diam + ringkasan QC. Tanpa pose (timestamp manual, tanpa
+    video) gerak tubuh tidak terukur → SEMUA jendela BERDIRI RILEKS + ISTIRAHAT UTAMA dipakai (tidak
+    dipilih dari EEG, agar acuan tidak sirkular)."""
     sc = cfg["segments"]
+    if pose is None:
+        W = [a for _, r in tl[tl.task.isin(sc["baseline_tasks"])].iterrows()
+             for a in np.arange(r.start + 0.5, r.end - sc["baseline_win_sec"] - 0.5 + 1e-9, sc["baseline_step_sec"])
+             if 0 <= float(sync.to_eeg(a, offset)) and float(sync.to_eeg(a, offset)) + sc["baseline_win_sec"] <= T]
+        keep = [float(sync.to_eeg(a, offset)) for a in W]
+        return keep, dict(n_candidates=len(W), n_quiet=len(keep), motion_thr=None,
+                          reference_selection="semua jendela (tanpa video)")
     pt, mot = pose["t"], body_motion(pose)
     W = []
     for _, r in tl[tl.task.isin(sc["baseline_tasks"])].iterrows():
@@ -147,7 +162,8 @@ def quiet_windows(tl, pose, offset, T, cfg):
     W = np.array(W)
     thr = np.quantile(W[:, 1], sc["baseline_quiet_frac"])
     keep = W[W[:, 1] <= thr, 0]
-    return list(keep), dict(n_candidates=len(W), n_quiet=len(keep), motion_thr=round(float(thr), 3))
+    return list(keep), dict(n_candidates=len(W), n_quiet=len(keep), motion_thr=round(float(thr), 3),
+                            reference_selection=f"{sc['baseline_quiet_frac']:.0%} paling diam (video)")
 
 
 def analyze(raw, reps, tl, pose, offset, pid, cfg, flat=None, seed=0):

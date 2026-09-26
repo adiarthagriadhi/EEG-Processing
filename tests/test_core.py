@@ -198,3 +198,52 @@ def test_longest_clean_and_salvage():
     ok = flat.mean(1) <= sc["max_flat_frac"]
     res = salvage(x, flat, P, ok, 100.0, dict(sc, flat_salvage=True))
     assert res.tolist() == [True, False] and ok.tolist() == [True, False]
+
+
+def _ts(labels_times):
+    return pd.DataFrame(dict(urutan=range(1, len(labels_times) + 1),
+                             waktu_detik=[t for _, t in labels_times], label=[l for l, _ in labels_times]))
+
+
+def test_manual_timestamps_parse_blocks_and_naik():
+    from eegpipe import manual_ts
+    cfg = load_config()
+    seq = []
+    t = 5.0
+    for lab in ["AKA", "AKA"]:                       # blok 1 (tanpa NGEED)
+        seq += [(lab, t), ("T ", t + 2), ("N", t + 6), ("B", t + 7.5)]
+        t += 16
+    t = 280.0
+    for lab in ["N", "N", "AKI"]:                    # blok 2
+        seq += [(lab, t), ("T", t + 2), ("N", t + 6), ("B", t + 7.5)]
+        t += 16
+    seq.append(("TT", 400.0))
+    tl, reps, info = manual_ts.build(manual_ts.load_df(_ts(seq)), cfg)
+    assert info["problems"] == [] and info["n_ok"] == 5
+    assert reps[reps.task == "NGEED"].rep.tolist() == [3, 4]      # blok 2 → rep 3–4
+    assert reps[reps.task == "AGEM KANAN"].rep.tolist() == [1, 2]
+    r = reps.iloc[0]
+    assert (r.act_turun, r.act_tahan, r.act_naik, r.act_end) == (5.0, 7.0, 11.0, 12.5)
+    assert "ISTIRAHAT UTAMA" in set(tl.task)
+    assert tl[tl.task == "BERDIRI MATA TERTUTUP"].start.iloc[0] == 400.0
+
+
+def test_manual_timestamps_incomplete_rep_flagged():
+    from eegpipe import manual_ts
+    seq = [("N", 5), ("T", 7), ("N", 10), ("AKA", 20), ("T", 22), ("N", 25), ("B", 26)]
+    tl, reps, info = manual_ts.build(manual_ts.load_df(_ts(seq)), load_config())
+    assert reps.compliance.tolist() == ["incomplete", "ok"] and len(info["problems"]) == 1
+
+
+def test_phase_windows_manual_pre_onset():
+    from eegpipe.segments import phase_windows
+    cfg = load_config()
+    cfg["manual_timestamps"]["pre_onset_sec"] = 0.5
+    m = pd.Series(dict(act_arm=10.0, act_turun=10.0, act_tahan=12.0, act_naik=15.0, act_end=16.5,
+                       phase_source="manual_timestamp"))
+    W = phase_windows(m, cfg)
+    assert W["PRA"][:2] == (7.5, 9.5)
+    assert W["TURUN"][:2] == (9.5, 12.0) and W["TAHAN"][:2] == (11.5, 15.0) and W["NAIK"][:2] == (14.5, 16.5)
+    assert W["TURUN"][2] == 2.0                       # durasi fase tetap dari timestamp
+    m["phase_source"] = "video"                       # jalur video tidak berubah
+    assert phase_windows(m, cfg)["TURUN"][:2] == (10.25, 11.75)

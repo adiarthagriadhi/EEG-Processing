@@ -1,0 +1,324 @@
+participant_id,sumber,gerakan,rep,fase,mulai,selesai,cakupan,r_kiri,r_kanan,r_antar
+P08,timestamp_manual,Ngeed,1,Gerak,5.588,10.188,1.0,0.819,0.816,-0.393
+P08,timestamp_manual,Ngeed,1,Tahan,9.688,13.955,1.0,,0.286,
+P08,timestamp_manual,Ngeed,1,Naik,13.455,15.255,1.0,0.87,0.661,-0.539
+P08,timestamp_manual,Ngeed,1,Berdiri,14.755,22.255,1.0,0.912,0.694,-0.535
+P08,timestamp_manual,Ngeed,2,Gerak,21.755,24.39,1.0,0.875,0.7,-0.438
+P08,timestamp_manual,Ngeed,2,Tahan,23.89,30.131,1.0,0.935,0.631,-0.407
+P08,timestamp_manual,Ngeed,2,Naik,29.631,31.838,1.0,0.934,0.53,-0.568
+P08,timestamp_manual,Ngeed,2,Berdiri,31.338,38.34,1.0,0.94,0.583,-0.54
+P08,timestamp_manual,Agem Kanan,1,Gerak,37.84,40.86,1.0,0.865,0.214,-0.083
+P08,timestamp_manual,Agem Kanan,1,Tahan,40.36,46.012,1.0,0.754,0.513,0.08
+P08,timestamp_manual,Agem Kanan,1,Naik,45.512,47.815,1.0,0.832,0.591,0.148
+P08,timestamp_manual,Agem Kanan,1,Berdiri,47.315,54.381,1.0,,0.578,
+P08,timestamp_manual,Agem Kanan,2,Gerak,53.881,56.485,1.0,0.664,0.295,0.174
+P08,timestamp_manual,Agem Kanan,2,Tahan,55.985,62.331,1.0,,0.378,0.102
+P08,timestamp_manual,Agem Kanan,2,Naik,61.831,63.702,1.0,,0.107,0.117
+P08,timestamp_manual,Agem Kanan,2,Berdiri,63.202,70.812,1.0,0.936,0.151,-0.092
+P08,timestamp_manual,Agem Kiri,1,Gerak,70.312,73.439,1.0,,0.268,-0.306
+P08,timestamp_manual,Agem Kiri,1,Tahan,72.939,78.505,1.0,0.735,-0.182,-0.093
+P08,timestamp_manual,Agem Kiri,1,Naik,78.005,80.369,1.0,0.778,0.338,-0.146
+P08,timestamp_manual,Agem Kiri,1,Berdiri,79.869,86.234,1.0,0.555,0.436,-0.292
+P08,timestamp_manual,Agem Kiri,2,Gerak,85.734,88.393,1.0,0.62,0.289,-0.102
+P08,timestamp_manual,Agem Kiri,2,Tahan,87.893,94.24,1.0,0.869,0.336,-0.077
+P08,timestamp_manual,Agem Kiri,2,Naik,93.74,95.894,1.0,0.792,0.665,-0.033
+P08,timestamp_manual,Agem Kiri,2,Berdiri,95.394,103.894,1.0,0.733,0.474,-0.162
+P08,timestamp_manual,Ngeed,3,Gerak,280.054,281.664,1.0,0.93,0.382,-0.522
+P08,timestamp_manual,Ngeed,3,Tahan,281.164,287.109,1.0,,0.395,-0.301
+P08,timestamp_manual,Ngeed,3,Naik,286.609,288.347,1.0,0.853,0.289,-0.335
+P08,timestamp_manual,Ngeed,3,Berdiri,287.847,295.64,1.0,0.944,0.746,-0.702
+P08,timestamp_manual,Ngeed,4,Gerak,295.14,297.425,1.0,0.787,0.286,-0.265
+P08,timestamp_manual,Ngeed,4,Tahan,296.925,303.433,1.0,0.748,0.507,-0.206
+P08,timestamp_manual,Ngeed,4,Naik,302.933,304.726,1.0,0.871,0.373,-0.311
+P08,timestamp_manual,Ngeed,4,Berdiri,304.226,311.359,1.0,0.927,0.704,-0.677
+P08,timestamp_manual,Agem Kanan,3,Gerak,310.859,314.188,1.0,0.612,0.431,-0.11
+P08,timestamp_manual,Agem Kanan,3,Tahan,313.688,319.226,1.0,0.662,0.364,0.246
+P08,timestamp_manual,Agem Kanan,3,Naik,318.726,321.369,1.0,0.807,0.479,-0.261
+P08,timestamp_manual,Agem Kanan,3,Berdiri,320.869,327.414,1.0,,0.426,
+P08,timestamp_manual,Agem Kanan,4,Gerak,326.914,330.003,1.0,0.685,0.519,-0.071
+P08,timestamp_manual,Agem Kanan,4,Tahan,329.503,335.545,1.0,0.831,0.255,-0.063
+P08,timestamp_manual,Agem Kanan,4,Naik,335.045,337.196,1.0,0.911,0.498,-0.337
+P08,timestamp_manual,Agem Kanan,4,Berdiri,336.696,343.367,1.0,0.754,0.533,-0.322
+P08,timestamp_manual,Agem Kiri,3,Gerak,342.867,345.71,1.0,0.591,0.374,-0.157
+P08,timestamp_manual,Agem Kiri,3,Tahan,345.21,351.371,1.0,0.809,0.545,-0.155
+P08,timestamp_manual,Agem Kiri,3,Naik,350.871,353.248,1.0,0.721,0.392,-0.325
+P08,timestamp_manual,Agem Kiri,3,Berdiri,352.748,359.266,1.0,0.856,0.418,-0.322
+P08,timestamp_manual,Agem Kiri,4,Gerak,358.766,361.752,1.0,0.687,0.346,-0.038
+P08,timestamp_manual,Agem Kiri,4,Tahan,361.252,367.478,1.0,0.828,0.324,0.015
+P08,timestamp_manual,Agem Kiri,4,Naik,366.978,369.45,1.0,0.774,0.285,-0.103
+P08,timestamp_manual,Agem Kiri,4,Berdiri,368.95,377.45,1.0,0.87,0.288,-0.159
+P08,timestamp_manual,-,0,Tutup Mata,411.635,442.135,0.471,,0.602,
+P08,timestamp_manual,-,0,Istirahat,103.894,275.554,1.0,,0.672,-0.469
+P08,repo_video,Ngeed,1,Gerak,8.405,9.904,1.0,0.766,0.818,-0.328
+P08,repo_video,Ngeed,1,Tahan,10.404,14.834,1.0,,0.387,-0.409
+P08,repo_video,Ngeed,1,Naik,15.165,15.545,1.0,0.808,0.279,-0.49
+P08,repo_video,Ngeed,2,Gerak,23.944,25.166,1.0,0.729,0.465,-0.076
+P08,repo_video,Ngeed,2,Tahan,25.666,30.901,1.0,0.94,0.742,-0.496
+P08,repo_video,Ngeed,2,Naik,31.291,31.942,1.0,0.921,0.291,-0.341
+P08,repo_video,Agem Kanan,1,Gerak,40.011,41.511,1.0,0.839,0.07,-0.028
+P08,repo_video,Agem Kanan,1,Tahan,42.011,46.774,1.0,0.75,0.51,0.106
+P08,repo_video,Agem Kanan,1,Naik,47.134,47.649,1.0,0.88,0.263,0.106
+P08,repo_video,Agem Kanan,2,Gerak,55.968,56.951,1.0,0.51,0.492,-0.204
+P08,repo_video,Agem Kanan,2,Tahan,57.411,63.035,1.0,,0.353,
+P08,repo_video,Agem Kanan,2,Naik,63.406,63.97,1.0,0.423,0.193,-0.043
+P08,repo_video,Agem Kiri,1,Gerak,72.936,75.298,1.0,0.722,-0.027,-0.129
+P08,repo_video,Agem Kiri,1,Naik,75.936,79.637,1.0,0.717,0.363,0.03
+P08,repo_video,Agem Kiri,2,Gerak,88.011,89.511,1.0,0.802,0.328,-0.019
+P08,repo_video,Agem Kiri,2,Tahan,90.011,94.898,1.0,0.893,0.463,-0.238
+P08,repo_video,Agem Kiri,2,Naik,95.279,95.893,1.0,0.794,0.472,-0.076
+P08,repo_video,Ngeed,3,Gerak,281.164,282.146,1.0,0.833,0.264,-0.244
+P08,repo_video,Ngeed,3,Tahan,282.606,287.841,1.0,0.603,0.347,-0.34
+P08,repo_video,Ngeed,3,Naik,288.181,288.599,1.0,0.962,0.182,-0.395
+P08,repo_video,Ngeed,4,Gerak,296.671,297.564,1.0,0.665,0.597,-0.091
+P08,repo_video,Ngeed,4,Tahan,298.006,304.172,1.0,0.855,0.32,-0.306
+P08,repo_video,Ngeed,4,Naik,304.512,304.929,1.0,0.967,0.291,-0.309
+P08,repo_video,Agem Kanan,3,Gerak,312.796,314.435,1.0,0.693,0.315,0.146
+P08,repo_video,Agem Kanan,3,Tahan,314.935,319.643,1.0,0.596,0.349,0.007
+P08,repo_video,Agem Kanan,3,Naik,319.991,320.447,1.0,0.745,0.536,-0.403
+P08,repo_video,Agem Kanan,4,Gerak,328.707,329.727,1.0,0.6,0.469,0.037
+P08,repo_video,Agem Kanan,4,Tahan,330.196,335.904,1.0,0.865,0.177,-0.005
+P08,repo_video,Agem Kanan,4,Naik,336.314,337.063,1.0,0.767,0.639,-0.362
+P08,repo_video,Agem Kiri,3,Gerak,344.901,345.931,1.0,0.663,0.63,-0.025
+P08,repo_video,Agem Kiri,3,Tahan,346.402,351.832,1.0,0.868,0.415,-0.244
+P08,repo_video,Agem Kiri,3,Naik,352.172,352.589,1.0,0.594,0.345,-0.144
+P08,repo_video,Agem Kiri,4,Gerak,360.997,362.302,1.0,0.664,0.371,0.06
+P08,repo_video,Agem Kiri,4,Tahan,362.802,368.038,1.0,0.799,0.318,-0.044
+P08,repo_video,Agem Kiri,4,Naik,368.409,368.972,1.0,0.759,0.345,-0.251
+P08,repo_video,-,0,Istirahat,103.894,275.554,1.0,,0.672,-0.469
+P09,timestamp_manual,Ngeed,1,Gerak,6.788,10.662,1.0,0.541,0.563,0.291
+P09,timestamp_manual,Ngeed,1,Tahan,10.162,14.104,1.0,0.546,0.621,0.465
+P09,timestamp_manual,Ngeed,1,Naik,13.604,15.976,1.0,0.601,0.566,0.287
+P09,timestamp_manual,Ngeed,1,Berdiri,15.476,22.327,1.0,0.656,0.509,0.021
+P09,timestamp_manual,Ngeed,2,Gerak,21.827,25.55,1.0,0.642,0.39,0.001
+P09,timestamp_manual,Ngeed,2,Tahan,25.05,29.618,1.0,0.438,,0.179
+P09,timestamp_manual,Ngeed,2,Naik,29.118,32.384,1.0,,,
+P09,timestamp_manual,Ngeed,2,Berdiri,31.884,38.257,1.0,,0.465,-0.079
+P09,timestamp_manual,Agem Kanan,1,Gerak,37.757,41.202,1.0,,-0.075,0.174
+P09,timestamp_manual,Agem Kanan,1,Tahan,40.702,46.217,1.0,0.285,0.864,0.063
+P09,timestamp_manual,Agem Kanan,1,Naik,45.717,48.02,1.0,0.536,0.915,0.171
+P09,timestamp_manual,Agem Kanan,1,Berdiri,47.52,54.243,1.0,0.699,0.511,0.183
+P09,timestamp_manual,Agem Kanan,2,Gerak,53.743,57.739,1.0,0.715,0.468,0.135
+P09,timestamp_manual,Agem Kanan,2,Tahan,57.239,62.373,1.0,0.442,0.547,0.095
+P09,timestamp_manual,Agem Kanan,2,Naik,61.873,64.868,1.0,0.586,0.536,0.258
+P09,timestamp_manual,Agem Kanan,2,Berdiri,64.368,70.714,1.0,0.635,0.59,0.012
+P09,timestamp_manual,Agem Kiri,1,Gerak,70.214,73.084,1.0,0.707,0.453,0.073
+P09,timestamp_manual,Agem Kiri,1,Tahan,72.584,77.96,1.0,0.798,0.466,0.153
+P09,timestamp_manual,Agem Kiri,1,Naik,77.46,80.435,1.0,0.882,0.41,0.018
+P09,timestamp_manual,Agem Kiri,1,Berdiri,79.935,86.482,1.0,0.755,0.443,0.052
+P09,timestamp_manual,Agem Kiri,2,Gerak,85.982,90.32,1.0,0.81,0.441,0.15
+P09,timestamp_manual,Agem Kiri,2,Tahan,89.82,93.814,1.0,0.827,0.515,0.021
+P09,timestamp_manual,Agem Kiri,2,Naik,93.314,96.999,1.0,0.816,0.421,0.04
+P09,timestamp_manual,Agem Kiri,2,Berdiri,96.499,104.999,1.0,0.517,0.373,0.013
+P09,timestamp_manual,Ngeed,3,Gerak,279.453,282.142,1.0,,0.616,0.026
+P09,timestamp_manual,Ngeed,3,Tahan,281.642,286.27,1.0,0.617,0.308,0.315
+P09,timestamp_manual,Ngeed,3,Naik,285.77,289.137,1.0,,-0.183,-0.064
+P09,timestamp_manual,Ngeed,3,Berdiri,288.637,295.67,1.0,0.464,0.033,0.085
+P09,timestamp_manual,Ngeed,4,Gerak,295.17,297.573,1.0,0.344,0.367,-0.024
+P09,timestamp_manual,Ngeed,4,Tahan,297.073,302.915,1.0,,-0.175,0.005
+P09,timestamp_manual,Ngeed,4,Naik,302.415,304.716,1.0,0.669,0.386,0.403
+P09,timestamp_manual,Ngeed,4,Berdiri,304.216,311.238,1.0,,0.049,-0.142
+P09,timestamp_manual,Agem Kanan,3,Gerak,310.738,315.222,1.0,0.945,0.172,-0.099
+P09,timestamp_manual,Agem Kanan,3,Tahan,314.722,318.84,1.0,,,-0.103
+P09,timestamp_manual,Agem Kanan,3,Naik,318.34,322.121,1.0,0.819,,0.108
+P09,timestamp_manual,Agem Kanan,3,Berdiri,321.621,327.33,1.0,,0.681,-0.085
+P09,timestamp_manual,Agem Kanan,4,Gerak,326.83,330.898,1.0,0.575,0.537,0.124
+P09,timestamp_manual,Agem Kanan,4,Tahan,330.398,334.38,1.0,0.895,0.636,-0.076
+P09,timestamp_manual,Agem Kanan,4,Naik,333.88,337.531,1.0,,0.424,-0.046
+P09,timestamp_manual,Agem Kanan,4,Berdiri,337.031,343.196,1.0,0.748,0.445,-0.06
+P09,timestamp_manual,Agem Kiri,3,Gerak,342.696,346.398,1.0,0.701,0.726,0.139
+P09,timestamp_manual,Agem Kiri,3,Tahan,345.898,349.778,1.0,0.841,0.968,-0.132
+P09,timestamp_manual,Agem Kiri,3,Naik,349.278,352.575,1.0,,0.818,0.093
+P09,timestamp_manual,Agem Kiri,3,Berdiri,352.075,359.194,1.0,0.623,0.635,0.046
+P09,timestamp_manual,Agem Kiri,4,Gerak,358.694,362.135,1.0,0.686,0.71,0.181
+P09,timestamp_manual,Agem Kiri,4,Tahan,361.635,366.278,1.0,,0.83,0.147
+P09,timestamp_manual,Agem Kiri,4,Naik,365.778,368.945,1.0,,0.812,-0.321
+P09,timestamp_manual,Agem Kiri,4,Berdiri,368.445,376.945,1.0,0.603,0.283,-0.241
+P09,timestamp_manual,-,0,Tutup Mata,411.892,442.392,0.135,0.663,0.555,0.312
+P09,timestamp_manual,-,0,Istirahat,104.999,274.953,1.0,0.594,0.564,0.076
+P09,repo_video,Ngeed,1,Gerak,9.302,10.371,1.0,0.644,0.715,0.41
+P09,repo_video,Ngeed,1,Tahan,10.85,15.613,1.0,0.522,0.697,0.513
+P09,repo_video,Ngeed,1,Naik,15.994,16.607,1.0,0.444,0.479,0.201
+P09,repo_video,Ngeed,2,Gerak,24.84,25.967,1.0,0.55,0.709,0.135
+P09,repo_video,Ngeed,2,Tahan,26.459,30.625,1.0,,,0.117
+P09,repo_video,Ngeed,2,Naik,31.083,32.056,1.0,,-0.384,0.321
+P09,repo_video,Agem Kiri,1,Gerak,73.716,76.813,1.0,0.798,0.498,0.065
+P09,repo_video,Agem Kiri,1,Tahan,77.313,78.951,1.0,0.872,0.754,-0.146
+P09,repo_video,Agem Kiri,1,Naik,79.28,79.65,1.0,0.945,0.439,0.158
+P09,repo_video,Agem Kiri,2,Gerak,89.265,90.149,1.0,0.897,0.311,-0.081
+P09,repo_video,Agem Kiri,2,Tahan,90.589,92.283,1.0,0.884,0.597,0.048
+P09,repo_video,Agem Kiri,2,Naik,92.783,95.685,1.0,0.847,0.627,0.014
+P09,repo_video,Ngeed,3,Gerak,281.541,282.523,1.0,0.531,0.322,0.019
+P09,repo_video,Ngeed,3,Tahan,282.984,287.552,1.0,0.627,0.168,0.325
+P09,repo_video,Ngeed,3,Naik,288.002,288.935,1.0,,-0.124,-0.032
+P09,repo_video,Ngeed,4,Gerak,297.343,298.326,1.0,,0.444,0.076
+P09,repo_video,Ngeed,4,Tahan,298.786,304.021,1.0,0.466,-0.185,0.092
+P09,repo_video,Ngeed,4,Naik,304.44,305.227,1.0,0.462,0.644,0.263
+P09,repo_video,Agem Kanan,3,Tahan,314.809,315.188,1.0,0.932,0.202,-0.301
+P09,repo_video,Agem Kanan,3,Naik,315.519,320.088,1.0,,,0.093
+P09,repo_video,Agem Kanan,4,Gerak,330.849,331.686,1.0,0.901,0.756,-0.058
+P09,repo_video,Agem Kanan,4,Naik,332.517,335.878,1.0,,0.6,0.199
+P09,repo_video,Agem Kiri,3,Gerak,346.377,347.223,1.0,0.878,0.965,-0.209
+P09,repo_video,Agem Kiri,3,Tahan,347.654,351.278,1.0,,0.964,-0.342
+P09,repo_video,Agem Kiri,3,Naik,351.62,352.047,1.0,0.599,-0.169,-0.197
+P09,repo_video,Agem Kiri,4,Gerak,362.541,363.192,1.0,0.822,0.813,0.369
+P09,repo_video,Agem Kiri,4,Tahan,363.582,367.012,1.0,,0.829,0.069
+P09,repo_video,Agem Kiri,4,Naik,367.423,368.177,1.0,,0.794,-0.362
+P09,repo_video,-,0,Istirahat,104.999,274.953,1.0,0.594,0.564,0.076
+P31,timestamp_manual,Agem Kanan,1,Gerak,38.413,42.197,1.0,0.276,0.763,-0.175
+P31,timestamp_manual,Agem Kanan,1,Tahan,41.697,46.46,1.0,0.342,0.696,0.071
+P31,timestamp_manual,Agem Kanan,1,Naik,45.96,48.617,1.0,0.203,0.642,-0.115
+P31,timestamp_manual,Agem Kanan,1,Berdiri,48.117,54.897,1.0,0.339,0.572,-0.154
+P31,timestamp_manual,Agem Kanan,2,Gerak,54.397,58.308,1.0,0.835,0.635,0.249
+P31,timestamp_manual,Agem Kanan,2,Tahan,57.808,62.546,1.0,0.492,0.727,-0.077
+P31,timestamp_manual,Agem Kanan,2,Naik,62.046,63.401,1.0,0.348,0.787,-0.082
+P31,timestamp_manual,Agem Kanan,2,Berdiri,62.901,70.317,1.0,0.446,0.695,0.174
+P31,timestamp_manual,Agem Kiri,1,Gerak,69.817,74.077,1.0,0.857,0.569,0.219
+P31,timestamp_manual,Agem Kiri,1,Tahan,73.577,82.536,1.0,0.289,0.548,0.064
+P31,timestamp_manual,Agem Kiri,1,Naik,82.036,84.17,1.0,0.392,0.526,-0.095
+P31,timestamp_manual,Agem Kiri,1,Berdiri,83.67,86.97,1.0,0.288,0.743,-0.002
+P31,timestamp_manual,Agem Kiri,2,Gerak,86.47,89.168,1.0,0.661,0.74,-0.018
+P31,timestamp_manual,Agem Kiri,2,Tahan,88.668,94.349,1.0,0.476,0.627,0.069
+P31,timestamp_manual,Agem Kiri,2,Naik,93.849,95.553,1.0,0.454,0.613,0.141
+P31,timestamp_manual,Agem Kiri,2,Berdiri,95.053,103.553,1.0,0.539,0.57,0.085
+P31,timestamp_manual,Ngeed,3,Gerak,279.616,282.582,1.0,0.095,0.837,-0.007
+P31,timestamp_manual,Ngeed,3,Tahan,282.082,285.501,1.0,0.074,0.842,0.019
+P31,timestamp_manual,Ngeed,3,Naik,285.001,287.032,1.0,0.585,0.721,-0.208
+P31,timestamp_manual,Ngeed,3,Berdiri,286.532,295.032,1.0,0.334,0.725,0.03
+P31,timestamp_manual,Ngeed,4,Gerak,295.131,297.614,1.0,0.002,0.866,0.185
+P31,timestamp_manual,Ngeed,4,Tahan,297.114,301.214,1.0,0.198,0.728,0.093
+P31,timestamp_manual,Ngeed,4,Naik,300.714,302.965,1.0,0.488,0.596,0.047
+P31,timestamp_manual,Ngeed,4,Berdiri,302.465,310.965,1.0,,0.727,0.057
+P31,timestamp_manual,Agem Kanan,3,Gerak,311.376,314.14,1.0,0.38,0.477,-0.07
+P31,timestamp_manual,Agem Kanan,3,Tahan,313.64,316.992,1.0,0.674,0.576,-0.267
+P31,timestamp_manual,Agem Kanan,3,Naik,316.492,319.747,1.0,,0.695,-0.363
+P31,timestamp_manual,Agem Kanan,3,Berdiri,319.247,327.597,1.0,0.595,0.496,-0.088
+P31,timestamp_manual,Agem Kanan,4,Gerak,327.097,330.714,1.0,0.168,0.381,0.123
+P31,timestamp_manual,Agem Kanan,4,Tahan,330.214,335.23,1.0,0.479,0.611,-0.007
+P31,timestamp_manual,Agem Kanan,4,Naik,334.73,336.799,1.0,0.102,0.677,-0.044
+P31,timestamp_manual,Agem Kanan,4,Berdiri,336.299,343.604,1.0,,0.675,0.17
+P31,timestamp_manual,Agem Kiri,3,Gerak,343.104,347.19,1.0,0.537,0.577,0.074
+P31,timestamp_manual,Agem Kiri,3,Tahan,346.69,350.775,1.0,,0.819,0.18
+P31,timestamp_manual,Agem Kiri,3,Naik,350.275,352.276,1.0,0.487,0.761,-0.0
+P31,timestamp_manual,Agem Kiri,3,Berdiri,351.776,359.481,1.0,,0.765,0.292
+P31,timestamp_manual,Agem Kiri,4,Gerak,358.981,361.82,1.0,0.599,0.752,0.0
+P31,timestamp_manual,Agem Kiri,4,Tahan,361.32,366.231,1.0,0.229,0.663,-0.07
+P31,timestamp_manual,Agem Kiri,4,Naik,365.731,368.229,1.0,0.329,0.742,-0.212
+P31,timestamp_manual,Agem Kiri,4,Berdiri,367.729,376.229,1.0,0.527,0.577,0.007
+P31,timestamp_manual,-,0,Tutup Mata,411.081,441.581,1.0,,0.19,
+P31,timestamp_manual,-,0,Istirahat,103.553,275.116,1.0,0.826,0.565,0.056
+P31,repo_video,Agem Kanan,1,Gerak,41.161,42.869,1.0,0.237,0.795,0.084
+P31,repo_video,Agem Kanan,1,Tahan,43.369,44.869,1.0,0.408,0.501,-0.024
+P31,repo_video,Agem Kanan,1,Naik,45.369,47.271,1.0,0.218,0.665,-0.006
+P31,repo_video,Agem Kanan,2,Gerak,57.432,57.996,1.0,0.595,0.73,-0.011
+P31,repo_video,Agem Kanan,2,Tahan,58.307,59.191,1.0,0.656,0.76,-0.158
+P31,repo_video,Agem Kanan,2,Naik,59.631,63.338,1.0,0.321,0.772,-0.079
+P31,repo_video,Agem Kiri,1,Tahan,73.698,76.072,1.0,0.468,0.526,0.182
+P31,repo_video,Agem Kiri,1,Naik,76.572,83.071,1.0,0.388,0.509,-0.062
+P31,repo_video,Agem Kiri,2,Gerak,88.476,88.943,1.0,0.409,0.844,0.029
+P31,repo_video,Agem Kiri,2,Tahan,89.214,90.011,1.0,0.354,0.545,0.054
+P31,repo_video,Agem Kiri,2,Naik,90.432,94.806,1.0,0.489,0.612,-0.019
+P31,repo_video,Ngeed,3,Gerak,281.667,282.416,1.0,-0.045,0.866,0.014
+P31,repo_video,Ngeed,3,Tahan,282.826,284.936,1.0,0.186,0.68,-0.043
+P31,repo_video,Ngeed,3,Naik,285.294,285.801,1.0,0.293,0.795,0.011
+P31,repo_video,Ngeed,4,Gerak,296.337,297.366,1.0,-0.031,0.835,0.16
+P31,repo_video,Ngeed,4,Tahan,297.837,300.934,1.0,0.225,0.642,-0.028
+P31,repo_video,Ngeed,4,Naik,301.345,302.094,1.0,0.533,0.536,0.18
+P31,repo_video,Agem Kanan,3,Gerak,313.979,314.581,1.0,0.529,0.604,-0.259
+P31,repo_video,Agem Kanan,3,Tahan,314.96,316.862,1.0,0.441,0.218,-0.276
+P31,repo_video,Agem Kanan,3,Naik,317.223,317.739,1.0,0.734,0.602,-0.439
+P31,repo_video,Agem Kanan,4,Gerak,329.43,330.666,1.0,0.353,0.21,-0.06
+P31,repo_video,Agem Kanan,4,Tahan,331.116,332.049,1.0,0.442,0.757,0.241
+P31,repo_video,Agem Kanan,4,Naik,332.499,336.193,1.0,0.386,0.629,-0.085
+P31,repo_video,Agem Kiri,3,Gerak,346.759,347.595,1.0,0.205,0.845,0.335
+P31,repo_video,Agem Kiri,3,Tahan,348.024,349.732,1.0,,0.89,0.112
+P31,repo_video,Agem Kiri,3,Naik,350.232,352.135,1.0,0.471,0.717,-0.078
+P31,repo_video,Agem Kiri,4,Gerak,361.385,361.715,1.0,-0.079,0.811,-0.338
+P31,repo_video,Agem Kiri,4,Tahan,362.036,363.869,1.0,0.057,0.489,-0.015
+P31,repo_video,Agem Kiri,4,Naik,364.369,368.466,1.0,0.236,0.724,-0.189
+P31,repo_video,-,0,Istirahat,103.553,275.116,1.0,0.826,0.565,0.056
+P32,timestamp_manual,Ngeed,1,Gerak,5.634,10.461,1.0,0.266,0.608,-0.033
+P32,timestamp_manual,Ngeed,1,Tahan,9.961,11.315,1.0,0.321,0.562,-0.097
+P32,timestamp_manual,Ngeed,1,Naik,10.815,13.585,1.0,0.134,0.408,-0.018
+P32,timestamp_manual,Ngeed,1,Berdiri,13.085,21.585,1.0,,0.518,-0.185
+P32,timestamp_manual,Ngeed,2,Gerak,21.575,23.725,1.0,0.071,0.382,-0.016
+P32,timestamp_manual,Ngeed,2,Tahan,23.225,26.905,1.0,0.163,,0.077
+P32,timestamp_manual,Ngeed,2,Naik,26.405,29.74,1.0,0.363,,-0.193
+P32,timestamp_manual,Ngeed,2,Berdiri,29.24,37.74,1.0,0.364,0.645,-0.144
+P32,timestamp_manual,Agem Kanan,1,Gerak,37.69,41.998,1.0,0.761,0.349,0.082
+P32,timestamp_manual,Agem Kanan,1,Tahan,41.498,45.323,1.0,0.562,0.589,0.223
+P32,timestamp_manual,Agem Kanan,1,Naik,44.823,47.39,1.0,0.349,0.763,-0.178
+P32,timestamp_manual,Agem Kanan,1,Berdiri,46.89,54.11,1.0,-0.244,0.538,0.053
+P32,timestamp_manual,Agem Kanan,2,Gerak,53.61,55.708,1.0,0.547,0.654,-0.115
+P32,timestamp_manual,Agem Kanan,2,Tahan,55.208,59.407,1.0,0.504,0.752,-0.005
+P32,timestamp_manual,Agem Kanan,2,Naik,58.907,62.218,1.0,0.477,0.636,-0.113
+P32,timestamp_manual,Agem Kanan,2,Berdiri,61.718,70.055,1.0,0.519,0.386,-0.038
+P32,timestamp_manual,Agem Kiri,1,Gerak,69.555,72.771,1.0,0.543,0.608,-0.024
+P32,timestamp_manual,Agem Kiri,1,Tahan,72.271,75.187,1.0,0.537,0.575,0.185
+P32,timestamp_manual,Agem Kiri,1,Naik,74.687,78.38,1.0,0.583,0.658,-0.119
+P32,timestamp_manual,Agem Kiri,1,Berdiri,77.88,86.125,1.0,0.379,0.426,-0.005
+P32,timestamp_manual,Agem Kiri,2,Gerak,85.625,87.682,1.0,0.603,0.513,-0.013
+P32,timestamp_manual,Agem Kiri,2,Tahan,87.182,92.107,1.0,0.515,0.498,-0.002
+P32,timestamp_manual,Agem Kiri,2,Naik,91.607,93.954,1.0,0.558,0.668,-0.415
+P32,timestamp_manual,Agem Kiri,2,Berdiri,93.454,101.954,1.0,0.638,0.185,-0.118
+P32,timestamp_manual,Ngeed,3,Gerak,278.783,282.705,1.0,0.571,0.428,-0.074
+P32,timestamp_manual,Ngeed,3,Tahan,282.205,284.133,1.0,0.401,0.624,-0.049
+P32,timestamp_manual,Ngeed,3,Naik,283.633,285.67,1.0,0.144,0.741,-0.032
+P32,timestamp_manual,Ngeed,3,Berdiri,285.17,293.67,1.0,0.32,0.656,-0.166
+P32,timestamp_manual,Ngeed,4,Gerak,295.601,297.887,1.0,0.573,0.703,0.031
+P32,timestamp_manual,Ngeed,4,Tahan,297.387,300.444,1.0,0.208,0.843,-0.072
+P32,timestamp_manual,Ngeed,4,Naik,299.944,302.334,1.0,0.255,0.775,0.069
+P32,timestamp_manual,Ngeed,4,Berdiri,301.834,310.334,1.0,0.444,0.727,-0.064
+P32,timestamp_manual,Agem Kanan,3,Gerak,310.741,313.153,1.0,0.475,0.529,-0.134
+P32,timestamp_manual,Agem Kanan,3,Tahan,312.653,316.001,1.0,0.56,0.423,-0.061
+P32,timestamp_manual,Agem Kanan,3,Naik,315.501,319.387,1.0,0.507,0.815,-0.106
+P32,timestamp_manual,Agem Kanan,3,Berdiri,318.887,327.307,1.0,0.237,0.791,0.007
+P32,timestamp_manual,Agem Kanan,4,Gerak,326.807,328.9,1.0,0.351,0.549,0.047
+P32,timestamp_manual,Agem Kanan,4,Tahan,328.4,332.309,1.0,0.448,0.57,0.03
+P32,timestamp_manual,Agem Kanan,4,Naik,331.809,334.886,1.0,0.615,0.645,0.005
+P32,timestamp_manual,Agem Kanan,4,Berdiri,334.386,342.886,1.0,0.526,0.606,-0.067
+P32,timestamp_manual,Agem Kiri,3,Gerak,342.455,344.87,1.0,0.447,0.527,-0.017
+P32,timestamp_manual,Agem Kiri,3,Tahan,344.37,348.32,1.0,0.375,0.745,-0.017
+P32,timestamp_manual,Agem Kiri,3,Naik,347.82,351.173,1.0,0.084,0.748,0.108
+P32,timestamp_manual,Agem Kiri,3,Berdiri,350.673,358.85,1.0,0.218,0.662,-0.099
+P32,timestamp_manual,Agem Kiri,4,Gerak,358.35,360.997,1.0,0.345,0.717,0.076
+P32,timestamp_manual,Agem Kiri,4,Tahan,360.497,364.664,1.0,0.153,0.783,0.003
+P32,timestamp_manual,Agem Kiri,4,Naik,364.164,366.97,1.0,0.459,0.714,-0.118
+P32,timestamp_manual,Agem Kiri,4,Berdiri,366.47,374.97,1.0,0.534,0.584,-0.088
+P32,timestamp_manual,-,0,Tutup Mata,411.364,441.864,1.0,0.323,0.203,-0.082
+P32,timestamp_manual,-,0,Istirahat,101.954,274.283,1.0,0.428,0.39,-0.062
+P32,repo_video,Ngeed,1,Gerak,7.998,9.707,1.0,0.301,0.598,-0.077
+P32,repo_video,Ngeed,1,Tahan,10.207,11.831,1.0,0.321,0.482,-0.101
+P32,repo_video,Ngeed,1,Naik,12.252,13.048,1.0,0.3,0.318,-0.11
+P32,repo_video,Ngeed,2,Gerak,23.593,25.232,1.0,0.252,,-0.044
+P32,repo_video,Ngeed,2,Tahan,25.732,27.37,1.0,0.34,,0.214
+P32,repo_video,Ngeed,2,Naik,27.82,28.754,1.0,0.372,0.684,-0.268
+P32,repo_video,Agem Kiri,11,Gerak,40.396,42.104,1.0,0.581,0.603,0.241
+P32,repo_video,Agem Kiri,11,Tahan,42.604,44.493,1.0,0.559,0.63,0.063
+P32,repo_video,Agem Kiri,11,Naik,44.964,45.994,1.0,0.415,0.813,-0.125
+P32,repo_video,Agem Kiri,12,Gerak,55.21,55.814,1.0,0.466,0.735,0.026
+P32,repo_video,Agem Kiri,12,Tahan,56.193,59.831,1.0,0.504,0.742,-0.086
+P32,repo_video,Agem Kiri,12,Naik,60.181,60.647,1.0,0.281,0.316,0.035
+P32,repo_video,Agem Kanan,11,Gerak,71.994,72.83,1.0,0.429,0.756,0.245
+P32,repo_video,Agem Kanan,11,Tahan,73.259,75.439,1.0,0.679,0.556,-0.145
+P32,repo_video,Agem Kanan,11,Naik,75.818,76.421,1.0,0.492,0.461,-0.017
+P32,repo_video,Agem Kanan,12,Gerak,87.61,88.223,1.0,0.778,0.493,0.189
+P32,repo_video,Agem Kanan,12,Tahan,88.533,89.369,1.0,0.643,0.382,-0.079
+P32,repo_video,Agem Kanan,12,Naik,89.798,93.104,1.0,0.43,0.615,0.018
+P32,repo_video,Ngeed,3,Gerak,280.604,282.63,1.0,0.584,0.492,0.002
+P32,repo_video,Ngeed,3,Tahan,283.13,284.63,1.0,0.124,0.354,-0.102
+P32,repo_video,Ngeed,3,Naik,285.009,285.612,1.0,0.2,0.274,-0.014
+P32,repo_video,Ngeed,4,Gerak,297.363,298.394,1.0,0.207,0.86,-0.022
+P32,repo_video,Ngeed,4,Tahan,298.865,300.558,1.0,0.154,0.835,0.003
+P32,repo_video,Ngeed,4,Naik,300.939,301.552,1.0,0.297,0.572,-0.074
+P32,repo_video,Agem Kanan,3,Gerak,312.773,313.522,1.0,0.651,0.372,-0.054
+P32,repo_video,Agem Kanan,3,Tahan,313.761,314.13,1.0,0.331,0.691,-0.099
+P32,repo_video,Agem Kanan,3,Naik,314.459,317.625,1.0,0.437,0.455,-0.037
+P32,repo_video,Agem Kanan,4,Gerak,328.817,329.75,1.0,0.57,0.75,0.017
+P32,repo_video,Agem Kanan,4,Naik,330.325,333.63,1.0,0.294,0.541,-0.128
+P32,repo_video,Agem Kiri,3,Gerak,344.233,344.982,1.0,0.467,0.552,-0.021
+P32,repo_video,Agem Kiri,3,Tahan,345.273,345.886,1.0,0.587,0.741,-0.047
+P32,repo_video,Agem Kiri,3,Naik,346.267,349.697,1.0,0.082,0.815,0.012
+P32,repo_video,Agem Kiri,4,Gerak,360.115,360.91,1.0,0.265,0.824,0.152
+P32,repo_video,Agem Kiri,4,Tahan,361.33,362.966,1.0,0.209,0.729,-0.0
+P32,repo_video,Agem Kiri,4,Naik,363.466,365.826,1.0,0.438,0.733,-0.279
+P32,repo_video,-,0,Istirahat,101.954,274.283,1.0,0.428,0.39,-0.062

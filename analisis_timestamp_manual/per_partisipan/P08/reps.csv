@@ -1,0 +1,13 @@
+task,rep,sesi,urutan,compliance,act_arm,act_turun,act_tahan,act_naik,act_end,act_turun_extrap,hud_turun,hud_tahan,hud_naik,hud_end,first_move,phase_source,baseline_still
+NGEED,1,1,1,ok,6.088,6.088,10.188,13.955,15.255,6.088,,,,,manual,manual_timestamp,True
+NGEED,2,1,5,ok,22.255,22.255,24.39,30.131,31.838,22.255,,,,,manual,manual_timestamp,True
+AGEM KANAN,1,1,9,ok,38.34,38.34,40.86,46.012,47.815,38.34,,,,,manual,manual_timestamp,True
+AGEM KANAN,2,1,13,ok,54.381,54.381,56.485,62.331,63.702,54.381,,,,,manual,manual_timestamp,True
+AGEM KIRI,1,1,17,ok,70.812,70.812,73.439,78.505,80.369,70.812,,,,,manual,manual_timestamp,True
+AGEM KIRI,2,1,21,ok,86.234,86.234,88.393,94.24,95.894,86.234,,,,,manual,manual_timestamp,True
+NGEED,3,2,25,ok,280.554,280.554,281.664,287.109,288.347,280.554,,,,,manual,manual_timestamp,True
+NGEED,4,2,29,ok,295.64,295.64,297.425,303.433,304.726,295.64,,,,,manual,manual_timestamp,True
+AGEM KANAN,3,2,33,ok,311.359,311.359,314.188,319.226,321.369,311.359,,,,,manual,manual_timestamp,True
+AGEM KANAN,4,2,37,ok,327.414,327.414,330.003,335.545,337.196,327.414,,,,,manual,manual_timestamp,True
+AGEM KIRI,3,2,41,ok,343.367,343.367,345.71,351.371,353.248,343.367,,,,,manual,manual_timestamp,True
+AGEM KIRI,4,2,45,ok,359.266,359.266,361.752,367.478,369.45,359.266,,,,,manual,manual_timestamp,True
